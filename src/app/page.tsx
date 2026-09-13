@@ -28,6 +28,7 @@ import { ProfileScreen } from '@/components/screens/ProfileScreen';
 import { AdminDashboard } from '@/components/admin/AdminDashboard';
 import { AuthProvider, useAuth } from '@/lib/auth/AuthContext';
 import { AuthModal } from '@/components/auth/AuthModal';
+import { useWakeLock } from '@/lib/device/useWakeLock';
 
 export type ScreenId =
   | 'home'
@@ -57,6 +58,10 @@ function QabrMapAppContent() {
   const [mounted, setMounted] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
   const [pendingUploads, setPendingUploads] = useState(3);
+
+  // Keep mobile screen awake when navigating to a cemetery or in AR mode
+  const shouldKeepAwake = ['navigation', 'ar-guidance', 'cemetery-map'].includes(currentScreen);
+  useWakeLock(shouldKeepAwake);
 
   // Data State
   const [cemeteries, setCemeteries] = useState<Cemetery[]>([]);

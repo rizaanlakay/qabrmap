@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { X, ChevronUp, Compass } from 'lucide-react';
 import { Grave } from '@/types';
 import { calculateDistanceMeters, calculateBearing } from '@/lib/geospatial';
+import { useWakeLock } from '@/lib/device/useWakeLock';
 
 interface ARGuidanceScreenProps {
   targetGrave: Grave;
@@ -19,6 +20,9 @@ export const ARGuidanceScreen: React.FC<ARGuidanceScreenProps> = ({
   distanceMeters: initialDistance = 8,
   onClose,
 }) => {
+  // Keep mobile screen awake while using AR camera guidance
+  const wakeLock = useWakeLock(true);
+
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [hasCameraStream, setHasCameraStream] = useState(false);
   const [phoneHeading, setPhoneHeading] = useState(62);
@@ -127,9 +131,17 @@ export const ARGuidanceScreen: React.FC<ARGuidanceScreenProps> = ({
           <X className="w-5 h-5 stroke-[2.2]" />
         </button>
 
-        <h1 className="text-sm font-bold tracking-wide text-white drop-shadow">
-          Approaching your destination
-        </h1>
+        <div className="flex flex-col items-center">
+          <h1 className="text-sm font-bold tracking-wide text-white drop-shadow">
+            Approaching your destination
+          </h1>
+          {wakeLock.isActive && (
+            <span className="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-[9px] font-semibold text-emerald-300 mt-0.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Awake</span>
+            </span>
+          )}
+        </div>
 
         <button
           onClick={() => setPhoneHeading((h) => (h + 30) % 360)}

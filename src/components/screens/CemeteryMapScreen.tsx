@@ -12,6 +12,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { Cemetery, Grave } from '@/types';
+import { useWakeLock } from '@/lib/device/useWakeLock';
 
 interface CemeteryMapScreenProps {
   cemetery: Cemetery;
@@ -34,6 +35,9 @@ export const CemeteryMapScreen: React.FC<CemeteryMapScreenProps> = ({
   onBack,
   onSwitchCemetery,
 }) => {
+  // Keep mobile screen awake while browsing cemetery map on location
+  const wakeLock = useWakeLock(true);
+
   const [zoomLevel, setZoomLevel] = useState(1);
   const [mapType, setMapType] = useState<'satellite' | 'vector'>('satellite');
 
@@ -70,9 +74,15 @@ export const CemeteryMapScreen: React.FC<CemeteryMapScreenProps> = ({
           onClick={onSwitchCemetery}
           className="flex flex-col items-center max-w-[240px] px-2 py-0.5 rounded-lg hover:bg-white/10 transition-colors"
         >
-          <div className="flex items-center space-x-1 text-sm font-bold tracking-tight">
+          <div className="flex items-center space-x-1.5 text-sm font-bold tracking-tight">
             <span className="truncate">{cemetery.name}</span>
             <ChevronDown className="w-4 h-4 opacity-80 shrink-0" />
+            {wakeLock.isActive && (
+              <span className="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded-full bg-emerald-500/25 border border-emerald-400/40 text-[9px] font-semibold text-emerald-300" title="Screen stays awake in cemetery map">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Awake</span>
+              </span>
+            )}
           </div>
           <span className="text-[11px] text-emerald-300/90 font-medium">
             {cemetery.mappedGravesCount.toLocaleString()} graves mapped ({cemetery.coveragePercentage}%)

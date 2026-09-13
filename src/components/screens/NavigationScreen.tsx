@@ -15,6 +15,7 @@ import {
   calculateBearing,
   formatBearingToCardinal,
 } from '@/lib/geospatial';
+import { useWakeLock } from '@/lib/device/useWakeLock';
 
 interface NavigationScreenProps {
   targetGrave: Grave;
@@ -33,6 +34,9 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
   onEndNavigation,
   onBack,
 }) => {
+  // Keep mobile screen awake during cemetery navigation
+  const wakeLock = useWakeLock(true);
+
   // Current user GPS in simulation or real device
   const [currentLoc, setCurrentLoc] = useState(initialUserLoc);
   const [headingDeg, setHeadingDeg] = useState(42);
@@ -119,7 +123,15 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
             <ArrowLeft className="w-5 h-5 stroke-[2.2]" />
           </button>
           <div>
-            <h1 className="text-sm font-bold tracking-tight">Navigate to Grave</h1>
+            <div className="flex items-center space-x-2">
+              <h1 className="text-sm font-bold tracking-tight">Navigate to Grave</h1>
+              {wakeLock.isActive && (
+                <span className="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-[9px] font-semibold text-emerald-300" title="Screen stays awake while navigating">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>Awake</span>
+                </span>
+              )}
+            </div>
             <p className="text-[11px] text-emerald-300 font-medium">
               {targetGrave.person?.fullName || 'Grave'} • Grave {targetGrave.graveNumber}
             </p>
