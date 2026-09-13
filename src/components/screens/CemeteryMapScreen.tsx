@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   ArrowLeft,
   MoreVertical,
@@ -53,14 +53,79 @@ export const CemeteryMapScreen: React.FC<CemeteryMapScreenProps> = ({
   const dragDistanceRef = useRef(0);
   const touchDistanceRef = useRef<number | null>(null);
 
-  // Cemetery center origin
-  const centerLat = cemetery.originLat;
-  const centerLng = cemetery.originLng;
+  // Compute bounding box and auto-fit viewport spans for current cemetery graves
+  // This ensures graves fill the screen prominently upon entering without vast empty margins
+  const { centerLat, centerLng, baseLatSpan, baseLngSpan } = useMemo(() => {
+    if (!graves || graves.length === 0) {
+      return {
+        centerLat: cemetery.originLat,
+        centerLng: cemetery.originLng,
+        baseLatSpan: 0.00030,
+        baseLngSpan: 0.00040,
+      };
+    }
 
-  const latSpan = 0.00075 / zoomLevel;
-  const lngSpan = 0.00095 / zoomLevel;
+    let minLat = Infinity;
+    let maxLat = -Infinity;
+    let minLng = Infinity;
+    let maxLng = -Infinity;
 
-  // Compute screen coordinates for lat/lng based on zoom and pan offset
+    for (const g of graves) {
+      if (typeof g.latitude === 'number' && !isNaN(g.latitude)) {
+        if (g.latitude < minLat) minLat = g.latitude;
+        if (g.latitude > maxLat) maxLat = g.latitude;
+      }
+      if (typeof g.longitude === 'number' && !isNaN(g.longitude)) {
+        if (g.longitude < minLng) minLng = g.longitude;
+        if (g.longitude > maxLng) maxLng = g.longitude;
+      }
+    }
+
+    // Fallbacks if single grave or invalid bounds
+    if (!isFinite(minLat) || minLat >= maxLat) {
+      minLat = cemetery.originLat - 0.00007;
+      maxLat = cemetery.originLat + 0.00007;
+    }
+    if (!isFinite(minLng) || minLng >= maxLng) {
+      minLng = cemetery.originLng - 0.00007;
+      maxLng = cemetery.originLng + 0.00007;
+    }
+
+    const rawLatSpan = maxLat - minLat;
+    const rawLngSpan = maxLng - minLng;
+
+    // Target fill ratios on the screen:
+    // - Width: graves fill ~68% of the viewport width (leaving comfortable margins on sides)
+    // - Height: graves fill ~50% of the viewport height (leaving room for top header & bottom legend)
+    const targetWidthRatio = 0.68;
+    const targetHeightRatio = 0.50;
+
+    const calculatedLngSpan = Math.max(0.00012, rawLngSpan / targetWidthRatio);
+    const calculatedLatSpan = Math.max(0.00012, rawLatSpan / targetHeightRatio);
+
+    // Center is the geometric midpoint of the cemetery's graves,
+    // with a slight vertical offset (3% of span) to provide clearance for the grave callout card above markers
+    const cLat = (minLat + maxLat) / 2 + calculatedLatSpan * 0.03;
+    const cLng = (minLng + maxLng) / 2;
+
+    return {
+      centerLat: cLat,
+      centerLng: cLng,
+      baseLatSpan: calculatedLatSpan,
+      baseLngSpan: calculatedLngSpan,
+    };
+  }, [graves, cemetery.originLat, cemetery.originLng]);
+
+  // Reset to auto-fit view when switching cemetery
+  useEffect(() => {
+    setZoomLevel(1);
+    setPanOffset({ x: 0, y: 0 });
+  }, [cemetery.id]);
+
+  const latSpan = baseLatSpan / zoomLevel;
+  const lngSpan = baseLngSpan / zoomLevel;
+
+  // Compute screen coordinates for lat/lng based on auto-fitted zoom and pan offset
   const getScreenCoordinates = useCallback(
     (lat: number, lng: number) => {
       const x = ((lng - (centerLng - lngSpan / 2)) / lngSpan) * 100 + panOffset.x;
@@ -338,7 +403,7 @@ export const CemeteryMapScreen: React.FC<CemeteryMapScreenProps> = ({
               >
                 {/* Marker Dot */}
                 <div
-                  className={`w-3.5 h-3.5 rounded-full border-2 border-white/80 transition-transform ${dotColor} ${
+                  className={`w-4 h-4 rounded-full border-2 border-white/90 transition-transform ${dotColor} ${
                     isSelected ? 'scale-150 ring-4 ring-white shadow-xl' : 'group-hover:scale-125'
                   }`}
                 />
@@ -406,7 +471,7 @@ export const CemeteryMapScreen: React.FC<CemeteryMapScreenProps> = ({
             onClick={handleRecenter}
             className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-md shadow-md flex items-center justify-center text-brand-forest hover:bg-white transition-colors"
             aria-label="My Location"
-            title="Recenter map"
+            title="Recenter and fit cemetery to screen"
           >
             <NavigationIcon className="w-5 h-5 stroke-[2.2]" />
           </button>

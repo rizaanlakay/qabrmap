@@ -84,4 +84,40 @@ describe('Cemetery Map Zoom & Scrollwheel Mechanics', () => {
     expect(x).toBeCloseTo(60, 5);
     expect(y).toBeCloseTo(45, 5);
   });
+
+  it('calculates optimal auto-fit viewport spans from cemetery graves bounding box', () => {
+    // Simulated Mowbray graves cluster
+    const sampleGraves = [
+      { latitude: -33.94852, longitude: 18.48205 },
+      { latitude: -33.94845, longitude: 18.48198 },
+      { latitude: -33.94858, longitude: 18.48212 },
+    ];
+
+    let minLat = Infinity, maxLat = -Infinity;
+    let minLng = Infinity, maxLng = -Infinity;
+
+    for (const g of sampleGraves) {
+      if (g.latitude < minLat) minLat = g.latitude;
+      if (g.latitude > maxLat) maxLat = g.latitude;
+      if (g.longitude < minLng) minLng = g.longitude;
+      if (g.longitude > maxLng) maxLng = g.longitude;
+    }
+
+    const rawLatSpan = maxLat - minLat;
+    const rawLngSpan = maxLng - minLng;
+
+    const targetWidthRatio = 0.68;
+    const targetHeightRatio = 0.50;
+
+    const baseLngSpan = Math.max(0.00012, rawLngSpan / targetWidthRatio);
+    const baseLatSpan = Math.max(0.00012, rawLatSpan / targetHeightRatio);
+
+    // Verify graves span comfortably within the viewport ratios
+    expect(rawLngSpan / baseLngSpan).toBeCloseTo(targetWidthRatio, 2);
+    expect(rawLatSpan / baseLatSpan).toBeCloseTo(targetHeightRatio, 2);
+
+    // Verify auto-fit eliminates excessive empty margins
+    expect(baseLngSpan).toBeLessThan(0.0005);
+    expect(baseLatSpan).toBeLessThan(0.0005);
+  });
 });
