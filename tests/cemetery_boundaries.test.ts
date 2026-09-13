@@ -19,17 +19,23 @@ describe('Cemetery Boundaries & Spatial Enclosure', () => {
     const mowbray = MOCK_CEMETERIES.find((c) => c.id === 'cem_mowbray');
     const athlone = MOCK_CEMETERIES.find((c) => c.id === 'cem_athlone');
     const wynberg = MOCK_CEMETERIES.find((c) => c.id === 'cem_wynberg');
+    const mountview = MOCK_CEMETERIES.find((c) => c.id === 'cem_mountview');
+    const epping = MOCK_CEMETERIES.find((c) => c.id === 'cem_epping');
 
     expect(mowbray?.boundary?.coordinates[0].length).toBeGreaterThan(4);
     expect(athlone?.boundary?.coordinates[0].length).toBeGreaterThan(4);
     expect(wynberg?.boundary?.coordinates[0].length).toBeGreaterThan(4);
+    expect(mountview?.boundary?.coordinates[0].length).toBeGreaterThan(4);
+    expect(epping?.boundary?.coordinates[0].length).toBeGreaterThan(4);
 
-    // Verify Mowbray is a closed ring
-    const mCoords = mowbray!.boundary!.coordinates[0];
-    const firstPoint = mCoords[0];
-    const lastPoint = mCoords[mCoords.length - 1];
-    expect(firstPoint[0]).toBe(lastPoint[0]);
-    expect(firstPoint[1]).toBe(lastPoint[1]);
+    // Verify all 5 cemeteries have closed polygon rings
+    for (const cem of [mowbray!, athlone!, wynberg!, mountview!, epping!]) {
+      const coords = cem.boundary!.coordinates[0];
+      const first = coords[0];
+      const last = coords[coords.length - 1];
+      expect(first[0]).toBe(last[0]);
+      expect(first[1]).toBe(last[1]);
+    }
   });
 
   it('verifies Mowbray Cemetery geographic center and real-world coordinates', () => {
