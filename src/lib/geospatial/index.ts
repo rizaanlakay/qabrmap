@@ -297,7 +297,7 @@ export function processPhotoToGravePosition(
   const distance = estimateMonocularDistance(box);
 
   // 2. Bearing
-  const bearing = estimateTargetBearing(telemetry.headingDegrees, box);
+  const bearing = estimateTargetBearing(telemetry.headingDegrees ?? 0, box);
 
   // 3. Forward Projection
   const projected = projectForwardGeodesic(

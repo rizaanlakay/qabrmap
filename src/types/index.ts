@@ -107,7 +107,7 @@ export interface DeviceTelemetry {
   longitude: number;
   altitude?: number;
   gpsAccuracy: number;
-  headingDegrees: number;
+  headingDegrees?: number;
   headingAccuracy?: number;
   pitch?: number;
   roll?: number;
@@ -214,6 +214,7 @@ export interface SurveySession {
 
 export interface OfflineUploadQueueItem {
   id: string;
+  graveId?: string;
   surveySessionId?: string;
   cemeteryId: string;
   photoBlob: Blob | string; // Base64 or Blob

@@ -5,6 +5,7 @@ import { MOCK_CEMETERIES, MOCK_GRAVES, MOCK_ACTIVE_SURVEY_SESSION } from './mock
 import { offlineDb } from '../offline/db';
 import { supabase, isSupabaseConfigured } from '../supabase/client';
 import { mapDbCemetery, mapDbGrave, graveToDb, personToDb } from '../supabase/mappers';
+import { uploadGravePhoto } from '../supabase/storage';
 
 export interface MyCemeteryGraveEntry {
   grave: Grave;
@@ -453,6 +454,64 @@ class DataStore {
   }
 
   async saveNewGrave(grave: Grave): Promise<Grave> {
+    const rawPhoto = grave.primaryPhotoUrl;
+    const isBase64 = typeof rawPhoto === 'string' && rawPhoto.startsWith('data:');
+
+    if (isBase64) {
+      if (isSupabaseConfigured && supabase && typeof navigator !== 'undefined' && navigator.onLine) {
+        try {
+          const uploadRes = await uploadGravePhoto({
+            file: rawPhoto,
+            cemeteryId: grave.cemeteryId,
+            graveId: grave.id,
+          });
+          if (uploadRes?.publicUrl) {
+            grave.primaryPhotoUrl = uploadRes.publicUrl;
+          }
+        } catch (uploadErr) {
+          console.warn('Direct photo upload to Supabase storage failed, queuing for offline sync:', uploadErr);
+          if (typeof window !== 'undefined') {
+            await offlineDb.offlineUploadQueue.add({
+              id: `queue_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+              graveId: grave.id,
+              cemeteryId: grave.cemeteryId,
+              photoBlob: rawPhoto,
+              telemetry: {
+                latitude: grave.latitude,
+                longitude: grave.longitude,
+                gpsAccuracy: grave.positionAccuracyMeters,
+                headingDegrees: grave.orientationDegrees || 0,
+                timestamp: new Date().toISOString(),
+              },
+              status: 'queued',
+              retryCount: 0,
+              createdAt: new Date().toISOString(),
+            }).catch(() => {});
+          }
+        }
+      } else {
+        // Offline or not configured: queue photo for background sync
+        if (typeof window !== 'undefined') {
+          await offlineDb.offlineUploadQueue.add({
+            id: `queue_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+            graveId: grave.id,
+            cemeteryId: grave.cemeteryId,
+            photoBlob: rawPhoto,
+            telemetry: {
+              latitude: grave.latitude,
+              longitude: grave.longitude,
+              gpsAccuracy: grave.positionAccuracyMeters,
+              headingDegrees: grave.orientationDegrees || 0,
+              timestamp: new Date().toISOString(),
+            },
+            status: 'queued',
+            retryCount: 0,
+            createdAt: new Date().toISOString(),
+          }).catch(() => {});
+        }
+      }
+    }
+
     this.memoryGraves.unshift(grave);
 
     // Save to local IndexedDB

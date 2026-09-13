@@ -3,6 +3,8 @@
 
 import { offlineDb } from './db';
 import { Cemetery, Grave, OfflineUploadQueueItem } from '@/types';
+import { uploadGravePhoto } from '../supabase/storage';
+import { supabase, isSupabaseConfigured } from '../supabase/client';
 
 export class SyncManager {
   private isSyncing = false;
@@ -182,8 +184,35 @@ export class SyncManager {
       try {
         await offlineDb.offlineUploadQueue.update(item.id, { status: 'syncing' });
 
-        // Simulate or execute upload API call
-        await new Promise((resolve) => setTimeout(resolve, 600));
+        let publicPhotoUrl: string | undefined;
+        if (item.photoBlob) {
+          const uploadRes = await uploadGravePhoto({
+            file: item.photoBlob,
+            cemeteryId: item.cemeteryId,
+            graveId: item.graveId || `grave_${Date.now()}`,
+          });
+          if (uploadRes?.publicUrl) {
+            publicPhotoUrl = uploadRes.publicUrl;
+          }
+        }
+
+        // If this queued item was for an existing grave, update its photo URL in DB & IndexedDB
+        if (item.graveId && publicPhotoUrl) {
+          const existingGrave = await offlineDb.graves.get(item.graveId);
+          if (existingGrave) {
+            existingGrave.primaryPhotoUrl = publicPhotoUrl;
+            await offlineDb.graves.put(existingGrave);
+          }
+          if (isSupabaseConfigured && supabase) {
+            await supabase
+              .from('graves')
+              .update({
+                primary_photo_url: publicPhotoUrl,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', item.graveId);
+          }
+        }
 
         await offlineDb.offlineUploadQueue.update(item.id, { status: 'completed' });
         synced++;
