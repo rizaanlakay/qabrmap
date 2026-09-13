@@ -24,6 +24,7 @@ import { SurveySessionScreen } from '@/components/screens/SurveySessionScreen';
 import { OfflineStatusScreen } from '@/components/screens/OfflineStatusScreen';
 import { MyCemeteriesScreen } from '@/components/screens/MyCemeteriesScreen';
 import { RegisterScreen } from '@/components/screens/RegisterScreen';
+import { ProfileScreen } from '@/components/screens/ProfileScreen';
 import { AdminDashboard } from '@/components/admin/AdminDashboard';
 import { AuthProvider, useAuth } from '@/lib/auth/AuthContext';
 import { AuthModal } from '@/components/auth/AuthModal';
@@ -43,6 +44,7 @@ export type ScreenId =
   | 'confirm-details'
   | 'survey-session'
   | 'offline-status'
+  | 'profile'
   | 'admin';
 
 function QabrMapAppContent() {
@@ -125,7 +127,7 @@ function QabrMapAppContent() {
     if (tab === 'search') setCurrentScreen('search');
     if (tab === 'capture') setCurrentScreen('capture');
     if (tab === 'surveys') setCurrentScreen('survey-session');
-    if (tab === 'profile') setCurrentScreen('admin');
+    if (tab === 'profile') setCurrentScreen('profile');
   };
 
   // Switch Cemetery
@@ -193,7 +195,7 @@ function QabrMapAppContent() {
   ].includes(currentScreen);
 
   const isDarkStatus = ['cemetery-map', 'navigation', 'ar-guidance', 'capture'].includes(currentScreen);
-  const { openAuthModal } = useAuth();
+  const { user, openAuthModal } = useAuth();
 
   return (
     <div className="w-full h-full flex flex-col relative overflow-hidden bg-slate-50">
@@ -363,6 +365,13 @@ function QabrMapAppContent() {
           />
         )}
 
+        {currentScreen === 'profile' && (
+          <ProfileScreen
+            onNavigate={(screen) => setCurrentScreen(screen as ScreenId)}
+            onBack={() => setCurrentScreen('home')}
+          />
+        )}
+
         {currentScreen === 'admin' && selectedCemetery && (
           <AdminDashboard
             cemetery={selectedCemetery}
@@ -377,6 +386,8 @@ function QabrMapAppContent() {
         <BottomNav
           currentTab={currentNavTab}
           onSelectTab={handleSelectNavTab}
+          isLoggedIn={Boolean(user)}
+          onRequireAuth={() => openAuthModal()}
         />
       )}
 

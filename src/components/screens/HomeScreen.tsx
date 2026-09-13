@@ -133,26 +133,28 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ myCemeteryCount = 2, onN
           </div>
         </button>
 
-        {/* Card 4: My cemeteries */}
-        <button
-          onClick={() => onNavigate('my-cemeteries')}
-          className="w-full bg-white hover:bg-slate-50 border border-slate-200/80 text-brand-dark rounded-2xl p-4 flex items-center shadow-sm transition-all active:scale-[0.99] text-left group"
-        >
-          <div className="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center mr-4 shrink-0 group-hover:bg-rose-100 transition-colors">
-            <Heart className="w-6 h-6 fill-rose-500 text-rose-500" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold tracking-wide text-slate-800">My cemeteries</h2>
-              {myCemeteryCount > 0 && (
-                <span className="text-[11px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full">
-                  {myCemeteryCount}
-                </span>
-              )}
+        {/* Card 4: My cemeteries (Only shown for signed in users) */}
+        {user && (
+          <button
+            onClick={() => onNavigate('my-cemeteries')}
+            className="w-full bg-white hover:bg-slate-50 border border-slate-200/80 text-brand-dark rounded-2xl p-4 flex items-center shadow-sm transition-all active:scale-[0.99] text-left group animate-in fade-in duration-200"
+          >
+            <div className="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center mr-4 shrink-0 group-hover:bg-rose-100 transition-colors">
+              <Heart className="w-6 h-6 fill-rose-500 text-rose-500" />
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">Your loved ones &amp; their resting places</p>
-          </div>
-        </button>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between">
+                <h2 className="text-base font-semibold tracking-wide text-slate-800">My cemeteries</h2>
+                {myCemeteryCount > 0 && (
+                  <span className="text-[11px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full">
+                    {myCemeteryCount}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">Your loved ones &amp; their resting places</p>
+            </div>
+          </button>
+        )}
       </div>
 
       {/* Quranic Verse Banner at Bottom */}

@@ -1,16 +1,21 @@
-'use client';
-
 import React from 'react';
-import { Home, Search, Camera, ClipboardList, User } from 'lucide-react';
+import { Home, Search, Camera, ClipboardList, User, Lock } from 'lucide-react';
 
 export type NavTab = 'home' | 'search' | 'capture' | 'surveys' | 'profile';
 
 interface BottomNavProps {
   currentTab: NavTab;
   onSelectTab: (tab: NavTab) => void;
+  isLoggedIn?: boolean;
+  onRequireAuth?: () => void;
 }
 
-export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, onSelectTab }) => {
+export const BottomNav: React.FC<BottomNavProps> = ({ 
+  currentTab, 
+  onSelectTab, 
+  isLoggedIn = false,
+  onRequireAuth 
+}) => {
   return (
     <nav className="w-full bg-white border-t border-slate-200/80 px-3 py-2 flex items-center justify-around z-30 shrink-0 select-none shadow-[0_-2px_10px_rgba(0,0,0,0.04)]">
       {/* 1. Home */}
@@ -47,27 +52,60 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, onSelectTab })
         <span className="text-[10px] mt-0.5 font-medium text-brand-forest">Capture</span>
       </button>
 
-      {/* 4. My Surveys */}
+      {/* 4. My Surveys (Disabled when not signed in) */}
       <button
-        onClick={() => onSelectTab('surveys')}
-        className={`flex flex-col items-center justify-center transition-colors min-w-[56px] py-1 ${
-          currentTab === 'surveys' ? 'text-brand-forest font-semibold' : 'text-slate-400 hover:text-slate-600'
+        onClick={() => {
+          if (!isLoggedIn) {
+            onRequireAuth?.();
+          } else {
+            onSelectTab('surveys');
+          }
+        }}
+        title={!isLoggedIn ? 'Sign in to access surveys' : 'My Surveys'}
+        className={`flex flex-col items-center justify-center transition-colors min-w-[56px] py-1 relative ${
+          !isLoggedIn
+            ? 'opacity-40 hover:opacity-60 cursor-pointer text-slate-400'
+            : currentTab === 'surveys'
+            ? 'text-brand-forest font-semibold'
+            : 'text-slate-400 hover:text-slate-600'
         }`}
       >
-        <ClipboardList className="w-5 h-5 stroke-[2.2]" />
+        <div className="relative">
+          <ClipboardList className="w-5 h-5 stroke-[2.2]" />
+          {!isLoggedIn && (
+            <Lock className="w-2.5 h-2.5 absolute -top-1 -right-1 text-slate-500" />
+          )}
+        </div>
         <span className="text-[10px] mt-1">My Surveys</span>
       </button>
 
-      {/* 5. Profile */}
+      {/* 5. Profile (Disabled / Sign In when not signed in) */}
       <button
-        onClick={() => onSelectTab('profile')}
-        className={`flex flex-col items-center justify-center transition-colors min-w-[56px] py-1 ${
-          currentTab === 'profile' ? 'text-brand-forest font-semibold' : 'text-slate-400 hover:text-slate-600'
+        onClick={() => {
+          if (!isLoggedIn) {
+            onRequireAuth?.();
+          } else {
+            onSelectTab('profile');
+          }
+        }}
+        title={!isLoggedIn ? 'Sign in to view profile' : 'Profile'}
+        className={`flex flex-col items-center justify-center transition-colors min-w-[56px] py-1 relative ${
+          !isLoggedIn
+            ? 'opacity-40 hover:opacity-60 cursor-pointer text-slate-400'
+            : currentTab === 'profile'
+            ? 'text-brand-forest font-semibold'
+            : 'text-slate-400 hover:text-slate-600'
         }`}
       >
-        <User className="w-5 h-5 stroke-[2.2]" />
-        <span className="text-[10px] mt-1">Profile</span>
+        <div className="relative">
+          <User className="w-5 h-5 stroke-[2.2]" />
+          {!isLoggedIn && (
+            <Lock className="w-2.5 h-2.5 absolute -top-1 -right-1 text-slate-500" />
+          )}
+        </div>
+        <span className="text-[10px] mt-1">{isLoggedIn ? 'Profile' : 'Sign In'}</span>
       </button>
     </nav>
   );
 };
+
