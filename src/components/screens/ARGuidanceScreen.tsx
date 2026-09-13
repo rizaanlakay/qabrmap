@@ -21,7 +21,7 @@ export const ARGuidanceScreen: React.FC<ARGuidanceScreenProps> = ({
   onClose,
 }) => {
   // Keep mobile screen awake while using AR camera guidance
-  const wakeLock = useWakeLock(true);
+  useWakeLock(true);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [hasCameraStream, setHasCameraStream] = useState(false);
@@ -135,12 +135,6 @@ export const ARGuidanceScreen: React.FC<ARGuidanceScreenProps> = ({
           <h1 className="text-sm font-bold tracking-wide text-white drop-shadow">
             Approaching your destination
           </h1>
-          {wakeLock.isActive && (
-            <span className="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-[9px] font-semibold text-emerald-300 mt-0.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Awake</span>
-            </span>
-          )}
         </div>
 
         <button

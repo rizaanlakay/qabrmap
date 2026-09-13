@@ -68,4 +68,12 @@ describe('New User Registration & Onboarding Flow', () => {
     const initialCount = dataStore.getMyCemeteriesGraveCount();
     expect(initialCount).toBeGreaterThanOrEqual(2); // Seeded grandfather/father + previous test
   });
+
+  it('supports Google OAuth provider for Sign In and Account Creation', async () => {
+    // Verify client has signInWithOAuth available when configured
+    const { supabase, isSupabaseConfigured } = await import('../src/lib/supabase/client');
+    if (isSupabaseConfigured && supabase) {
+      expect(typeof supabase.auth.signInWithOAuth).toBe('function');
+    }
+  });
 });

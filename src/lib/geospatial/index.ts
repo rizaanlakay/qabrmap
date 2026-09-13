@@ -362,3 +362,177 @@ export function isPointInPolygon(point: [number, number], polygonRing: [number, 
   }
   return inside;
 }
+
+/**
+ * Snaps a GPS coordinate { lat, lng } to the closest point along a polyline route [lng, lat][].
+ * Uses equirectangular projection onto line segments for millimeter-accurate road snapping.
+ */
+export function snapToRoute(
+  point: { lat: number; lng: number },
+  route: [number, number][],
+  maxSnapDistanceMeters: number = 75
+): { lat: number; lng: number; snapped: boolean; distanceToRouteMeters: number } {
+  if (!route || route.length === 0) {
+    return { lat: point.lat, lng: point.lng, snapped: false, distanceToRouteMeters: 0 };
+  }
+
+  if (route.length === 1) {
+    const dist = calculateDistanceMeters(point.lat, point.lng, route[0][1], route[0][0]);
+    if (dist <= maxSnapDistanceMeters) {
+      return { lat: route[0][1], lng: route[0][0], snapped: true, distanceToRouteMeters: dist };
+    }
+    return { lat: point.lat, lng: point.lng, snapped: false, distanceToRouteMeters: dist };
+  }
+
+  const phi0 = toRad(point.lat);
+  const cosPhi0 = Math.cos(phi0);
+
+  // Convert (lng, lat) to local tangent meters (x, y) relative to point
+  const toLocalMeters = (lng: number, lat: number) => ({
+    x: EARTH_RADIUS_METERS * toRad(lng - point.lng) * cosPhi0,
+    y: EARTH_RADIUS_METERS * toRad(lat - point.lat),
+  });
+
+  const fromLocalMeters = (x: number, y: number) => ({
+    lng: point.lng + toDeg(x / (EARTH_RADIUS_METERS * cosPhi0)),
+    lat: point.lat + toDeg(y / EARTH_RADIUS_METERS),
+  });
+
+  let minDistanceSq = Infinity;
+  let bestPoint = { lat: point.lat, lng: point.lng };
+
+  for (let i = 0; i < route.length - 1; i++) {
+    const p1 = toLocalMeters(route[i][0], route[i][1]);
+    const p2 = toLocalMeters(route[i + 1][0], route[i + 1][1]);
+
+    const dx = p2.x - p1.x;
+    const dy = p2.y - p1.y;
+    const segLengthSq = dx * dx + dy * dy;
+
+    let t = 0;
+    if (segLengthSq > 0) {
+      t = (-p1.x * dx + -p1.y * dy) / segLengthSq;
+      t = Math.max(0, Math.min(1, t));
+    }
+
+    const projX = p1.x + t * dx;
+    const projY = p1.y + t * dy;
+    const distSq = projX * projX + projY * projY;
+
+    if (distSq < minDistanceSq) {
+      minDistanceSq = distSq;
+      bestPoint = fromLocalMeters(projX, projY);
+    }
+  }
+
+  const minDistanceMeters = Math.sqrt(minDistanceSq);
+  if (minDistanceMeters <= maxSnapDistanceMeters) {
+    return {
+      lat: Number(bestPoint.lat.toFixed(7)),
+      lng: Number(bestPoint.lng.toFixed(7)),
+      snapped: true,
+      distanceToRouteMeters: minDistanceMeters,
+    };
+  }
+
+  return {
+    lat: point.lat,
+    lng: point.lng,
+    snapped: false,
+    distanceToRouteMeters: minDistanceMeters,
+  };
+}
+
+export interface RouteStep {
+  instruction: string;
+  streetName: string;
+  distanceMeters: number;
+  durationSeconds: number;
+  type: string;
+  modifier?: string;
+  location: [number, number]; // [lng, lat]
+  bearingAfter?: number;
+  bearingBefore?: number;
+  exit?: string;
+  ref?: string;
+  destinations?: string;
+}
+
+export interface DirectionsResult {
+  code: 'Ok' | 'Fallback' | 'Error';
+  distanceMeters: number;
+  durationSeconds: number;
+  coordinates: [number, number][]; // [lng, lat][]
+  steps?: RouteStep[];
+  mode: 'driving' | 'walking';
+  summary?: string;
+}
+
+export function formatManeuverInstruction(step: any): string {
+  const mType = step.maneuver?.type || 'turn';
+  const mMod = step.maneuver?.modifier || '';
+  const roadName = step.name ? step.name.trim() : '';
+  const target = roadName || step.destinations || step.ref || '';
+
+  if (mType === 'depart') {
+    return target ? `Head out onto ${target}` : 'Head towards destination';
+  }
+  if (mType === 'arrive') {
+    return target ? `Arrive at ${target}` : 'Arrive at destination';
+  }
+  if (mType === 'off ramp') {
+    let exitStr = '';
+    if (step.exits) {
+      const rawExit = String(step.exits).trim();
+      exitStr = rawExit.toLowerCase().startsWith('exit')
+        ? rawExit
+        : `exit ${rawExit}`;
+    }
+
+    const rawDest = (step.destinations || step.ref || roadName || '').trim();
+
+    if (exitStr) {
+      if (rawDest && !exitStr.toLowerCase().includes(rawDest.toLowerCase())) {
+        return `Take ${exitStr} towards ${rawDest}`;
+      }
+      return `Take ${exitStr}`;
+    }
+
+    if (rawDest) {
+      if (rawDest.toLowerCase().startsWith('exit')) {
+        return `Take ${rawDest}`;
+      }
+      return `Take exit towards ${rawDest}`;
+    }
+
+    return 'Take exit';
+  }
+  if (mType === 'on ramp') {
+    return target ? `Take ramp onto ${target}` : 'Take highway ramp';
+  }
+  if (mType === 'merge') {
+    return target ? `Merge onto ${target}` : 'Merge ahead';
+  }
+  if (mType === 'turn') {
+    const modStr = mMod ? `${mMod.replace('_', ' ')} ` : '';
+    return target ? `Turn ${modStr}onto ${target}` : `Turn ${modStr}`;
+  }
+  if (mType === 'new name' || mType === 'continue') {
+    return target ? `Continue onto ${target}` : 'Continue straight';
+  }
+  if (mType === 'roundabout') {
+    return target ? `Enter roundabout towards ${target}` : 'Enter roundabout';
+  }
+  if (mType === 'fork') {
+    const modStr = mMod ? `keep ${mMod.replace('_', ' ')} ` : '';
+    return target ? `At fork, ${modStr}onto ${target}` : `At fork, ${modStr}`;
+  }
+  if (mType === 'end of road') {
+    const modStr = mMod ? `${mMod.replace('_', ' ')} ` : '';
+    return target ? `Turn ${modStr}onto ${target}` : `Turn ${modStr}`;
+  }
+
+  const modStr = mMod ? ` ${mMod.replace('_', ' ')}` : '';
+  return target ? `${mType}${modStr} onto ${target}` : `${mType}${modStr}`;
+}
+

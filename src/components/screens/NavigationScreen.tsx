@@ -25,6 +25,7 @@ import {
   calculateBearing,
   formatBearingToCardinal,
   isPointInPolygon,
+  snapToRoute,
 } from '@/lib/geospatial';
 import { useWakeLock } from '@/lib/device/useWakeLock';
 
@@ -36,6 +37,11 @@ interface RouteStep {
   type: string;
   modifier?: string;
   location: [number, number];
+  bearingAfter?: number;
+  bearingBefore?: number;
+  exit?: string;
+  ref?: string;
+  destinations?: string;
 }
 
 interface NavigationScreenProps {
@@ -103,6 +109,93 @@ const GOOGLE_ROADMAP_STYLE: any = {
   ],
 };
 
+// Calculate compass bearing along a road route from a given coordinate looking ahead 25-40m
+function getRoadBearingAtCoordinate(
+  route: [number, number][],
+  coord: [number, number], // [lng, lat]
+  fallbackBearing: number = 0
+): number {
+  if (!route || route.length < 2) return fallbackBearing;
+
+  let closestIdx = 0;
+  let minD = Infinity;
+  for (let i = 0; i < route.length; i++) {
+    const d = calculateDistanceMeters(coord[1], coord[0], route[i][1], route[i][0]);
+    if (d < minD) {
+      minD = d;
+      closestIdx = i;
+    }
+  }
+
+  // Look ahead along the route for at least 25-40 meters to get the true road tangent
+  let targetIdx = closestIdx;
+  let accumulatedDist = 0;
+  for (let i = closestIdx + 1; i < route.length; i++) {
+    accumulatedDist += calculateDistanceMeters(
+      route[i - 1][1],
+      route[i - 1][0],
+      route[i][1],
+      route[i][0]
+    );
+    targetIdx = i;
+    if (accumulatedDist >= 25) {
+      break;
+    }
+  }
+
+  if (targetIdx === closestIdx && closestIdx > 0) {
+    return calculateBearing(
+      route[closestIdx - 1][1],
+      route[closestIdx - 1][0],
+      route[closestIdx][1],
+      route[closestIdx][0]
+    );
+  }
+
+  if (targetIdx !== closestIdx) {
+    return calculateBearing(
+      route[closestIdx][1],
+      route[closestIdx][0],
+      route[targetIdx][1],
+      route[targetIdx][0]
+    );
+  }
+
+  return fallbackBearing;
+}
+
+// Generate HTML for User Marker (Garmin/Google Maps 3D Arrow in Driving Mode; Pedestrian Dot in Walking Mode)
+function getUserMarkerHtml(mode: 'driving' | 'walking', heading: number): string {
+  if (mode === 'driving') {
+    return `
+      <div class="user-vehicle-marker flex items-center justify-center select-none filter drop-shadow-[0_4px_12px_rgba(37,99,235,0.7)] pointer-events-none">
+        <div class="absolute w-12 h-12 rounded-full bg-blue-500/20 animate-ping"></div>
+        <div class="relative w-10 h-10 flex items-center justify-center">
+          <svg viewBox="0 0 36 36" class="w-9 h-9 drop-shadow-md" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M18 3L31 31L18 24.5L5 31L18 3Z" fill="white" stroke="#1D4ED8" stroke-width="2.2" stroke-linejoin="round"/>
+            <path d="M18 5.5L28.5 28.5L18 23.2L7.5 28.5L18 5.5Z" fill="url(#nav-arrow-grad)"/>
+            <defs>
+              <linearGradient id="nav-arrow-grad" x1="18" y1="5.5" x2="18" y2="28.5" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#60A5FA"/>
+                <stop offset="1" stop-color="#1D4ED8"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="relative flex items-center justify-center select-none pointer-events-none">
+      <div class="w-7 h-7 rounded-full bg-blue-600 border-[2.5px] border-white shadow-2xl flex items-center justify-center animate-user-pulse">
+        <div class="w-2 h-2 rounded-full bg-white"></div>
+      </div>
+      <div class="user-heading-pointer absolute -top-3.5 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-b-[10px] border-b-blue-400 drop-shadow-md" style="transform: rotate(${heading}deg); transform-origin: center bottom;"></div>
+    </div>
+  `;
+}
+
 export const NavigationScreen: React.FC<NavigationScreenProps> = ({
   targetGrave,
   cemetery,
@@ -113,7 +206,7 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
   onBack,
 }) => {
   // Keep mobile screen awake during navigation
-  const wakeLock = useWakeLock(true);
+  useWakeLock(true);
 
   // User GPS position
   const [currentLoc, setCurrentLoc] = useState(initialUserLoc);
@@ -121,6 +214,7 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
   const [mapType, setMapType] = useState<'satellite' | 'roadmap'>('satellite');
   const [zoomDisplay, setZoomDisplay] = useState(100);
   const [isMapReady, setIsMapReady] = useState(false);
+  const [mapBearing, setMapBearing] = useState(0);
 
   // Manual mode override: 'auto' | 'driving' | 'walking'
   const [manualMode, setManualMode] = useState<'auto' | 'driving' | 'walking'>('auto');
@@ -185,6 +279,17 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
         ? 'driving'
         : 'walking'
       : manualMode;
+
+  // Road-snapped user location for driving navigation (aligns vehicle arrow directly on the road route)
+  const displayedUserLoc = useMemo(() => {
+    if (activeMode === 'driving' && drivingRoute && drivingRoute.length > 0) {
+      const snapped = snapToRoute(currentLoc, drivingRoute, 75);
+      if (snapped.snapped) {
+        return { lat: snapped.lat, lng: snapped.lng };
+      }
+    }
+    return currentLoc;
+  }, [activeMode, drivingRoute, currentLoc]);
 
   // Bearing & Cardinal to target grave
   const bearing = calculateBearing(
@@ -272,37 +377,80 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
     };
   }, [activeMode, currentLoc.lat, currentLoc.lng, entranceLat, entranceLng, drivingRoute]);
 
-  // Calculate forward road bearing for driving perspective
-  const initialRoadBearing = useMemo(() => {
-    if (drivingRoute && drivingRoute.length > 3) {
-      // Use bearing between start and 4th point along road for smooth alignment
-      return calculateBearing(
-        drivingRoute[0][1],
-        drivingRoute[0][0],
-        drivingRoute[Math.min(5, drivingRoute.length - 1)][1],
-        drivingRoute[Math.min(5, drivingRoute.length - 1)][0]
-      );
-    }
+  // Direct bearing to entrance gate as foundational baseline
+  const directEntranceBearing = useMemo(() => {
     return calculateBearing(currentLoc.lat, currentLoc.lng, entranceLat, entranceLng);
-  }, [drivingRoute, currentLoc.lat, currentLoc.lng, entranceLat, entranceLng]);
+  }, [currentLoc.lat, currentLoc.lng, entranceLat, entranceLng]);
+
+  // Current turn instruction from OSRM
+  const activeStep = drivingSteps[currentStepIndex] || drivingSteps[0];
+  const nextStep = drivingSteps[currentStepIndex + 1];
+
+  // Helper: Find the next turn maneuver to display on the HUD sign (always matches the upcoming "Then..." guidance)
+  const nextTurnStep = useMemo(() => {
+    if (!drivingSteps || drivingSteps.length === 0) return activeStep;
+    return nextStep || activeStep;
+  }, [drivingSteps, activeStep, nextStep]);
+
+  // Active vehicle marker location on map:
+  // When scrubbing/previewing an upcoming maneuver (currentStepIndex > 0), the vehicle marker moves with it to that maneuver's location.
+  // When live navigating (currentStepIndex === 0), it sits at displayedUserLoc (snapped to road).
+  const vehicleMarkerCoord = useMemo<[number, number]>(() => {
+    if (activeMode === 'driving' && currentStepIndex > 0 && activeStep?.location && activeStep.location[0] !== 0) {
+      return activeStep.location;
+    }
+    return [displayedUserLoc.lng, displayedUserLoc.lat];
+  }, [activeMode, currentStepIndex, activeStep, displayedUserLoc.lng, displayedUserLoc.lat]);
+
+  // Calculate forward road bearing so that "UP" on the map ALWAYS aligns with the road we travel in
+  const activeRoadBearing = useMemo(() => {
+    // 1. If viewing an upcoming maneuver (step > 0), use that maneuver's bearingAfter
+    if (currentStepIndex > 0 && activeStep?.bearingAfter !== undefined && activeStep.bearingAfter !== null) {
+      return activeStep.bearingAfter;
+    }
+
+    // 2. If active step has bearingAfter from OSRM, use it:
+    if (activeStep?.bearingAfter !== undefined && activeStep.bearingAfter !== null) {
+      return activeStep.bearingAfter;
+    }
+
+    // 3. Otherwise calculate tangent bearing from the immediate route segment ahead of current location
+    if (drivingRoute && drivingRoute.length > 1) {
+      const coord: [number, number] =
+        currentStepIndex > 0 && activeStep?.location && activeStep.location[0] !== 0
+          ? activeStep.location
+          : [displayedUserLoc.lng, displayedUserLoc.lat];
+      return getRoadBearingAtCoordinate(drivingRoute, coord, directEntranceBearing);
+    }
+
+    // Fallback: direct bearing to entrance gate
+    return directEntranceBearing;
+  }, [currentStepIndex, activeStep, drivingRoute, displayedUserLoc.lat, displayedUserLoc.lng, directEntranceBearing]);
 
   // Center camera in Garmin / Google Maps driver view:
-  // User placed near bottom third of the screen with 3D forward perspective
+  // User placed near bottom third of the screen with 3D forward perspective and road aligned UP
   const applyDriverCameraView = useCallback(
     (map: any, animate: boolean = true) => {
       if (!map) return;
 
       if (activeMode === 'driving') {
+        // When previewing an upcoming maneuver (step > 0), frame on the maneuver location;
+        // When live navigating, center on user's road-snapped location:
+        const targetCenter: [number, number] =
+          currentStepIndex > 0 && activeStep?.location && activeStep.location[0] !== 0
+            ? [activeStep.location[0], activeStep.location[1]]
+            : [displayedUserLoc.lng, displayedUserLoc.lat];
+
         // Driver 3D navigation mode (Garmin / Google Maps):
-        // pitch: 56° perspective tilt, bearing oriented forward along the road,
+        // pitch: 58° perspective tilt, bearing aligned so UP is the road direction,
         // offset: [0, 165] places the user dot centered near the bottom of the screen
         map.easeTo({
-          center: [currentLoc.lng, currentLoc.lat],
-          zoom: 16.6,
-          pitch: 56,
-          bearing: initialRoadBearing,
+          center: targetCenter,
+          zoom: 16.8,
+          pitch: 58,
+          bearing: activeRoadBearing,
           offset: [0, 165],
-          duration: animate ? 900 : 0,
+          duration: animate ? 800 : 0,
         });
       } else {
         // Pedestrian walking mode: top-down 2D framing to grave plot
@@ -326,7 +474,48 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
         );
       }
     },
-    [activeMode, currentLoc.lat, currentLoc.lng, initialRoadBearing, targetGrave.latitude, targetGrave.longitude]
+    [activeMode, currentStepIndex, activeStep, displayedUserLoc.lat, displayedUserLoc.lng, currentLoc.lat, currentLoc.lng, activeRoadBearing, targetGrave.latitude, targetGrave.longitude]
+  );
+
+  // Handle step selection (e.g. clicking ‹ / › on the maneuver badge)
+  const handleSelectStep = useCallback(
+    (newIndex: number) => {
+      if (!drivingSteps || newIndex < 0 || newIndex >= drivingSteps.length) return;
+      setCurrentStepIndex(newIndex);
+
+      const step = drivingSteps[newIndex];
+      const map = mapInstanceRef.current;
+      if (!map) return;
+
+      let stepBearing = step.bearingAfter;
+      if (stepBearing === undefined || stepBearing === null) {
+        stepBearing = drivingRoute
+          ? getRoadBearingAtCoordinate(drivingRoute, step.location, directEntranceBearing)
+          : directEntranceBearing;
+      }
+
+      const targetCoord: [number, number] =
+        newIndex === 0
+          ? [displayedUserLoc.lng, displayedUserLoc.lat]
+          : step.location && step.location[0] !== 0
+          ? step.location
+          : [displayedUserLoc.lng, displayedUserLoc.lat];
+
+      // Move the blue vehicle arrow marker along with the scrubbed turn
+      if (userMarkerRef.current) {
+        userMarkerRef.current.setLngLat(targetCoord);
+      }
+
+      map.easeTo({
+        center: targetCoord,
+        zoom: 16.8,
+        pitch: 58,
+        bearing: stepBearing,
+        offset: [0, 165],
+        duration: 700,
+      });
+    },
+    [drivingSteps, drivingRoute, displayedUserLoc.lng, displayedUserLoc.lat, directEntranceBearing]
   );
 
   // Setup / Update Direction Line on top of Google Maps
@@ -471,8 +660,8 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
           style: mapType === 'satellite' ? GOOGLE_SATELLITE_STYLE : GOOGLE_ROADMAP_STYLE,
           center: [currentLoc.lng, currentLoc.lat],
           zoom: 16.8,
-          pitch: activeMode === 'driving' ? 52 : 0,
-          bearing: activeMode === 'driving' ? initialRoadBearing : 0,
+          pitch: activeMode === 'driving' ? 58 : 0,
+          bearing: activeMode === 'driving' ? directEntranceBearing : 0,
           minZoom: 10,
           maxZoom: 21,
           attributionControl: false,
@@ -527,20 +716,13 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
           .setLngLat([entranceLng, entranceLat])
           .addTo(map);
 
-        // Custom HTML Marker for User Vehicle / Dot with dynamic heading cone
+        // Custom HTML Marker for User Vehicle / Dot (Garmin/Google Maps 3D Arrow in Driving, Dot in Walking)
         const userEl = document.createElement('div');
-        userEl.className = 'navigation-user-dot';
-        userEl.innerHTML = `
-          <div class="relative flex items-center justify-center select-none">
-            <div class="w-7 h-7 rounded-full bg-blue-600 border-[2.5px] border-white shadow-2xl flex items-center justify-center animate-user-pulse">
-              <div class="w-2 h-2 rounded-full bg-white"></div>
-            </div>
-            <div class="user-heading-pointer absolute -top-3.5 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-b-[10px] border-b-blue-400 drop-shadow-md" style="transform: rotate(${headingDeg}deg); transform-origin: center bottom;"></div>
-          </div>
-        `;
+        userEl.className = 'navigation-user-marker';
+        userEl.innerHTML = getUserMarkerHtml(activeMode, headingDeg);
 
         userMarkerRef.current = new maplibregl.Marker({ element: userEl, anchor: 'center' })
-          .setLngLat([currentLoc.lng, currentLoc.lat])
+          .setLngLat(vehicleMarkerCoord)
           .addTo(map);
 
         map.on('load', () => {
@@ -569,6 +751,7 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
           const base = baseZoomRef.current || 16.8;
           const pct = Math.max(25, Math.min(600, Math.round(Math.pow(2, currentZoom - base) * 100)));
           setZoomDisplay(pct);
+          setMapBearing(Math.round(map.getBearing()));
 
           // In driving mode, if route exists, calculate position
           if (activeMode === 'driving' && drivingRoute && drivingRoute.length > 1) {
@@ -622,35 +805,33 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
     });
   }, [mapType, isMapReady, setupRouteLayers]);
 
-  // Update route layer, markers, and follow-me tracking as user moves
+  // Update route layer, markers, and follow-me tracking as user moves or scrubs steps
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (map && isMapReady) {
       setupRouteLayers(map);
 
       if (userMarkerRef.current) {
-        userMarkerRef.current.setLngLat([currentLoc.lng, currentLoc.lat]);
+        userMarkerRef.current.setLngLat(vehicleMarkerCoord);
+        const el = userMarkerRef.current.getElement();
+        if (el) {
+          el.innerHTML = getUserMarkerHtml(activeMode, headingDeg);
+        }
       }
       if (entranceMarkerRef.current) {
         entranceMarkerRef.current.setLngLat([entranceLng, entranceLat]);
       }
 
-      // Update heading arrow rotation
-      const pointer = document.querySelector('.user-heading-pointer') as HTMLElement;
-      if (pointer) {
-        pointer.style.transform = `rotate(${headingDeg}deg)`;
-      }
-
-      // Follow user camera in driving mode (keeps user at bottom third, forward perspective)
-      if (isFollowingUser) {
+      // Follow user camera in driving mode when not previewing an upcoming turn
+      if (isFollowingUser && currentStepIndex === 0) {
         applyDriverCameraView(map, true);
       }
     }
   }, [
     activeMode,
     drivingRoute,
-    currentLoc.lat,
-    currentLoc.lng,
+    vehicleMarkerCoord,
+    currentStepIndex,
     entranceLat,
     entranceLng,
     headingDeg,
@@ -672,6 +853,10 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
   // Re-center follow-me mode (Garmin / Google Maps driver view)
   const handleRecenter = () => {
     setIsFollowingUser(true);
+    setCurrentStepIndex(0);
+    if (userMarkerRef.current) {
+      userMarkerRef.current.setLngLat([displayedUserLoc.lng, displayedUserLoc.lat]);
+    }
     if (mapInstanceRef.current) {
       applyDriverCameraView(mapInstanceRef.current, true);
     }
@@ -694,17 +879,16 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
   // External turn-by-turn navigation URL for drivers
   const externalGoogleMapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${currentLoc.lat},${currentLoc.lng}&destination=${entranceLat},${entranceLng}&travelmode=driving`;
 
-  // Current turn instruction from OSRM
-  const activeStep = drivingSteps[currentStepIndex] || drivingSteps[0];
-  const nextStep = drivingSteps[currentStepIndex + 1];
-
   // Helper to render maneuver icon
   const renderManeuverIcon = (step?: RouteStep) => {
     if (!step) return <Navigation className="w-6 h-6 text-white" />;
-    const mod = step.modifier?.toLowerCase() || '';
-    if (mod.includes('left')) return <CornerUpLeft className="w-7 h-7 text-white stroke-[2.5]" />;
-    if (mod.includes('right')) return <CornerUpRight className="w-7 h-7 text-white stroke-[2.5]" />;
     if (step.type === 'arrive') return <CheckCircle2 className="w-7 h-7 text-white stroke-[2.5]" />;
+    if (step.type === 'depart') return <ArrowUp className="w-7 h-7 text-white stroke-[2.5]" />;
+    const mod = (step.modifier || '').toLowerCase();
+    const inst = (step.instruction || '').toLowerCase();
+    if (mod.includes('u-turn') || mod.includes('uturn') || inst.includes('u-turn')) return <RotateCcw className="w-7 h-7 text-white stroke-[2.5]" />;
+    if (mod.includes('left') || inst.includes('turn left') || inst.includes('keep left') || inst.includes('bear left')) return <CornerUpLeft className="w-7 h-7 text-white stroke-[2.5]" />;
+    if (mod.includes('right') || inst.includes('turn right') || inst.includes('keep right') || inst.includes('bear right')) return <CornerUpRight className="w-7 h-7 text-white stroke-[2.5]" />;
     return <ArrowUp className="w-7 h-7 text-white stroke-[2.5]" />;
   };
 
@@ -784,7 +968,7 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
             {drivingSteps.length > 1 && (
               <div className="absolute top-2.5 right-3 flex items-center bg-black/40 backdrop-blur-xs rounded-lg p-0.5 border border-emerald-400/25 z-10">
                 <button
-                  onClick={() => setCurrentStepIndex((prev) => Math.max(0, prev - 1))}
+                  onClick={() => handleSelectStep(Math.max(0, currentStepIndex - 1))}
                   disabled={currentStepIndex === 0}
                   className="w-5 h-5 flex items-center justify-center text-white/80 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed text-xs font-bold active:scale-95 transition-transform"
                   title="Previous maneuver"
@@ -795,7 +979,7 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
                   {currentStepIndex + 1}/{drivingSteps.length}
                 </span>
                 <button
-                  onClick={() => setCurrentStepIndex((prev) => Math.min(drivingSteps.length - 1, prev + 1))}
+                  onClick={() => handleSelectStep(Math.min(drivingSteps.length - 1, currentStepIndex + 1))}
                   disabled={currentStepIndex >= drivingSteps.length - 1}
                   className="w-5 h-5 flex items-center justify-center text-white/80 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed text-xs font-bold active:scale-95 transition-transform"
                   title="Next maneuver"
@@ -806,8 +990,13 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
             )}
 
             <div className="flex items-center space-x-3.5 pr-16 w-full">
-              <div className="w-11 h-11 rounded-xl bg-emerald-900/90 border border-emerald-400/50 flex items-center justify-center shrink-0 shadow-md">
-                {renderManeuverIcon(activeStep)}
+              <div className="flex flex-col items-center shrink-0">
+                <div className="w-11 h-11 rounded-xl bg-emerald-900/90 border border-emerald-400/50 flex items-center justify-center shadow-md">
+                  {renderManeuverIcon(nextTurnStep)}
+                </div>
+                <span className="text-[9px] font-bold text-emerald-200 uppercase tracking-wide mt-1 text-center select-none leading-none">
+                  {nextTurnStep?.type === 'arrive' ? 'Destination' : 'Next Turn'}
+                </span>
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline space-x-2 flex-wrap">
@@ -820,7 +1009,7 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
                 </div>
                 {nextStep && (
                   <p className="text-[11px] text-emerald-100/80 font-medium truncate max-w-[300px] mt-0.5">
-                    Then {nextStep.instruction.toLowerCase()}
+                    Then {nextStep.instruction ? (nextStep.instruction.charAt(0).toLowerCase() + nextStep.instruction.slice(1)) : ''}
                   </p>
                 )}
               </div>
@@ -830,7 +1019,7 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
       )}
 
       {/* Main Google Maps Interactive Container */}
-      <div className="flex-1 relative w-full h-full overflow-hidden">
+      <div className="flex-1 relative w-full overflow-hidden">
         <div ref={mapContainerRef} className="w-full h-full" />
 
         {/* Floating Route Badge along the Direction Line (in Walking Mode) */}
@@ -851,15 +1040,15 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
           </div>
         )}
 
-        {/* Re-center Follow-Me Driver Button (Appears if user panned away) */}
-        {!isFollowingUser && activeMode === 'driving' && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
+        {/* Re-center / Resume Live Navigation Button (Appears if user panned away or is scrubbing turns) */}
+        {(!isFollowingUser || currentStepIndex > 0) && activeMode === 'driving' && (
+          <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
             <button
               onClick={handleRecenter}
               className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2.5 rounded-full shadow-2xl border-2 border-white flex items-center space-x-2 active:scale-95 transition-all"
             >
               <Navigation className="w-4 h-4 fill-white" />
-              <span>Re-center Driver View</span>
+              <span>{currentStepIndex > 0 ? 'Resume Live Navigation' : 'Re-center Driver View'}</span>
             </button>
           </div>
         )}
@@ -885,7 +1074,10 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
             className="w-10 h-10 rounded-full bg-white/95 backdrop-blur-md shadow-lg border border-slate-200/80 flex items-center justify-center text-slate-700 hover:bg-white active:scale-95 transition-all"
             title="Reset North orientation"
           >
-            <Compass className="w-5 h-5 text-emerald-700" />
+            <Compass
+              className="w-5 h-5 text-emerald-700 transition-transform duration-200"
+              style={{ transform: `rotate(${-mapBearing}deg)` }}
+            />
           </button>
 
           {/* Recenter View on User & Route */}
@@ -924,7 +1116,7 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
         </div>
 
         {/* Google Maps Attribution Badge */}
-        <div className="absolute left-2.5 bottom-2 z-10 pointer-events-none">
+        <div className="absolute left-2.5 bottom-14 z-10 pointer-events-none">
           <div className="bg-black/50 backdrop-blur-xs px-2 py-0.5 rounded text-[10px] text-white/90 font-medium tracking-tight">
             <span className="font-bold">Google</span> Imagery ©2026
           </div>
@@ -932,7 +1124,7 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
       </div>
 
       {/* Bottom Navigation Stats Drawer */}
-      <div className="bg-white rounded-t-3xl shadow-[0_-4px_25px_rgba(0,0,0,0.18)] p-5 z-30 shrink-0 border-t border-slate-100 pointer-events-auto">
+      <div className="relative -mt-[50px] bg-white rounded-t-3xl shadow-[0_-4px_25px_rgba(0,0,0,0.18)] p-5 z-30 shrink-0 border-t border-slate-100 pointer-events-auto">
         {activeMode === 'driving' ? (
           <>
             {/* Driving Mode Banner */}

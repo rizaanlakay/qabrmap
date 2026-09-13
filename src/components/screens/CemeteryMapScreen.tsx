@@ -91,7 +91,7 @@ export const CemeteryMapScreen: React.FC<CemeteryMapScreenProps> = ({
   onSwitchCemetery,
 }) => {
   // Keep mobile screen awake while browsing cemetery map on location
-  const wakeLock = useWakeLock(true);
+  useWakeLock(true);
 
   const [mapType, setMapType] = useState<'satellite' | 'roadmap'>('satellite');
   const [zoomDisplay, setZoomDisplay] = useState(100);
@@ -457,15 +457,6 @@ export const CemeteryMapScreen: React.FC<CemeteryMapScreenProps> = ({
           <div className="flex items-center space-x-1.5 text-sm font-bold tracking-tight">
             <span className="truncate">{cemetery.name}</span>
             <ChevronDown className="w-4 h-4 opacity-80 shrink-0" />
-            {wakeLock.isActive && (
-              <span
-                className="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded-full bg-emerald-500/25 border border-emerald-400/40 text-[9px] font-semibold text-emerald-300"
-                title="Screen stays awake in cemetery map"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span>Awake</span>
-              </span>
-            )}
           </div>
           <span className="text-[11px] text-emerald-300/90 font-medium">
             {cemetery.mappedGravesCount.toLocaleString()} graves mapped ({cemetery.coveragePercentage}%)
