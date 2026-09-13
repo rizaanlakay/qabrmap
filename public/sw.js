@@ -1,10 +1,13 @@
 // QabrMap Service Worker - Offline Resilience
-const CACHE_NAME = 'qabrmap-v1';
+const CACHE_NAME = 'qabrmap-v2';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
+  '/favicon.ico',
   '/icons/icon.svg',
   '/icons/qabr-icon.svg',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
   '/sample-gravestone.jpg'
 ];
 

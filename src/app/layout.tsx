@@ -6,8 +6,18 @@ export const metadata: Metadata = {
   description: 'Digital mapping, AI gravestone analysis, and precision navigation for Muslim cemeteries.',
   manifest: '/manifest.json',
   icons: {
-    icon: '/icons/icon.svg',
-    apple: '/icons/icon.svg',
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icons/icon.svg', type: 'image/svg+xml' },
+      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: [
+      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+      { url: '/icons/icon.svg', type: 'image/svg+xml' },
+    ],
   },
   appleWebApp: {
     capable: true,

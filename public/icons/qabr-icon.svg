@@ -1,36 +1,224 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
+    <!-- Background Gradient: Deep Islamic Forest Green -->
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#143A2E"/>
-      <stop offset="100%" stop-color="#0B231B"/>
+      <stop offset="0%" stop-color="#0B261D"/>
+      <stop offset="45%" stop-color="#143A2E"/>
+      <stop offset="100%" stop-color="#061811"/>
     </linearGradient>
-    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#E5C77A"/>
-      <stop offset="100%" stop-color="#C5A059"/>
-    </linearGradient>
-  </defs>
-  <!-- Background Rounded Shield -->
-  <rect width="512" height="512" rx="112" fill="url(#bgGrad)"/>
-  
-  <!-- Subtle Islamic Geometric Octagram / Arch -->
-  <path d="M256 90 C180 180, 150 250, 150 330 C150 390, 195 430, 256 430 C317 430, 362 390, 362 330 C362 250, 332 180, 256 90 Z" 
-        fill="none" stroke="url(#goldGrad)" stroke-width="12" stroke-linecap="round"/>
-  
-  <!-- Mosque Dome Silhouette -->
-  <path d="M256 120 C235 180, 205 240, 205 310 L307 310 C307 240, 277 180, 256 120 Z" 
-        fill="url(#goldGrad)" opacity="0.9"/>
-        
-  <!-- Base arch foundation -->
-  <path d="M190 310 L322 310 L322 350 L190 350 Z" fill="url(#goldGrad)" opacity="0.9"/>
-  <path d="M236 350 C236 335, 276 335, 276 350 Z" fill="#143A2E"/>
 
-  <!-- Crescent & Star finial at apex -->
-  <circle cx="256" cy="76" r="14" fill="none" stroke="url(#goldGrad)" stroke-width="4"/>
-  <circle cx="260" cy="73" r="11" fill="#143A2E"/>
-  <circle cx="252" cy="74" r="3.5" fill="url(#goldGrad)"/>
+    <!-- Warm Islamic Gold Gradient for Borders & Details -->
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF5CC"/>
+      <stop offset="25%" stop-color="#F5D77F"/>
+      <stop offset="65%" stop-color="#D4AF37"/>
+      <stop offset="100%" stop-color="#8F681E"/>
+    </linearGradient>
+
+    <!-- Rich Gold Fill for Hands Solid Silhouette -->
+    <linearGradient id="handFill" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#A27827" stop-opacity="0.4"/>
+      <stop offset="40%" stop-color="#D4AF37" stop-opacity="0.6"/>
+      <stop offset="85%" stop-color="#F5D77F" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#FFF8D6" stop-opacity="0.95"/>
+    </linearGradient>
+
+    <!-- Emerald Radiance Glow for Du'a -->
+    <radialGradient id="emeraldGlow" cx="50%" cy="40%" r="55%">
+      <stop offset="0%" stop-color="#34D399" stop-opacity="0.7"/>
+      <stop offset="40%" stop-color="#10B981" stop-opacity="0.3"/>
+      <stop offset="80%" stop-color="#059669" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#061811" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Drop Shadows -->
+    <filter id="goldShadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#000000" flood-opacity="0.55"/>
+    </filter>
+
+    <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Background App Squircle -->
+  <rect width="512" height="512" rx="114" fill="url(#bgGrad)"/>
   
-  <!-- GPS Pin Radar Rings -->
-  <circle cx="256" cy="380" r="8" fill="#10B981"/>
-  <circle cx="256" cy="380" r="22" fill="none" stroke="#10B981" stroke-width="3" opacity="0.6"/>
-  <circle cx="256" cy="380" r="36" fill="none" stroke="#10B981" stroke-width="2" stroke-dasharray="4 4" opacity="0.4"/>
+  <!-- Inset Gold Borders -->
+  <rect x="14" y="14" width="484" height="484" rx="102" fill="none" stroke="url(#goldGrad)" stroke-width="2.5" opacity="0.4"/>
+  <rect x="22" y="22" width="468" height="468" rx="94" fill="none" stroke="#10B981" stroke-width="1.2" opacity="0.25"/>
+
+  <!-- Background Luminous Aura -->
+  <circle cx="256" cy="225" r="145" fill="url(#emeraldGlow)"/>
+
+  <!-- Sacred Islamic Arch (Mihrab) Framing -->
+  <path d="M125 435 L125 240 C125 158, 180 102, 256 64 C332 102, 387 158, 387 240 L387 435" 
+        fill="none" stroke="url(#goldGrad)" stroke-width="6" stroke-linecap="round" opacity="0.85" filter="url(#goldShadow)"/>
+
+  <!-- Inner Dotted Arch Motif -->
+  <path d="M140 435 L140 248 C140 174, 190 122, 256 90 C322 122, 372 174, 372 248 L372 435" 
+        fill="none" stroke="url(#goldGrad)" stroke-width="1.8" stroke-dasharray="5 5" opacity="0.45"/>
+
+  <!-- Apex Finial: Crescent Moon and Star -->
+  <g transform="translate(256, 58)" filter="url(#softGlow)">
+    <!-- Crescent Moon -->
+    <path d="M-15 -6 C-15 8, -3 18, 13 14 C1 17, -10 11, -10 -2 C-10 -13, -1 -18, 11 -18 C-4 -18, -15 -13, -15 -6 Z" 
+          fill="url(#goldGrad)"/>
+    <!-- 8-Point Star -->
+    <polygon points="9,-12 11,-7 16,-7 12,-3 14,2 9,-1 5,2 7,-3 3,-7 8,-7" fill="url(#goldGrad)"/>
+  </g>
+
+  <!-- Celestial Beacon of Light / Du'a Radiance -->
+  <circle cx="256" cy="172" r="7" fill="#FFFFFF" filter="url(#softGlow)"/>
+  <circle cx="256" cy="172" r="22" fill="none" stroke="#34D399" stroke-width="2" opacity="0.7"/>
+  <circle cx="256" cy="172" r="42" fill="none" stroke="#10B981" stroke-width="1.5" stroke-dasharray="3 3" opacity="0.4"/>
+
+  <!-- Rays of divine light / Du'a remembrance -->
+  <g stroke="url(#goldGrad)" stroke-linecap="round" opacity="0.45">
+    <line x1="256" y1="152" x2="256" y2="120" stroke-width="2.5"/>
+    <line x1="225" y1="160" x2="202" y2="132" stroke-width="2"/>
+    <line x1="287" y1="160" x2="310" y2="132" stroke-width="2"/>
+    <line x1="198" y1="182" x2="168" y2="162" stroke-width="1.5"/>
+    <line x1="314" y1="182" x2="344" y2="162" stroke-width="1.5"/>
+  </g>
+
+  <!-- ============================================================== -->
+  <!-- ISLAMIC PRAYING HANDS (DU'A SUPPLICATION - CUPPED PALMS)       -->
+  <!-- ============================================================== -->
+  <g filter="url(#goldShadow)">
+
+    <!-- LEFT HAND (Cupped in prayer facing center & up) -->
+    <!-- Solid Silhouette of Left Hand -->
+    <path d="M 215 428
+             C 188 420, 168 385, 164 340 
+             C 160 300, 168 262, 182 244 
+             C 190 234, 199 235, 204 248 
+             L 210 222 
+             C 215 208, 226 208, 231 220
+             L 237 202
+             C 243 190, 254 192, 257 205
+             L 257 320
+             C 257 365, 248 405, 242 422 
+             Z" 
+          fill="url(#handFill)"/>
+
+    <!-- Left Outer Edge (Pinky & Palm) -->
+    <path d="M 215 428 
+             C 188 420, 168 385, 164 340 
+             C 160 300, 168 262, 182 244 
+             C 190 234, 199 235, 204 250 
+             C 207 262, 208 282, 208 308" 
+          fill="none" stroke="url(#goldGrad)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- Left Ring Finger -->
+    <path d="M 204 265 
+             L 210 224 
+             C 214 210, 224 210, 228 222 
+             C 231 232, 230 252, 230 282" 
+          fill="none" stroke="url(#goldGrad)" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- Left Middle Finger (Tallest) -->
+    <path d="M 226 245 
+             L 232 208 
+             C 236 194, 248 194, 252 206 
+             C 255 216, 254 240, 254 278" 
+          fill="none" stroke="url(#goldGrad)" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- Left Index Finger (Innermost) -->
+    <path d="M 248 232 
+             L 252 202 
+             C 254 192, 262 192, 263 204 
+             L 263 295" 
+          fill="none" stroke="url(#goldGrad)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- Left Thumb Contour (Natural thenar curve) -->
+    <path d="M 222 340 
+             C 230 325, 242 310, 250 310 
+             C 255 310, 256 318, 254 330 
+             C 251 348, 242 375, 240 395" 
+          fill="none" stroke="url(#goldGrad)" stroke-width="5" stroke-linecap="round"/>
+
+    <!-- Left Palm Inner Lifeline Crease -->
+    <path d="M 194 332 C 210 342, 228 360, 238 390" 
+          fill="none" stroke="url(#goldGrad)" stroke-width="4.5" stroke-linecap="round" opacity="0.85"/>
+
+    <!-- Left Wrist Base Curve -->
+    <path d="M 186 414 C 202 434, 226 438, 246 424" 
+          fill="none" stroke="url(#goldGrad)" stroke-width="7" stroke-linecap="round"/>
+
+    <!-- RIGHT HAND (Symmetrically Cupped in prayer facing center & up) -->
+    <!-- Solid Silhouette of Right Hand -->
+    <path d="M 297 428
+             C 324 420, 344 385, 348 340 
+             C 352 300, 344 262, 330 244 
+             C 322 234, 313 235, 308 248 
+             L 302 222 
+             C 297 208, 286 208, 281 220
+             L 275 202
+             C 269 190, 258 192, 255 205
+             L 255 320
+             C 255 365, 264 405, 270 422 
+             Z" 
+          fill="url(#handFill)"/>
+
+    <!-- Right Outer Edge (Pinky & Palm) -->
+    <path d="M 297 428 
+             C 324 420, 344 385, 348 340 
+             C 352 300, 344 262, 330 244 
+             C 322 234, 313 235, 308 250 
+             C 305 262, 304 282, 304 308" 
+          fill="none" stroke="url(#goldGrad)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- Right Ring Finger -->
+    <path d="M 308 265 
+             L 302 224 
+             C 298 210, 288 210, 284 222 
+             C 281 232, 282 252, 282 282" 
+          fill="none" stroke="url(#goldGrad)" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- Right Middle Finger (Tallest) -->
+    <path d="M 286 245 
+             L 280 208 
+             C 276 194, 264 194, 260 206 
+             C 257 216, 258 240, 258 278" 
+          fill="none" stroke="url(#goldGrad)" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- Right Index Finger (Innermost) -->
+    <path d="M 264 232 
+             L 260 202 
+             C 258 192, 250 192, 249 204 
+             L 249 295" 
+          fill="none" stroke="url(#goldGrad)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- Right Thumb Contour (Natural thenar curve) -->
+    <path d="M 290 340 
+             C 282 325, 270 310, 262 310 
+             C 257 310, 256 318, 258 330 
+             C 261 348, 270 375, 272 395" 
+          fill="none" stroke="url(#goldGrad)" stroke-width="5" stroke-linecap="round"/>
+
+    <!-- Right Palm Inner Lifeline Crease -->
+    <path d="M 318 332 C 302 342, 284 360, 274 390" 
+          fill="none" stroke="url(#goldGrad)" stroke-width="4.5" stroke-linecap="round" opacity="0.85"/>
+
+    <!-- Right Wrist Base Curve -->
+    <path d="M 326 414 C 310 434, 286 438, 266 424" 
+          fill="none" stroke="url(#goldGrad)" stroke-width="7" stroke-linecap="round"/>
+
+    <!-- Joined Wrist Arch -->
+    <path d="M 215 435 C 235 448, 277 448, 297 435" 
+          fill="none" stroke="url(#goldGrad)" stroke-width="5" stroke-linecap="round"/>
+
+    <!-- Prayer Beads (Tasbih) draping under hands -->
+    <g fill="url(#goldGrad)">
+      <circle cx="218" cy="452" r="5"/>
+      <circle cx="230" cy="458" r="5"/>
+      <circle cx="243" cy="462" r="5"/>
+      <circle cx="256" cy="464" r="6.5"/>
+      <circle cx="269" cy="462" r="5"/>
+      <circle cx="282" cy="458" r="5"/>
+      <circle cx="294" cy="452" r="5"/>
+    </g>
+  </g>
 </svg>
