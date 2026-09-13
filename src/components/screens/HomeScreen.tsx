@@ -4,6 +4,7 @@ import React from 'react';
 import Image from 'next/image';
 import { Search, Camera, Compass, Heart, User as UserIcon } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthContext';
+import { RemembranceQuoteCarousel } from '../common/RemembranceQuoteCarousel';
 
 interface HomeScreenProps {
   myCemeteryCount?: number;
@@ -157,15 +158,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ myCemeteryCount = 2, onN
         )}
       </div>
 
-      {/* Quranic Verse Banner at Bottom */}
-      <div className="px-6 py-4 my-2 text-center">
-        <blockquote className="text-[12px] italic text-slate-600 leading-relaxed font-serif">
-          &ldquo;And do not say of those who are killed in the way of Allah that they are dead. Rather, they are alive...&rdquo;
-        </blockquote>
-        <cite className="block text-[11px] text-slate-400 font-sans mt-1.5 not-italic">
-          — Qur&apos;an 2:154
-        </cite>
-      </div>
+      {/* Auto-cycling Islamic Remembrance & Reflections Carousel */}
+      <RemembranceQuoteCarousel autoCycleIntervalMs={7000} />
     </div>
   );
 };
