@@ -78,6 +78,38 @@ body {
   animation: blue-pulse 2.2s infinite cubic-bezier(0.4, 0, 0.6, 1);
 }
 
+/* AR guidance chevrons flowing away along a 3D ground plane.
+   The plane's perspective makes near chevrons large and distant ones small. */
+@keyframes ar-chevron-flow {
+  0% {
+    transform: translate(-50%, 0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate(-50%, -640px);
+    opacity: 0;
+  }
+}
+
+.ar-chevron {
+  opacity: 0;
+  animation: ar-chevron-flow 3.6s linear infinite;
+  filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.85));
+}
+
+/* Negative delays still spread the chevrons along the path when paused */
+@media (prefers-reduced-motion: reduce) {
+  .ar-chevron {
+    animation-play-state: paused;
+  }
+}
+
 /* Islamic Geometric Border Accent */
 .islamic-pattern {
   background-color: #143A2E;
