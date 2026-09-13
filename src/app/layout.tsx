@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import { APP_INSTALLED_EVENT, INSTALLED_FLAG_KEY, INSTALL_PROMPT_EVENT } from '@/lib/pwa/installPrompt';
 
 export const metadata: Metadata = {
   title: 'QabrMap - Find, Remember, Always',
@@ -23,6 +24,10 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: 'black-translucent',
     title: 'QabrMap',
+  },
+  other: {
+    // Chromium's counterpart to apple-mobile-web-app-capable
+    'mobile-web-app-capable': 'yes',
   },
 };
 
@@ -54,6 +59,19 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: `
+              // Hold Chrome's install prompt for the weekly in-app offer instead of its own mini-infobar.
+              // Registered before hydration because the event can fire before React mounts.
+              window.addEventListener('beforeinstallprompt', function (e) {
+                e.preventDefault();
+                window.__qabrmapInstallPrompt = e;
+                window.dispatchEvent(new Event('${INSTALL_PROMPT_EVENT}'));
+              });
+              window.addEventListener('appinstalled', function () {
+                window.__qabrmapInstallPrompt = null;
+                try { localStorage.setItem('${INSTALLED_FLAG_KEY}', '1'); } catch (e) {}
+                window.dispatchEvent(new Event('${APP_INSTALLED_EVENT}'));
+              });
+
               if ('serviceWorker' in navigator) {
                 if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
                   window.addEventListener('load', () => {

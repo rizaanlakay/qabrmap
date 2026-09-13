@@ -1,8 +1,10 @@
 {
+  "id": "/",
   "name": "QabrMap - Muslim Cemetery Mapping & Grave Navigation",
   "short_name": "QabrMap",
   "description": "Find, map and navigate to deceased loved ones in Muslim cemeteries with AI and high-precision spatial positioning.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#143A2E",
   "theme_color": "#143A2E",
@@ -18,24 +20,32 @@
       "src": "/icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "categories": ["navigation", "lifestyle", "utilities"],
   "shortcuts": [
     {
       "name": "Find a Grave",
+      "short_name": "Search",
       "url": "/?mode=search",
       "description": "Quickly search for a deceased loved one"
     },
     {
       "name": "Map a Grave",
+      "short_name": "Capture",
       "url": "/?mode=capture",
       "description": "Photograph and catalog a gravestone"
     }

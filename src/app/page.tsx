@@ -30,6 +30,8 @@ import { AdminDashboard } from '@/components/admin/AdminDashboard';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { useWakeLock } from '@/lib/device/useWakeLock';
+import { useInstallOffer } from '@/lib/pwa/useInstallOffer';
+import { InstallAppCard } from '@/components/common/InstallAppCard';
 
 export type ScreenId =
   | 'home'
@@ -63,6 +65,9 @@ function QabrMapAppContent() {
   // Keep mobile screen awake when navigating to a cemetery or in AR mode
   const shouldKeepAwake = ['navigation', 'ar-guidance', 'cemetery-map'].includes(currentScreen);
   useWakeLock(shouldKeepAwake);
+
+  // Weekly "Install QabrMap" offer, only on the home screen so it never covers navigation or capture
+  const installOffer = useInstallOffer({ enabled: mounted && currentScreen === 'home' });
 
   // Data State
   const [cemeteries, setCemeteries] = useState<Cemetery[]>([]);
@@ -107,6 +112,20 @@ function QabrMapAppContent() {
   // Load initial data
   useEffect(() => {
     setMounted(true);
+
+    // Home screen shortcuts from the installed app's manifest open straight into search or capture
+    const launchMode = new URLSearchParams(window.location.search).get('mode');
+    if (launchMode === 'search' || launchMode === 'capture') {
+      setCurrentNavTab(launchMode);
+      setCurrentScreen(launchMode);
+      const launchUrl = new URL(window.location.href);
+      launchUrl.searchParams.delete('mode');
+      window.history.replaceState(
+        window.history.state,
+        '',
+        `${launchUrl.pathname}${launchUrl.search}${launchUrl.hash}`
+      );
+    }
 
     // Open a shared grave link directly on its details view
     const linkedGraveId = getGraveIdFromUrl(window.location.href);
@@ -426,6 +445,13 @@ function QabrMapAppContent() {
             cemetery={selectedCemetery}
             graves={graves}
             onBack={() => setCurrentScreen('home')}
+          />
+        )}
+        {installOffer.visible && installOffer.platform !== 'unsupported' && (
+          <InstallAppCard
+            platform={installOffer.platform}
+            onInstall={installOffer.install}
+            onDismiss={installOffer.dismiss}
           />
         )}
       </main>
