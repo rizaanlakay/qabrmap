@@ -280,7 +280,7 @@ function QabrMapAppContent() {
             userLocation={userLocation}
             onSelectGrave={(grave) => setSelectedGrave(grave)}
             onOpenGraveDetails={handleOpenGrave}
-            onBack={() => setCurrentScreen('home')}
+            onBack={() => setCurrentScreen('cemetery-select')}
             onSwitchCemetery={() => {
               setCemeteryFilter('nearby');
               setCurrentScreen('cemetery-select');
