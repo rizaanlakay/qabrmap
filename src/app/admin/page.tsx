@@ -16,6 +16,14 @@ export default function AdminPage() {
   const [selectedCemetery, setSelectedCemetery] = useState<Cemetery | null>(null);
   const [graves, setGraves] = useState<Grave[]>([]);
   const [loading, setLoading] = useState(true);
+  const [authTimedOut, setAuthTimedOut] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setAuthTimedOut(true), 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const isCheckingAuth = authLoading && !authTimedOut;
 
   useEffect(() => {
     async function loadData() {
@@ -32,14 +40,14 @@ export default function AdminPage() {
       setLoading(false);
     }
 
-    if (!authLoading) {
+    if (!isCheckingAuth) {
       if (isAdmin) {
         loadData();
       } else {
         setLoading(false);
       }
     }
-  }, [authLoading, isAdmin]);
+  }, [isCheckingAuth, isAdmin]);
 
   const handleCemeteryChange = async (cemeteryId: string) => {
     const cem = cemeteries.find((c) => c.id === cemeteryId);
@@ -53,7 +61,7 @@ export default function AdminPage() {
   };
 
   // 1. Loading Authentication State
-  if (authLoading || (isAdmin && loading && !selectedCemetery)) {
+  if (isCheckingAuth || (isAdmin && loading && !selectedCemetery)) {
     return (
       <div className="w-full h-full min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white p-6">
         <Loader2 className="w-8 h-8 animate-spin text-emerald-400 mb-3" />
