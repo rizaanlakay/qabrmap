@@ -1,5 +1,5 @@
 // Realistic Seed & Mock Data for QabrMap
-// Faithfully matches Athlone, Mountview, Wynberg, and Epping cemeteries and Abdul Wahab Hassan Narker
+// Faithfully matches Athlone, Mountview, and Wynberg cemeteries and Abdul Wahab Hassan Narker
 
 import { Cemetery, Grave, SurveySession } from '@/types';
 
@@ -143,35 +143,6 @@ export const MOCK_CEMETERIES: Cemetery[] = [
     mappedGravesCount: 8912,
     coveragePercentage: 72.0,
     distanceKm: 7.3,
-    thumbnailUrl: '/sample-gravestone.svg',
-  },
-  {
-    id: 'cem_epping',
-    name: 'Epping Muslim Cemetery',
-    slug: 'epping-muslim-cemetery',
-    description: 'Regional cemetery serving greater Cape Town communities.',
-    country: 'South Africa',
-    province: 'Western Cape',
-    city: 'Cape Town',
-    denomination: 'Muslim',
-    originLat: -33.9312,
-    originLng: 18.541,
-    boundary: {
-      type: 'Polygon',
-      coordinates: [
-        [
-          [18.5385, -33.9300],
-          [18.5435, -33.9300],
-          [18.5435, -33.9325],
-          [18.5385, -33.9325],
-          [18.5385, -33.9300],
-        ],
-      ],
-    },
-    totalGravesEstimate: 10050,
-    mappedGravesCount: 3120,
-    coveragePercentage: 31.0,
-    distanceKm: 9.8,
     thumbnailUrl: '/sample-gravestone.svg',
   },
 ];

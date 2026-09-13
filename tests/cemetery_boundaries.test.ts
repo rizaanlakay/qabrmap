@@ -26,10 +26,10 @@ describe('Cemetery Boundaries & Spatial Enclosure', () => {
     expect(athlone?.boundary?.coordinates[0].length).toBeGreaterThan(4);
     expect(wynberg?.boundary?.coordinates[0].length).toBeGreaterThan(4);
     expect(mountview?.boundary?.coordinates[0].length).toBeGreaterThan(4);
-    expect(epping?.boundary?.coordinates[0].length).toBeGreaterThan(4);
+    expect(epping).toBeUndefined();
 
-    // Verify all 5 cemeteries have closed polygon rings
-    for (const cem of [mowbray!, athlone!, wynberg!, mountview!, epping!]) {
+    // Verify all 4 authentic cemeteries have closed polygon rings
+    for (const cem of [mowbray!, athlone!, wynberg!, mountview!]) {
       const coords = cem.boundary!.coordinates[0];
       const first = coords[0];
       const last = coords[coords.length - 1];
