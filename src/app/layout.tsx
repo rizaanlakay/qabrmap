@@ -35,6 +35,8 @@ export const viewport: Viewport = {
   themeColor: '#143A2E',
 };
 
+import { AppProviders } from '@/components/providers/AppProviders';
+
 export default function RootLayout({
   children,
 }: {
@@ -72,11 +74,10 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="h-full flex justify-center bg-slate-950 select-none overflow-x-hidden">
-        {/* Responsive mobile container simulating native phone frame or responsive desktop */}
-        <div className="w-full max-w-md h-full bg-white relative flex flex-col shadow-2xl overflow-hidden">
+      <body className="h-full w-full bg-slate-950 select-none overflow-x-hidden">
+        <AppProviders>
           {children}
-        </div>
+        </AppProviders>
       </body>
     </html>
   );

@@ -26,7 +26,7 @@ import { MyCemeteriesScreen } from '@/components/screens/MyCemeteriesScreen';
 import { RegisterScreen } from '@/components/screens/RegisterScreen';
 import { ProfileScreen } from '@/components/screens/ProfileScreen';
 import { AdminDashboard } from '@/components/admin/AdminDashboard';
-import { AuthProvider, useAuth } from '@/lib/auth/AuthContext';
+import { useAuth } from '@/lib/auth/AuthContext';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { useWakeLock } from '@/lib/device/useWakeLock';
 
@@ -404,9 +404,11 @@ function QabrMapAppContent() {
 
 export default function QabrMapApp() {
   return (
-    <AuthProvider>
-      <QabrMapAppContent />
-    </AuthProvider>
+    <div className="w-full h-full flex justify-center bg-slate-950">
+      <div className="w-full max-w-md h-full bg-white relative flex flex-col shadow-2xl overflow-hidden">
+        <QabrMapAppContent />
+      </div>
+    </div>
   );
 }
 
