@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback } from 'react';
 import {
   ArrowLeft,
   Compass,
@@ -28,6 +28,25 @@ import {
   snapToRoute,
 } from '@/lib/geospatial';
 import { useWakeLock } from '@/lib/device/useWakeLock';
+import {
+  SHEET_CLICK_SUPPRESS_MS,
+  SHEET_DRAG_THRESHOLD_PX,
+  SHEET_EASING,
+  SHEET_FLICK_MAX_IDLE_MS,
+  SHEET_PEEK_GAP_PX,
+  SHEET_SNAP_MS,
+  clampSheetOffset,
+  mapPaddingForSheet,
+  shouldCollapseSheet,
+} from '@/lib/ui/bottomSheet';
+
+// Keeps a floating map control a fixed gap above the visible top edge of the bottom sheet
+function aboveSheetStyle(gapPx: number): React.CSSProperties {
+  return {
+    bottom: `calc(var(--sheet-visible, 0px) + ${gapPx}px)`,
+    transition: `bottom var(--sheet-transition, 0ms) ${SHEET_EASING}`,
+  };
+}
 
 interface RouteStep {
   instruction: string;
@@ -240,6 +259,27 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
   const targetMarkerRef = useRef<any>(null);
   const baseZoomRef = useRef<number>(17.0);
 
+  // Swipeable bottom sheet. Position lives in CSS variables on the root so dragging doesn't re-render the screen.
+  const rootRef = useRef<HTMLDivElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const sheetPeekRef = useRef<HTMLDivElement>(null);
+  const [isSheetExpanded, setIsSheetExpanded] = useState(true);
+  const sheetExpandedRef = useRef(true);
+  const sheetHeightRef = useRef(0);
+  const sheetCollapsedOffsetRef = useRef(0);
+  const sheetOffsetRef = useRef(0);
+  const sheetVisibleRef = useRef(0);
+  const sheetDragRef = useRef<{
+    pointerId: number;
+    startY: number;
+    startOffset: number;
+    lastY: number;
+    lastTime: number;
+    velocity: number;
+    dragging: boolean;
+  } | null>(null);
+  const suppressSheetClickUntilRef = useRef(0);
+
   // Entrance coordinates for the cemetery
   const entranceLat = cemetery?.entranceLat ?? cemetery?.originLat ?? targetGrave.latitude;
   const entranceLng = cemetery?.entranceLng ?? cemetery?.originLng ?? targetGrave.longitude;
@@ -450,6 +490,7 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
           pitch: 58,
           bearing: activeRoadBearing,
           offset: [0, 165],
+          padding: mapPaddingForSheet(sheetVisibleRef.current),
           duration: animate ? 800 : 0,
         });
       } else {
@@ -459,19 +500,25 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
         const minLng = Math.min(currentLoc.lng, targetGrave.longitude);
         const maxLng = Math.max(currentLoc.lng, targetGrave.longitude);
 
-        map.fitBounds(
+        // cameraForBounds sizes the fit with the map's current padding plus these options, but centres using
+        // only the options. Size against the sheet padding we ease to, and offset away the extra centre shift.
+        const sheetPadding = mapPaddingForSheet(sheetVisibleRef.current);
+        const paddingDelta = sheetPadding.bottom - (map.getPadding()?.bottom ?? 0);
+        const camera = map.cameraForBounds(
           [
             [minLng, minLat],
             [maxLng, maxLat],
           ],
           {
-            padding: { top: 100, bottom: 240, left: 50, right: 50 },
+            padding: { top: 100, bottom: 240 + paddingDelta, left: 50, right: 50 },
+            offset: [0, paddingDelta / 2],
             maxZoom: 20,
-            pitch: 0,
             bearing: 0,
-            duration: animate ? 800 : 0,
           }
         );
+        if (camera) {
+          map.easeTo({ ...camera, pitch: 0, padding: sheetPadding, duration: animate ? 800 : 0 });
+        }
       }
     },
     [activeMode, currentStepIndex, activeStep, displayedUserLoc.lat, displayedUserLoc.lng, currentLoc.lat, currentLoc.lng, activeRoadBearing, targetGrave.latitude, targetGrave.longitude]
@@ -512,6 +559,7 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
         pitch: 58,
         bearing: stepBearing,
         offset: [0, 165],
+        padding: mapPaddingForSheet(sheetVisibleRef.current),
         duration: 700,
       });
     },
@@ -873,8 +921,130 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
     setMapType((prev) => (prev === 'satellite' ? 'roadmap' : 'satellite'));
   };
 
+  // Slide the sheet to `offset` px below fully expanded and move the floating controls with it
+  const applySheetOffset = useCallback((offset: number, animate: boolean) => {
+    sheetOffsetRef.current = offset;
+    sheetVisibleRef.current = Math.max(0, sheetHeightRef.current - offset);
+    const root = rootRef.current;
+    if (!root) return;
+    root.style.setProperty('--sheet-offset', `${offset}px`);
+    root.style.setProperty('--sheet-visible', `${sheetVisibleRef.current}px`);
+    root.style.setProperty('--sheet-transition', animate ? `${SHEET_SNAP_MS}ms` : '0ms');
+  }, []);
+
+  const snapSheet = useCallback(
+    (expanded: boolean) => {
+      sheetExpandedRef.current = expanded;
+      setIsSheetExpanded(expanded);
+      applySheetOffset(expanded ? 0 : sheetCollapsedOffsetRef.current, true);
+    },
+    [applySheetOffset]
+  );
+
+  // Collapsed, only the handle and stats row stay visible. Re-measure when the content changes (e.g. Drive/Walk).
+  useLayoutEffect(() => {
+    const sheet = sheetRef.current;
+    const peek = sheetPeekRef.current;
+    if (!sheet || !peek) return;
+
+    const measure = () => {
+      sheetHeightRef.current = sheet.offsetHeight;
+      sheetCollapsedOffsetRef.current = Math.max(
+        0,
+        sheet.offsetHeight - (peek.offsetTop + peek.offsetHeight + SHEET_PEEK_GAP_PX)
+      );
+      if (!sheetDragRef.current?.dragging) {
+        applySheetOffset(sheetExpandedRef.current ? 0 : sheetCollapsedOffsetRef.current, false);
+      }
+    };
+
+    measure();
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(sheet);
+    observer.observe(peek);
+    return () => observer.disconnect();
+  }, [applySheetOffset]);
+
+  // Re-frame the followed route into the space the sheet frees up or covers
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !isMapReady || !isFollowingUser || currentStepIndex !== 0) return;
+    applyDriverCameraView(map, true);
+  }, [isSheetExpanded]);
+
+  const handleSheetPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    suppressSheetClickUntilRef.current = 0;
+    sheetDragRef.current = {
+      pointerId: e.pointerId,
+      startY: e.clientY,
+      startOffset: sheetOffsetRef.current,
+      lastY: e.clientY,
+      lastTime: e.timeStamp,
+      velocity: 0,
+      dragging: false,
+    };
+  };
+
+  const handleSheetPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const drag = sheetDragRef.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+
+    if (!drag.dragging) {
+      if (Math.abs(e.clientY - drag.startY) < SHEET_DRAG_THRESHOLD_PX) return;
+      drag.dragging = true;
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch {
+        // Capture isn't available for synthetic or already-released pointers; dragging still works
+      }
+    }
+
+    const elapsed = e.timeStamp - drag.lastTime;
+    if (elapsed > 0) drag.velocity = (e.clientY - drag.lastY) / elapsed;
+    drag.lastY = e.clientY;
+    drag.lastTime = e.timeStamp;
+
+    applySheetOffset(
+      clampSheetOffset(drag.startOffset + e.clientY - drag.startY, sheetCollapsedOffsetRef.current),
+      false
+    );
+  };
+
+  const handleSheetPointerEnd = (e: React.PointerEvent<HTMLDivElement>) => {
+    const drag = sheetDragRef.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    sheetDragRef.current = null;
+    if (!drag.dragging) return;
+
+    // The click a mouse drag produces must not press whichever button it started on. Touch swipes produce
+    // no click, so this is a short window rather than a flag that would eat the next real tap or key press.
+    suppressSheetClickUntilRef.current = e.timeStamp + SHEET_CLICK_SUPPRESS_MS;
+    const released = e.timeStamp - drag.lastTime > SHEET_FLICK_MAX_IDLE_MS;
+    snapSheet(
+      !shouldCollapseSheet({
+        offset: sheetOffsetRef.current,
+        collapsedOffset: sheetCollapsedOffsetRef.current,
+        velocity: released ? 0 : drag.velocity,
+      })
+    );
+  };
+
+  const handleSheetClickCapture = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.timeStamp > suppressSheetClickUntilRef.current) return;
+    suppressSheetClickUntilRef.current = 0;
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
   const isNearby = distToGrave <= 12;
   const isAtGrave = distToGrave <= 3.5;
+
+  // Raise a collapsed sheet when the grave is close so the arrival and AR prompts aren't hidden
+  useEffect(() => {
+    if (isNearby) snapSheet(true);
+  }, [isNearby, snapSheet]);
 
   // External turn-by-turn navigation URL for drivers
   const externalGoogleMapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${currentLoc.lat},${currentLoc.lng}&destination=${entranceLat},${entranceLng}&travelmode=driving`;
@@ -893,7 +1063,7 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col relative bg-slate-950 overflow-hidden select-none">
+    <div ref={rootRef} className="flex-1 flex flex-col relative bg-slate-950 overflow-hidden select-none">
       {/* Top Floating Navigation Bar */}
       <div className="absolute top-0 inset-x-0 z-20 px-4 pt-3 pb-2 bg-gradient-to-b from-black/90 via-black/60 to-transparent flex items-center justify-between text-white pointer-events-auto">
         <div className="flex items-center space-x-3">
@@ -1042,7 +1212,10 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
 
         {/* Re-center / Resume Live Navigation Button (Appears if user panned away or is scrubbing turns) */}
         {(!isFollowingUser || currentStepIndex > 0) && activeMode === 'driving' && (
-          <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
+          <div
+            className="absolute left-1/2 -translate-x-1/2 z-20 pointer-events-auto"
+            style={aboveSheetStyle(14)}
+          >
             <button
               onClick={handleRecenter}
               className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2.5 rounded-full shadow-2xl border-2 border-white flex items-center space-x-2 active:scale-95 transition-all"
@@ -1116,28 +1289,42 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
         </div>
 
         {/* Google Maps Attribution Badge */}
-        <div className="absolute left-2.5 bottom-14 z-10 pointer-events-none">
+        <div className="absolute left-2.5 z-10 pointer-events-none" style={aboveSheetStyle(6)}>
           <div className="bg-black/50 backdrop-blur-xs px-2 py-0.5 rounded text-[10px] text-white/90 font-medium tracking-tight">
             <span className="font-bold">Google</span> Imagery ©2026
           </div>
         </div>
       </div>
 
-      {/* Bottom Navigation Stats Drawer */}
-      <div className="relative -mt-[50px] bg-white rounded-t-3xl shadow-[0_-4px_25px_rgba(0,0,0,0.18)] p-5 z-30 shrink-0 border-t border-slate-100 pointer-events-auto">
-        {activeMode === 'driving' ? (
-          <>
-            {/* Driving Mode Banner */}
-            <div className="mb-3 p-2.5 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between text-blue-900 text-xs">
-              <div className="flex items-center space-x-2">
-                <Car className="w-4 h-4 text-blue-600 shrink-0" />
-                <span className="font-semibold">
-                  Driver Navigation Mode: Positioned at bottom facing direction of travel.
-                </span>
-              </div>
-            </div>
+      {/* Bottom Navigation Stats Drawer: swipe or tap the handle to slide it down to just the stats row */}
+      <div
+        ref={sheetRef}
+        onPointerDown={handleSheetPointerDown}
+        onPointerMove={handleSheetPointerMove}
+        onPointerUp={handleSheetPointerEnd}
+        onPointerCancel={handleSheetPointerEnd}
+        onClickCapture={handleSheetClickCapture}
+        style={{
+          transform: 'translateY(var(--sheet-offset, 0px))',
+          transition: `transform var(--sheet-transition, 0ms) ${SHEET_EASING}`,
+        }}
+        className="absolute inset-x-0 bottom-0 bg-white rounded-t-3xl shadow-[0_-4px_25px_rgba(0,0,0,0.18)] px-5 pb-5 z-30 border-t border-slate-100 pointer-events-auto touch-none"
+      >
+        {/* Drag Handle */}
+        <button
+          type="button"
+          onClick={() => snapSheet(!isSheetExpanded)}
+          aria-expanded={isSheetExpanded}
+          aria-label={isSheetExpanded ? 'Collapse trip details' : 'Expand trip details'}
+          className="w-full flex justify-center pt-2.5 pb-3 cursor-grab active:cursor-grabbing rounded-t-3xl focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60"
+        >
+          <span className="block w-10 h-1.5 rounded-full bg-slate-300" />
+        </button>
 
-            {/* 3 Metric Cards for Driving: Road Distance, Est. Drive Time, Gate Name */}
+        {/* Stats row: the part that stays visible when the sheet is collapsed */}
+        <div ref={sheetPeekRef}>
+          {activeMode === 'driving' ? (
+            /* 3 Metric Cards for Driving: Road Distance, Est. Drive Time, Gate Name */
             <div className="grid grid-cols-3 gap-3 text-center">
               <div className="bg-slate-50 rounded-2xl p-3 border border-slate-100">
                 <div className="text-xl font-extrabold text-blue-700">
@@ -1164,6 +1351,38 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
                   {entranceName.replace(/Main Gate|Gate/i, '').trim() || 'Entrance'}
                 </div>
                 <div className="text-[11px] text-slate-500 font-medium mt-0.5">Entrance Gate</div>
+              </div>
+            </div>
+          ) : (
+            /* 3 Metric Stats Cards: Distance, Direction, Walk time */
+            <div className="grid grid-cols-3 gap-3 text-center">
+              <div className="bg-slate-50 rounded-2xl p-3 border border-slate-100">
+                <div className="text-xl font-extrabold text-emerald-700">{Math.round(distToGrave)} m</div>
+                <div className="text-[11px] text-slate-500 font-medium mt-0.5">Walk Distance</div>
+              </div>
+
+              <div className="bg-slate-50 rounded-2xl p-3 border border-slate-100">
+                <div className="text-xl font-extrabold text-slate-900">{cardinal}</div>
+                <div className="text-[11px] text-slate-500 font-medium mt-0.5">Direction</div>
+              </div>
+
+              <div className="bg-slate-50 rounded-2xl p-3 border border-slate-100">
+                <div className="text-xl font-extrabold text-slate-900">~{walkTimeMinutes} min</div>
+                <div className="text-[11px] text-slate-500 font-medium mt-0.5">Walk time</div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {activeMode === 'driving' ? (
+          <>
+            {/* Driving Mode Banner */}
+            <div className="mt-3 p-2.5 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between text-blue-900 text-xs">
+              <div className="flex items-center space-x-2">
+                <Car className="w-4 h-4 text-blue-600 shrink-0" />
+                <span className="font-semibold">
+                  Driver Navigation Mode: Positioned at bottom facing direction of travel.
+                </span>
               </div>
             </div>
 
@@ -1195,7 +1414,7 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
           <>
             {/* Walking Mode Content */}
             {isAtGrave ? (
-              <div className="mb-3 p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center space-x-2 text-emerald-800 text-xs font-semibold animate-pulse">
+              <div className="mt-3 p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center space-x-2 text-emerald-800 text-xs font-semibold animate-pulse">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                 <span>
                   You have arrived! Grave {targetGrave.graveNumber} is right here (±
@@ -1203,7 +1422,7 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
                 </span>
               </div>
             ) : isNearby ? (
-              <div className="mb-3 p-2.5 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between text-amber-900 text-xs font-semibold">
+              <div className="mt-3 p-2.5 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between text-amber-900 text-xs font-semibold">
                 <span>Approaching target ({Math.round(distToGrave)}m). Switch to AR camera guidance?</span>
                 <button
                   onClick={onOpenARGuidance}
@@ -1213,24 +1432,6 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
                 </button>
               </div>
             ) : null}
-
-            {/* 3 Metric Stats Cards: Distance, Direction, Walk time */}
-            <div className="grid grid-cols-3 gap-3 text-center">
-              <div className="bg-slate-50 rounded-2xl p-3 border border-slate-100">
-                <div className="text-xl font-extrabold text-emerald-700">{Math.round(distToGrave)} m</div>
-                <div className="text-[11px] text-slate-500 font-medium mt-0.5">Walk Distance</div>
-              </div>
-
-              <div className="bg-slate-50 rounded-2xl p-3 border border-slate-100">
-                <div className="text-xl font-extrabold text-slate-900">{cardinal}</div>
-                <div className="text-[11px] text-slate-500 font-medium mt-0.5">Direction</div>
-              </div>
-
-              <div className="bg-slate-50 rounded-2xl p-3 border border-slate-100">
-                <div className="text-xl font-extrabold text-slate-900">~{walkTimeMinutes} min</div>
-                <div className="text-[11px] text-slate-500 font-medium mt-0.5">Walk time</div>
-              </div>
-            </div>
 
             {/* AR Camera Guidance Launcher Button */}
             <button
