@@ -4,11 +4,13 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import { dataStore } from '@/lib/data/store';
+import { isAdminUser } from './admin';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  isAdmin: boolean;
   isConfigured: boolean;
   isAuthModalOpen: boolean;
   openAuthModal: () => void;
@@ -22,6 +24,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   session: null,
   loading: true,
+  isAdmin: false,
   isConfigured: false,
   isAuthModalOpen: false,
   openAuthModal: () => {},
@@ -139,6 +142,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         session,
         loading,
+        isAdmin: isAdminUser(user),
         isConfigured: isSupabaseConfigured,
         isAuthModalOpen,
         openAuthModal,
