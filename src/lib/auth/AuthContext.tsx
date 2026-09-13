@@ -92,7 +92,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { error: 'Supabase is not configured' };
     }
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -102,6 +102,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         },
       });
       if (error) return { error: error.message };
+
+      if (data?.session) {
+        setSession(data.session);
+        setUser(data.session.user);
+        dataStore.syncUserSavedGraves(data.session.user.id);
+      } else {
+        // If autoconfirm enabled or session pending, attempt immediate sign in
+        const { data: signInData } = await supabase.auth
+          .signInWithPassword({ email, password })
+          .catch(() => ({ data: null }));
+        if (signInData?.session) {
+          setSession(signInData.session);
+          setUser(signInData.session.user);
+          dataStore.syncUserSavedGraves(signInData.session.user.id);
+        }
+      }
+
       return { error: null };
     } catch (err: any) {
       return { error: err.message || 'Failed to sign up' };
