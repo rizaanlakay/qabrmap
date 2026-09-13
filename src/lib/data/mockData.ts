@@ -8,16 +8,35 @@ export const MOCK_CEMETERIES: Cemetery[] = [
     id: 'cem_athlone',
     name: 'Athlone Muslim Cemetery',
     slug: 'athlone-muslim-cemetery',
-    description: 'Historical Muslim cemetery in Athlone, Cape Town, established in the early 20th century.',
+    description: 'Historical Muslim cemetery in Athlone / Rylands, Cape Town, established in the early 20th century.',
     country: 'South Africa',
     province: 'Western Cape',
     city: 'Cape Town',
     denomination: 'Muslim (Sunni)',
     contactPhone: '+27 21 697 1234',
     contactEmail: 'info@athlonecemetery.org.za',
-    originLat: -33.967521,
-    originLng: 18.503277,
+    originLat: -33.96813,
+    originLng: 18.52682,
     originAlt: 24.0,
+    boundary: {
+      type: 'Polygon',
+      coordinates: [
+        [
+          [18.5261299, -33.9669731],
+          [18.5267897, -33.9670666],
+          [18.52731, -33.9670132],
+          [18.5281791, -33.9672312],
+          [18.5282113, -33.967289],
+          [18.5281362, -33.9675159],
+          [18.5281737, -33.9675337],
+          [18.5281415, -33.9678896],
+          [18.5276548, -33.9692871],
+          [18.5260166, -33.9688882],
+          [18.5254325, -33.968746],
+          [18.5261299, -33.9669731],
+        ],
+      ],
+    },
     totalGravesEstimate: 14300,
     mappedGravesCount: 12450,
     coveragePercentage: 87.0,
@@ -28,16 +47,31 @@ export const MOCK_CEMETERIES: Cemetery[] = [
     id: 'cem_mowbray',
     name: 'Mowbray Muslim Cemetery',
     slug: 'mowbray-muslim-cemetery',
-    description: 'Historic Cape Town Muslim cemetery on Johnstone Road, Mowbray, serving the community for over a century.',
+    description: 'Historic Cape Town Muslim cemetery on Browning Road, Observatory / Mowbray, serving the community since 1886.',
     country: 'South Africa',
     province: 'Western Cape',
     city: 'Cape Town',
     denomination: 'Muslim (Sunni)',
     contactPhone: '+27 21 685 4321',
     contactEmail: 'info@mowbraycemetery.org.za',
-    originLat: -33.9485,
-    originLng: 18.4820,
+    originLat: -33.93908,
+    originLng: 18.46112,
     originAlt: 18.0,
+    boundary: {
+      type: 'Polygon',
+      coordinates: [
+        [
+          [18.4587353, -33.9402044],
+          [18.4618266, -33.9375332],
+          [18.4634977, -33.9390082],
+          [18.4634922, -33.9390557],
+          [18.4630248, -33.9393512],
+          [18.4620809, -33.9399777],
+          [18.459181, -33.9406329],
+          [18.4587353, -33.9402044],
+        ],
+      ],
+    },
     totalGravesEstimate: 11200,
     mappedGravesCount: 9850,
     coveragePercentage: 88.0,
@@ -55,6 +89,18 @@ export const MOCK_CEMETERIES: Cemetery[] = [
     denomination: 'Muslim',
     originLat: -33.9721,
     originLng: 18.528,
+    boundary: {
+      type: 'Polygon',
+      coordinates: [
+        [
+          [18.5265, -33.9715],
+          [18.5295, -33.9715],
+          [18.5295, -33.9730],
+          [18.5265, -33.9730],
+          [18.5265, -33.9715],
+        ],
+      ],
+    },
     totalGravesEstimate: 9600,
     mappedGravesCount: 4320,
     coveragePercentage: 45.0,
@@ -65,13 +111,26 @@ export const MOCK_CEMETERIES: Cemetery[] = [
     id: 'cem_wynberg',
     name: 'Wynberg Muslim Cemetery',
     slug: 'wynberg-muslim-cemetery',
-    description: 'Historic Cape Malay burial ground located off Broad Road, Wynberg.',
+    description: 'Historic Cape Malay burial ground located off Brodie Road, Wynberg.',
     country: 'South Africa',
     province: 'Western Cape',
     city: 'Cape Town',
     denomination: 'Muslim',
-    originLat: -34.0084,
-    originLng: 18.471,
+    originLat: -34.00264,
+    originLng: 18.46765,
+    boundary: {
+      type: 'Polygon',
+      coordinates: [
+        [
+          [18.4672311, -34.0028409],
+          [18.4680775, -34.002872],
+          [18.4680655, -34.0024185],
+          [18.4677544, -34.0024623],
+          [18.4676581, -34.0024117],
+          [18.4672311, -34.0028409],
+        ],
+      ],
+    },
     totalGravesEstimate: 12380,
     mappedGravesCount: 8912,
     coveragePercentage: 72.0,
@@ -89,6 +148,18 @@ export const MOCK_CEMETERIES: Cemetery[] = [
     denomination: 'Muslim',
     originLat: -33.9312,
     originLng: 18.541,
+    boundary: {
+      type: 'Polygon',
+      coordinates: [
+        [
+          [18.5385, -33.9300],
+          [18.5435, -33.9300],
+          [18.5435, -33.9325],
+          [18.5385, -33.9325],
+          [18.5385, -33.9300],
+        ],
+      ],
+    },
     totalGravesEstimate: 10050,
     mappedGravesCount: 3120,
     coveragePercentage: 31.0,
@@ -121,8 +192,8 @@ function generateAthloneGraves(): Grave[] {
       graveNumber: '8660',
       rowNumber: '14',
       plotNumber: 'B-8660',
-      latitude: -33.967521,
-      longitude: 18.503277,
+      latitude: -33.96810,
+      longitude: 18.52680,
       estimatedAltitude: 24.5,
       localX: 0.0,
       localY: 0.0,
@@ -246,8 +317,8 @@ function generateAthloneGraves(): Grave[] {
       graveNumber: '1402',
       rowNumber: '4',
       plotNumber: 'A-1402',
-      latitude: -33.94852,
-      longitude: 18.48205,
+      latitude: -33.93925,
+      longitude: 18.46115,
       positionAccuracyMeters: 2.1,
       positionConfidence: 'HIGH',
       status: 'MAPPED',
@@ -260,9 +331,9 @@ function generateAthloneGraves(): Grave[] {
   ];
 
   // Generate a realistic grid of surrounding graves in Section B around Grave 8660
-  // Center is -33.967521, 18.503277
-  const baseLat = -33.967521;
-  const baseLng = 18.503277;
+  // Center is Athlone Muslim Cemetery -33.96813, 18.52682
+  const baseLat = -33.96813;
+  const baseLng = 18.52682;
   const sampleNames = [
     { f: 'Farouk', s: 'Adams', b: '1950', d: '2018' },
     { f: 'Zainab', s: 'Hendricks', b: '1942', d: '2015' },
@@ -325,9 +396,9 @@ function generateAthloneGraves(): Grave[] {
     }
   }
 
-  // Generate realistic grave rows for Mowbray Muslim Cemetery
-  const mowbrayLat = -33.9485;
-  const mowbrayLng = 18.4820;
+  // Generate realistic grave rows strictly inside Mowbray Muslim Cemetery boundary
+  const mowbrayLat = -33.93930;
+  const mowbrayLng = 18.46130;
   const mowbrayNames = [
     { f: 'Ismail', s: 'Hendricks', b: '1934', d: '2010' },
     { f: 'Amina', s: 'Gamieldien', b: '1940', d: '2015' },
@@ -341,8 +412,8 @@ function generateAthloneGraves(): Grave[] {
   for (let r = -3; r <= 3; r++) {
     for (let c = -4; c <= 4; c++) {
       mowbrayNum++;
-      const lat = mowbrayLat + r * 0.000022;
-      const lng = mowbrayLng + c * 0.000016;
+      const lat = mowbrayLat + r * 0.00016;
+      const lng = mowbrayLng + c * 0.00020;
       const isUnmapped = Math.random() < 0.12;
       const isLowConfidence = !isUnmapped && Math.random() < 0.15;
       const nameObj = mowbrayNames[mowbrayNum % mowbrayNames.length];

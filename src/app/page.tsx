@@ -138,6 +138,8 @@ function QabrMapAppContent() {
   // Switch Cemetery
   const handleSelectCemetery = (cemetery: Cemetery) => {
     setSelectedCemetery(cemetery);
+    setSelectedGrave(null);
+    setGraves([]);
     dataStore.getGraves(cemetery.id).then((gList) => {
       setGraves(gList);
       if (gList.length > 0) setSelectedGrave(gList[0]);

@@ -107,40 +107,46 @@ export const CemeteryMapScreen: React.FC<CemeteryMapScreenProps> = ({
   const userMarkerRef = useRef<any>(null);
   const baseZoomRef = useRef<number>(18.5);
 
-  // Compute bounding box across all cemetery graves
+  // Compute bounding box across the recorded cemetery boundary and all graves
   const bounds = useMemo(() => {
-    if (!graves || graves.length === 0) {
-      return {
-        minLat: cemetery.originLat - 0.0004,
-        maxLat: cemetery.originLat + 0.0004,
-        minLng: cemetery.originLng - 0.0004,
-        maxLng: cemetery.originLng + 0.0004,
-        centerLat: cemetery.originLat,
-        centerLng: cemetery.originLng,
-      };
-    }
-
     let minLat = Infinity, maxLat = -Infinity;
     let minLng = Infinity, maxLng = -Infinity;
 
-    for (const g of graves) {
-      if (typeof g.latitude === 'number' && !isNaN(g.latitude)) {
-        if (g.latitude < minLat) minLat = g.latitude;
-        if (g.latitude > maxLat) maxLat = g.latitude;
+    // Prioritize the recorded cemetery boundary polygon
+    if (cemetery.boundary?.coordinates?.[0]?.length) {
+      for (const [lng, lat] of cemetery.boundary.coordinates[0]) {
+        if (typeof lat === 'number' && !isNaN(lat)) {
+          if (lat < minLat) minLat = lat;
+          if (lat > maxLat) maxLat = lat;
+        }
+        if (typeof lng === 'number' && !isNaN(lng)) {
+          if (lng < minLng) minLng = lng;
+          if (lng > maxLng) maxLng = lng;
+        }
       }
-      if (typeof g.longitude === 'number' && !isNaN(g.longitude)) {
-        if (g.longitude < minLng) minLng = g.longitude;
-        if (g.longitude > maxLng) maxLng = g.longitude;
+    } else if (graves && graves.length > 0) {
+      // Fallback: only include graves that belong to THIS cemetery
+      for (const g of graves) {
+        if (g.cemeteryId && g.cemeteryId !== cemetery.id) continue;
+        if (typeof g.latitude === 'number' && !isNaN(g.latitude)) {
+          if (g.latitude < minLat) minLat = g.latitude;
+          if (g.latitude > maxLat) maxLat = g.latitude;
+        }
+        if (typeof g.longitude === 'number' && !isNaN(g.longitude)) {
+          if (g.longitude < minLng) minLng = g.longitude;
+          if (g.longitude > maxLng) maxLng = g.longitude;
+        }
       }
     }
 
+    // Fallback if no valid points found
     if (!isFinite(minLat) || minLat >= maxLat) {
-      minLat = cemetery.originLat - 0.0002;
-      maxLat = cemetery.originLat + 0.0002;
+      minLat = cemetery.originLat - 0.0008;
+      maxLat = cemetery.originLat + 0.0008;
     }
     if (!isFinite(minLng) || minLng >= maxLng) {
-      minLng = cemetery.originLng - 0.0002;
-      maxLng = cemetery.originLng + 0.0002;
+      minLng = cemetery.originLng - 0.0008;
+      maxLng = cemetery.originLng + 0.0008;
     }
 
     return {
@@ -151,10 +157,10 @@ export const CemeteryMapScreen: React.FC<CemeteryMapScreenProps> = ({
       centerLat: (minLat + maxLat) / 2,
       centerLng: (minLng + maxLng) / 2,
     };
-  }, [graves, cemetery.originLat, cemetery.originLng]);
+  }, [cemetery.boundary, cemetery.originLat, cemetery.originLng, graves]);
 
-  // Function to re-fit map camera to the graves bounds
-  const fitBoundsToGraves = useCallback(
+  // Function to re-fit map camera so the entire cemetery boundary is in view
+  const fitBoundsToCemetery = useCallback(
     (map: any, animate: boolean = true) => {
       if (!map) return;
       map.fitBounds(
@@ -163,13 +169,83 @@ export const CemeteryMapScreen: React.FC<CemeteryMapScreenProps> = ({
           [bounds.maxLng, bounds.maxLat],
         ],
         {
-          padding: { top: 80, bottom: 80, left: 35, right: 65 },
-          maxZoom: 19.8,
+          padding: { top: 75, bottom: 85, left: 30, right: 30 },
+          maxZoom: 19.5,
           duration: animate ? 800 : 0,
         }
       );
     },
     [bounds]
+  );
+
+  // Setup/Render the highlighted cemetery boundary polygon layers
+  const setupBoundaryLayers = useCallback(
+    (map: any) => {
+      if (!map || !cemetery.boundary) return;
+
+      const sourceId = 'cemetery-boundary-src';
+      const fillLayerId = 'cemetery-boundary-fill';
+      const glowLayerId = 'cemetery-boundary-glow';
+      const lineLayerId = 'cemetery-boundary-line';
+
+      try {
+        if (map.getLayer(lineLayerId)) map.removeLayer(lineLayerId);
+        if (map.getLayer(glowLayerId)) map.removeLayer(glowLayerId);
+        if (map.getLayer(fillLayerId)) map.removeLayer(fillLayerId);
+        if (map.getSource(sourceId)) map.removeSource(sourceId);
+
+        map.addSource(sourceId, {
+          type: 'geojson',
+          data: {
+            type: 'Feature',
+            geometry: cemetery.boundary,
+            properties: {
+              name: cemetery.name,
+            },
+          },
+        });
+
+        // 1. Semi-transparent emerald polygon fill
+        map.addLayer({
+          id: fillLayerId,
+          type: 'fill',
+          source: sourceId,
+          paint: {
+            'fill-color': '#10B981',
+            'fill-opacity': 0.16,
+          },
+        });
+
+        // 2. Soft glowing outer boundary stroke
+        map.addLayer({
+          id: glowLayerId,
+          type: 'line',
+          source: sourceId,
+          paint: {
+            'line-color': '#34D399',
+            'line-width': 6,
+            'line-opacity': 0.35,
+            'line-blur': 2,
+          },
+        });
+
+        // 3. Crisp emerald perimeter line
+        map.addLayer({
+          id: lineLayerId,
+          type: 'line',
+          source: sourceId,
+          paint: {
+            'line-color': '#059669',
+            'line-width': 2.5,
+            'line-opacity': 0.95,
+            'line-dasharray': [4, 2],
+          },
+        });
+      } catch (err) {
+        console.warn('Error setting up cemetery boundary layers:', err);
+      }
+    },
+    [cemetery.boundary, cemetery.name]
   );
 
   // Initialize MapLibre GL with Google Maps tiles
@@ -190,8 +266,8 @@ export const CemeteryMapScreen: React.FC<CemeteryMapScreenProps> = ({
           container: mapContainerRef.current,
           style: mapType === 'satellite' ? GOOGLE_SATELLITE_STYLE : GOOGLE_ROADMAP_STYLE,
           center: [bounds.centerLng, bounds.centerLat],
-          zoom: 18.5,
-          minZoom: 14,
+          zoom: 18.0,
+          minZoom: 13,
           maxZoom: 21,
           attributionControl: false,
         });
@@ -201,15 +277,21 @@ export const CemeteryMapScreen: React.FC<CemeteryMapScreenProps> = ({
         map.on('load', () => {
           if (isCancelled) return;
           setIsMapReady(true);
-          fitBoundsToGraves(map, false);
-          baseZoomRef.current = map.getZoom();
+          setupBoundaryLayers(map);
+          fitBoundsToCemetery(map, false);
+          setTimeout(() => {
+            if (mapInstanceRef.current) {
+              baseZoomRef.current = mapInstanceRef.current.getZoom();
+              setZoomDisplay(100);
+            }
+          }, 80);
         });
 
         // Update zoom percentage and callout projection on movement
         const handleMapTransform = () => {
           if (!map) return;
           const currentZoom = map.getZoom();
-          const base = baseZoomRef.current || 18.5;
+          const base = baseZoomRef.current || 18.0;
           const pct = Math.max(25, Math.min(600, Math.round(Math.pow(2, currentZoom - base) * 100)));
           setZoomDisplay(pct);
 
@@ -246,12 +328,22 @@ export const CemeteryMapScreen: React.FC<CemeteryMapScreenProps> = ({
     };
   }, [cemetery.id]); // Re-init on cemetery switch
 
-  // Update Map style when toggled
+  // Update Map style when toggled and re-render boundary highlight
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map || !isMapReady) return;
     map.setStyle(mapType === 'satellite' ? GOOGLE_SATELLITE_STYLE : GOOGLE_ROADMAP_STYLE);
-  }, [mapType, isMapReady]);
+    map.once('style.load', () => {
+      setupBoundaryLayers(map);
+    });
+  }, [mapType, isMapReady, setupBoundaryLayers]);
+
+  // Re-apply boundary layers whenever cemetery.boundary updates
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !isMapReady) return;
+    setupBoundaryLayers(map);
+  }, [cemetery.boundary, isMapReady, setupBoundaryLayers]);
 
   // Sync Grave Markers with Google Map
   useEffect(() => {
@@ -266,6 +358,7 @@ export const CemeteryMapScreen: React.FC<CemeteryMapScreenProps> = ({
       markersMapRef.current.clear();
 
       graves.forEach((grave) => {
+        if (grave.cemeteryId && grave.cemeteryId !== cemetery.id) return;
         const isSelected = selectedGrave?.id === grave.id;
 
         // Create marker container element
@@ -330,7 +423,13 @@ export const CemeteryMapScreen: React.FC<CemeteryMapScreenProps> = ({
 
   const handleRecenter = () => {
     if (mapInstanceRef.current) {
-      fitBoundsToGraves(mapInstanceRef.current, true);
+      fitBoundsToCemetery(mapInstanceRef.current, true);
+      setTimeout(() => {
+        if (mapInstanceRef.current) {
+          baseZoomRef.current = mapInstanceRef.current.getZoom();
+          setZoomDisplay(100);
+        }
+      }, 820);
     }
   };
 
@@ -385,6 +484,14 @@ export const CemeteryMapScreen: React.FC<CemeteryMapScreenProps> = ({
       <div className="flex-1 relative w-full h-full overflow-hidden">
         {/* MapLibre Canvas Container */}
         <div ref={mapContainerRef} className="absolute inset-0 w-full h-full" />
+
+        {/* Cemetery Boundary Highlight Badge */}
+        {cemetery.boundary && (
+          <div className="absolute top-16 left-3.5 z-20 pointer-events-none flex items-center space-x-1.5 bg-black/65 backdrop-blur-md px-2.5 py-1 rounded-full border border-emerald-500/40 text-emerald-300 shadow-md">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-[10px] font-semibold tracking-wide">Boundary Highlighted</span>
+          </div>
+        )}
 
         {/* User Location Pulse Marker (Blue GPS) */}
         {userScreenPos && (

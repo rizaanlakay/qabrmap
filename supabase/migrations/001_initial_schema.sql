@@ -266,12 +266,12 @@ CREATE POLICY "Users can insert corrections"
 -- ============================================================
 -- 10. SEED DATA – Cemeteries
 -- ============================================================
-INSERT INTO cemeteries (id, name, slug, description, country, province, city, denomination, contact_phone, contact_email, origin_lat, origin_lng, origin_alt, total_graves_estimate, mapped_graves_count, coverage_percentage, thumbnail_url) VALUES
-  ('cem_athlone', 'Athlone Muslim Cemetery', 'athlone-muslim-cemetery', 'Historical Muslim cemetery in Athlone, Cape Town, established in the early 20th century.', 'South Africa', 'Western Cape', 'Cape Town', 'Muslim (Sunni)', '+27 21 697 1234', 'info@athlonecemetery.org.za', -33.967521, 18.503277, 24.0, 14300, 12450, 87.0, '/sample-gravestone.svg'),
-  ('cem_mowbray', 'Mowbray Muslim Cemetery', 'mowbray-muslim-cemetery', 'Historic Cape Town Muslim cemetery on Johnstone Road, Mowbray, serving the community for over a century.', 'South Africa', 'Western Cape', 'Cape Town', 'Muslim (Sunni)', '+27 21 685 4321', 'info@mowbraycemetery.org.za', -33.9485, 18.482, 18.0, 11200, 9850, 88.0, '/sample-gravestone.svg'),
-  ('cem_mountview', 'Mountview Cemetery', 'mountview-cemetery', 'Community Muslim cemetery situated in Mountview / Hanover Park.', 'South Africa', 'Western Cape', 'Cape Town', 'Muslim', NULL, NULL, -33.9721, 18.528, NULL, 9600, 4320, 45.0, '/sample-gravestone.svg'),
-  ('cem_wynberg', 'Wynberg Muslim Cemetery', 'wynberg-muslim-cemetery', 'Historic Cape Malay burial ground located off Broad Road, Wynberg.', 'South Africa', 'Western Cape', 'Cape Town', 'Muslim', NULL, NULL, -34.0084, 18.471, NULL, 12380, 8912, 72.0, '/sample-gravestone.svg'),
-  ('cem_epping', 'Epping Muslim Cemetery', 'epping-muslim-cemetery', 'Regional cemetery serving greater Cape Town communities.', 'South Africa', 'Western Cape', 'Cape Town', 'Muslim', NULL, NULL, -33.9312, 18.541, NULL, 10050, 3120, 31.0, '/sample-gravestone.svg')
+INSERT INTO cemeteries (id, name, slug, description, country, province, city, denomination, contact_phone, contact_email, origin_lat, origin_lng, origin_alt, boundary, total_graves_estimate, mapped_graves_count, coverage_percentage, thumbnail_url) VALUES
+  ('cem_athlone', 'Athlone Muslim Cemetery', 'athlone-muslim-cemetery', 'Historical Muslim cemetery in Athlone / Rylands, Cape Town, established in the early 20th century.', 'South Africa', 'Western Cape', 'Cape Town', 'Muslim (Sunni)', '+27 21 697 1234', 'info@athlonecemetery.org.za', -33.96813, 18.52682, 24.0, '{"type":"Polygon","coordinates":[[[18.5261299,-33.9669731],[18.5267897,-33.9670666],[18.52731,-33.9670132],[18.5281791,-33.9672312],[18.5282113,-33.967289],[18.5281362,-33.9675159],[18.5281737,-33.9675337],[18.5281415,-33.9678896],[18.5276548,-33.9692871],[18.5260166,-33.9688882],[18.5254325,-33.968746],[18.5261299,-33.9669731]]]}'::jsonb, 14300, 12450, 87.0, '/sample-gravestone.svg'),
+  ('cem_mowbray', 'Mowbray Muslim Cemetery', 'mowbray-muslim-cemetery', 'Historic Cape Town Muslim cemetery on Browning Road, Observatory / Mowbray, serving the community since 1886.', 'South Africa', 'Western Cape', 'Cape Town', 'Muslim (Sunni)', '+27 21 685 4321', 'info@mowbraycemetery.org.za', -33.93908, 18.46112, 18.0, '{"type":"Polygon","coordinates":[[[18.4587353,-33.9402044],[18.4618266,-33.9375332],[18.4634977,-33.9390082],[18.4634922,-33.9390557],[18.4630248,-33.9393512],[18.4620809,-33.9399777],[18.459181,-33.9406329],[18.4587353,-33.9402044]]]}'::jsonb, 11200, 9850, 88.0, '/sample-gravestone.svg'),
+  ('cem_mountview', 'Mountview Cemetery', 'mountview-cemetery', 'Community Muslim cemetery situated in Mountview / Hanover Park.', 'South Africa', 'Western Cape', 'Cape Town', 'Muslim', NULL, NULL, -33.9721, 18.528, NULL, NULL, 9600, 4320, 45.0, '/sample-gravestone.svg'),
+  ('cem_wynberg', 'Wynberg Muslim Cemetery', 'wynberg-muslim-cemetery', 'Historic Cape Malay burial ground located off Broad Road, Wynberg.', 'South Africa', 'Western Cape', 'Cape Town', 'Muslim', NULL, NULL, -34.00264, 18.46765, NULL, '{"type":"Polygon","coordinates":[[[18.4672311,-34.0028409],[18.4680775,-34.002872],[18.4680655,-34.0024185],[18.4677544,-34.0024623],[18.4676581,-34.0024117],[18.4672311,-34.0028409]]]}'::jsonb, 12380, 8912, 72.0, '/sample-gravestone.svg'),
+  ('cem_epping', 'Epping Muslim Cemetery', 'epping-muslim-cemetery', 'Regional cemetery serving greater Cape Town communities.', 'South Africa', 'Western Cape', 'Cape Town', 'Muslim', NULL, NULL, -33.9312, 18.541, NULL, NULL, 10050, 3120, 31.0, '/sample-gravestone.svg')
 ON CONFLICT (id) DO NOTHING;
 
 
@@ -287,11 +287,11 @@ INSERT INTO persons (id, first_name, middle_names, surname, full_name, gender, b
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO graves (id, cemetery_id, section_id, person_id, grave_number, plot_number, row_number, latitude, longitude, estimated_altitude, local_x, local_y, position_accuracy_meters, position_confidence, orientation_degrees, status, primary_photo_url, photo_count, last_verified_at) VALUES
-  ('grave_8660', 'cem_athlone', NULL, 'person_8660', '8660', 'B-8660', '14', -33.967521, 18.503277, 24.5, 0.0, 0.0, 2.8, 'HIGH', 28.5, 'MAPPED', '/sample-gravestone.svg', 3, '12 September 2026'),
-  ('grave_7695', 'cem_athlone', NULL, 'person_7695', '7695', NULL, '12', -33.96748, 18.50323, NULL, NULL, NULL, 3.2, 'HIGH', NULL, 'MAPPED', '/sample-gravestone.svg', 2, '10 August 2026'),
-  ('grave_1203', 'cem_wynberg', NULL, 'person_1203', '1203', NULL, '4', -34.00845, 18.47108, NULL, NULL, NULL, 4.1, 'MEDIUM', NULL, 'MAPPED', '/sample-gravestone.svg', 1, '15 June 2026'),
-  ('grave_4481', 'cem_athlone', NULL, 'person_4481', '4481', NULL, '8', -33.96759, 18.50335, NULL, NULL, NULL, 3.0, 'HIGH', NULL, 'MAPPED', '/sample-gravestone.svg', 2, '02 September 2026'),
-  ('grave_mowbray_grandmother', 'cem_mowbray', NULL, 'person_mowbray_gm', '1402', 'A-1402', '4', -33.94852, 18.48205, NULL, NULL, NULL, 2.1, 'HIGH', NULL, 'MAPPED', '/sample-gravestone.svg', 2, '08 September 2026')
+  ('grave_8660', 'cem_athlone', NULL, 'person_8660', '8660', 'B-8660', '14', -33.96810, 18.52680, 24.5, 0.0, 0.0, 2.8, 'HIGH', 28.5, 'MAPPED', '/sample-gravestone.svg', 3, '12 September 2026'),
+  ('grave_7695', 'cem_athlone', NULL, 'person_7695', '7695', NULL, '12', -33.96805, 18.52675, NULL, NULL, NULL, 3.2, 'HIGH', NULL, 'MAPPED', '/sample-gravestone.svg', 2, '10 August 2026'),
+  ('grave_1203', 'cem_wynberg', NULL, 'person_1203', '1203', NULL, '4', -34.00260, 18.46760, NULL, NULL, NULL, 4.1, 'MEDIUM', NULL, 'MAPPED', '/sample-gravestone.svg', 1, '15 June 2026'),
+  ('grave_4481', 'cem_athlone', NULL, 'person_4481', '4481', NULL, '8', -33.96818, 18.52688, NULL, NULL, NULL, 3.0, 'HIGH', NULL, 'MAPPED', '/sample-gravestone.svg', 2, '02 September 2026'),
+  ('grave_mowbray_grandmother', 'cem_mowbray', NULL, 'person_mowbray_gm', '1402', 'A-1402', '4', -33.93925, 18.46115, NULL, NULL, NULL, 2.1, 'HIGH', NULL, 'MAPPED', '/sample-gravestone.svg', 2, '08 September 2026')
 ON CONFLICT (id) DO NOTHING;
 
 
