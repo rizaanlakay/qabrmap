@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Cemetery, Grave, DeviceTelemetry, AIStructuredExtraction, AIProcessingState, SurveySession } from '@/types';
 import { dataStore } from '@/lib/data/store';
+import { getGraveIdFromUrl, withGraveParam } from '@/lib/share/graveLink';
 import { syncManager } from '@/lib/offline/sync';
 
 // Components
@@ -100,9 +101,32 @@ function QabrMapAppContent() {
     fieldConfidences: { graveNumber: 0.99, fullName: 0.98, dates: 0.96 },
   });
 
+  // True while a shared ?grave= link is being resolved, so the URL sync below doesn't strip it early
+  const deepLinkPending = useRef(false);
+
   // Load initial data
   useEffect(() => {
     setMounted(true);
+
+    // Open a shared grave link directly on its details view
+    const linkedGraveId = getGraveIdFromUrl(window.location.href);
+    if (linkedGraveId) {
+      deepLinkPending.current = true;
+      dataStore
+        .getGraveById(linkedGraveId)
+        .catch(() => undefined)
+        .then((grave) => {
+          deepLinkPending.current = false;
+          if (grave) {
+            setSelectedGrave(grave);
+            setPreviousScreen('home');
+            setCurrentScreen('grave-details');
+          } else {
+            window.history.replaceState(window.history.state, '', withGraveParam(window.location.href, null));
+          }
+        });
+    }
+
     dataStore.getCemeteries().then((cems) => {
       setCemeteries(cems);
       if (cems.length > 0) {
@@ -113,7 +137,8 @@ function QabrMapAppContent() {
     dataStore.getGraves('cem_athlone').then((gList) => {
       setGraves(gList);
       const defaultGrave = gList.find((g) => g.graveNumber === '8660') || gList[0];
-      if (defaultGrave) setSelectedGrave(defaultGrave);
+      // Don't override a grave opened from a shared link
+      if (defaultGrave) setSelectedGrave((prev) => prev ?? defaultGrave);
     });
 
     // Subscribe to SyncManager
@@ -124,6 +149,17 @@ function QabrMapAppContent() {
 
     return () => unsub();
   }, []);
+
+  // Keep the address bar in sync with the open grave so it can be copied or refreshed
+  useEffect(() => {
+    if (deepLinkPending.current) return;
+    const graveId = currentScreen === 'grave-details' && selectedGrave ? selectedGrave.id : null;
+    const next = withGraveParam(window.location.href, graveId);
+    const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    if (next !== current) {
+      window.history.replaceState(window.history.state, '', next);
+    }
+  }, [currentScreen, selectedGrave]);
 
   // Handle Bottom Nav clicks
   const handleSelectNavTab = (tab: NavTab) => {
@@ -304,6 +340,7 @@ function QabrMapAppContent() {
             onBack={() => {
               if (previousScreen === 'my-cemeteries') setCurrentScreen('my-cemeteries');
               else if (previousScreen === 'cemetery-map') setCurrentScreen('cemetery-map');
+              else if (previousScreen === 'home') setCurrentScreen('home');
               else setCurrentScreen('search');
             }}
           />

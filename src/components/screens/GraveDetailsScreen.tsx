@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Grave, GraveRelationship, RelationshipCategory } from '@/types';
 import { dataStore } from '@/lib/data/store';
+import { buildGraveShareUrl } from '@/lib/share/graveLink';
 
 interface GraveDetailsScreenProps {
   grave: Grave;
@@ -66,6 +67,35 @@ export const GraveDetailsScreen: React.FC<GraveDetailsScreenProps> = ({
   const birthFormatted = formatDate(grave.person?.birthDate);
   const deathFormatted = formatDate(grave.person?.deathDate);
 
+  const [shareNotice, setShareNotice] = useState<string | null>(null);
+
+  const handleShare = async () => {
+    const url = buildGraveShareUrl(window.location.origin, grave.id);
+    const name = grave.person?.fullName || `Grave ${grave.graveNumber}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${name} - QabrMap`,
+          text: `Grave ${grave.graveNumber} at ${grave.cemeteryName || 'Athlone Muslim Cemetery'}`,
+          url,
+        });
+        return;
+      } catch (err) {
+        // User dismissed the share sheet; anything else falls through to copying the link
+        if ((err as DOMException)?.name === 'AbortError') return;
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(url);
+      setShareNotice('Link copied');
+      setTimeout(() => setShareNotice(null), 2000);
+    } catch {
+      window.prompt('Copy this link to share the grave:', url);
+    }
+  };
+
   const handleReportSubmit = () => {
     if (!reportText.trim()) return;
     dataStore.reportCorrection({
@@ -111,15 +141,7 @@ export const GraveDetailsScreen: React.FC<GraveDetailsScreenProps> = ({
           </button>
 
           <button
-            onClick={() => {
-              if (navigator.share) {
-                navigator.share({
-                  title: `${grave.person?.fullName} - QabrMap`,
-                  text: `Grave ${grave.graveNumber} at ${grave.cemeteryName}`,
-                  url: window.location.href,
-                });
-              }
-            }}
+            onClick={handleShare}
             className="w-9 h-9 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-700 transition-colors"
             aria-label="Share"
           >
@@ -134,6 +156,13 @@ export const GraveDetailsScreen: React.FC<GraveDetailsScreenProps> = ({
             <MoreVertical className="w-5 h-5" />
           </button>
         </div>
+
+        {shareNotice && (
+          <div className="absolute top-full right-4 mt-2 flex items-center text-[11px] font-semibold text-white bg-slate-900/90 px-3 py-1.5 rounded-full shadow-lg">
+            <CheckCircle2 className="w-3.5 h-3.5 mr-1 text-emerald-400" />
+            {shareNotice}
+          </div>
+        )}
       </div>
 
       {/* Gravestone Photograph Hero */}
