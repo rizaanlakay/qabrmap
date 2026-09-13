@@ -721,20 +721,9 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
             <ArrowLeft className="w-5 h-5 stroke-[2.2]" />
           </button>
           <div>
-            <div className="flex items-center space-x-2">
-              <h1 className="text-sm font-bold tracking-tight">
-                {activeMode === 'driving' ? 'Drive to Cemetery' : 'Navigate to Grave'}
-              </h1>
-              {wakeLock.isActive && (
-                <span
-                  className="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-[9px] font-semibold text-emerald-300"
-                  title="Screen stays awake while navigating"
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  <span>Awake</span>
-                </span>
-              )}
-            </div>
+            <h1 className="text-sm font-bold tracking-tight">
+              {activeMode === 'driving' ? 'Drive to Cemetery' : 'Navigate to Grave'}
+            </h1>
             <p className="text-[11px] text-emerald-300 font-medium truncate max-w-[190px]">
               {activeMode === 'driving'
                 ? `🚗 ${entranceName}`
@@ -790,57 +779,51 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
       {/* Garmin / Google Maps Turn Guidance Banner (Only in Driving Mode) */}
       {activeMode === 'driving' && (
         <div className="absolute top-14 inset-x-3 z-20 pointer-events-auto transition-all duration-300">
-          <div className="bg-emerald-800/95 backdrop-blur-md text-white rounded-2xl p-3.5 shadow-2xl border border-emerald-500/40 flex items-center justify-between">
-            <div className="flex items-center space-x-3.5">
+          <div className="relative bg-emerald-800/95 backdrop-blur-md text-white rounded-2xl p-3.5 shadow-2xl border border-emerald-500/40 flex items-center justify-between">
+            {/* Top-Right Maneuver Step Badge (e.g. 2/13) */}
+            {drivingSteps.length > 1 && (
+              <div className="absolute top-2.5 right-3 flex items-center bg-black/40 backdrop-blur-xs rounded-lg p-0.5 border border-emerald-400/25 z-10">
+                <button
+                  onClick={() => setCurrentStepIndex((prev) => Math.max(0, prev - 1))}
+                  disabled={currentStepIndex === 0}
+                  className="w-5 h-5 flex items-center justify-center text-white/80 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed text-xs font-bold active:scale-95 transition-transform"
+                  title="Previous maneuver"
+                >
+                  ‹
+                </button>
+                <span className="text-[10px] font-bold text-emerald-200 px-1.5 select-none tracking-wider">
+                  {currentStepIndex + 1}/{drivingSteps.length}
+                </span>
+                <button
+                  onClick={() => setCurrentStepIndex((prev) => Math.min(drivingSteps.length - 1, prev + 1))}
+                  disabled={currentStepIndex >= drivingSteps.length - 1}
+                  className="w-5 h-5 flex items-center justify-center text-white/80 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed text-xs font-bold active:scale-95 transition-transform"
+                  title="Next maneuver"
+                >
+                  ›
+                </button>
+              </div>
+            )}
+
+            <div className="flex items-center space-x-3.5 pr-16 w-full">
               <div className="w-11 h-11 rounded-xl bg-emerald-900/90 border border-emerald-400/50 flex items-center justify-center shrink-0 shadow-md">
                 {renderManeuverIcon(activeStep)}
               </div>
-              <div>
-                <div className="flex items-baseline space-x-2">
-                  <span className="text-lg font-black tracking-tight text-white">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-baseline space-x-2 flex-wrap">
+                  <span className="text-xl font-black tracking-tight text-white whitespace-nowrap shrink-0">
                     {activeStep ? `${activeStep.distanceMeters} m` : 'Drive'}
                   </span>
-                  <span className="text-xs font-semibold text-emerald-200 truncate max-w-[220px]">
+                  <span className="text-xs font-semibold text-emerald-200 truncate max-w-[260px]">
                     {activeStep?.instruction || `Proceed towards ${entranceName}`}
                   </span>
                 </div>
                 {nextStep && (
-                  <p className="text-[11px] text-emerald-100/80 font-medium truncate max-w-[240px] mt-0.5">
+                  <p className="text-[11px] text-emerald-100/80 font-medium truncate max-w-[300px] mt-0.5">
                     Then {nextStep.instruction.toLowerCase()}
                   </p>
                 )}
               </div>
-            </div>
-
-            {/* Maneuver steps counter & GPS Live indicator */}
-            <div className="flex items-center space-x-2 shrink-0 pl-2">
-              {drivingSteps.length > 1 && (
-                <div className="flex items-center bg-black/30 rounded-lg p-0.5 border border-emerald-400/20">
-                  <button
-                    onClick={() => setCurrentStepIndex((prev) => Math.max(0, prev - 1))}
-                    disabled={currentStepIndex === 0}
-                    className="w-6 h-6 flex items-center justify-center text-white/80 hover:text-white disabled:opacity-25 disabled:cursor-not-allowed text-xs font-bold active:scale-95 transition-transform"
-                    title="Previous maneuver"
-                  >
-                    ‹
-                  </button>
-                  <span className="text-[10px] font-bold text-emerald-200 px-1 select-none">
-                    {currentStepIndex + 1}/{drivingSteps.length}
-                  </span>
-                  <button
-                    onClick={() => setCurrentStepIndex((prev) => Math.min(drivingSteps.length - 1, prev + 1))}
-                    disabled={currentStepIndex >= drivingSteps.length - 1}
-                    className="w-6 h-6 flex items-center justify-center text-white/80 hover:text-white disabled:opacity-25 disabled:cursor-not-allowed text-xs font-bold active:scale-95 transition-transform"
-                    title="Next maneuver"
-                  >
-                    ›
-                  </button>
-                </div>
-              )}
-              <span className="hidden sm:inline-flex items-center space-x-1 px-1.5 py-0.5 rounded-full bg-emerald-950/60 border border-emerald-400/30 text-[9px] font-bold text-emerald-300">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                <span>GPS Live</span>
-              </span>
             </div>
           </div>
         </div>
@@ -881,10 +864,10 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
           </div>
         )}
 
-        {/* Floating Controls Toolbar (Top Right) */}
+        {/* Floating Controls Toolbar (Top Right) - Moved down below guidance card in driving mode */}
         <div
           className={`absolute right-3.5 z-20 flex flex-col space-y-2 pointer-events-auto transition-all ${
-            activeMode === 'driving' ? 'top-32' : 'top-16'
+            activeMode === 'driving' ? 'top-44' : 'top-16'
           }`}
         >
           {/* Layer Switcher (Satellite <-> Roadmap) */}
