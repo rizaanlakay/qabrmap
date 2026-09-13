@@ -1,0 +1,31 @@
+{
+  "name": "QabrMap - Muslim Cemetery Mapping & Grave Navigation",
+  "short_name": "QabrMap",
+  "description": "Find, map and navigate to deceased loved ones in Muslim cemeteries with AI and high-precision spatial positioning.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#143A2E",
+  "theme_color": "#143A2E",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["navigation", "lifestyle", "utilities"],
+  "shortcuts": [
+    {
+      "name": "Find a Grave",
+      "url": "/?mode=search",
+      "description": "Quickly search for a deceased loved one"
+    },
+    {
+      "name": "Map a Grave",
+      "url": "/?mode=capture",
+      "description": "Photograph and catalog a gravestone"
+    }
+  ]
+}
