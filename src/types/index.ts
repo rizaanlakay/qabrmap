@@ -30,6 +30,9 @@ export interface Cemetery {
   originLat: number;
   originLng: number;
   originAlt?: number;
+  entranceLat?: number;
+  entranceLng?: number;
+  entranceName?: string;
   boundary?: GeoJSON.Polygon;
   totalGravesEstimate: number;
   mappedGravesCount: number;

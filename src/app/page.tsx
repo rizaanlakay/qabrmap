@@ -312,6 +312,11 @@ function QabrMapAppContent() {
         {currentScreen === 'navigation' && selectedGrave && (
           <NavigationScreen
             targetGrave={selectedGrave}
+            cemetery={
+              (selectedCemetery && selectedCemetery.id === selectedGrave.cemeteryId)
+                ? selectedCemetery
+                : cemeteries.find((c) => c.id === selectedGrave.cemeteryId) || selectedCemetery || undefined
+            }
             userLocation={userLocation}
             onUpdateUserLocation={(newLoc) => setUserLocation(newLoc)}
             onOpenARGuidance={() => setCurrentScreen('ar-guidance')}

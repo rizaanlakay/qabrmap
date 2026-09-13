@@ -346,3 +346,19 @@ export function processPhotoToGravePosition(
     localY,
   };
 }
+
+/**
+ * Checks if a [lng, lat] point is inside a GeoJSON Polygon coordinates ring using ray casting.
+ */
+export function isPointInPolygon(point: [number, number], polygonRing: [number, number][]): boolean {
+  if (!polygonRing || polygonRing.length < 3) return false;
+  const [x, y] = point;
+  let inside = false;
+  for (let i = 0, j = polygonRing.length - 1; i < polygonRing.length; j = i++) {
+    const [xi, yi] = polygonRing[i];
+    const [xj, yj] = polygonRing[j];
+    const intersect = yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}

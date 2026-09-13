@@ -18,6 +18,9 @@ export const MOCK_CEMETERIES: Cemetery[] = [
     originLat: -33.96813,
     originLng: 18.52682,
     originAlt: 24.0,
+    entranceLat: -33.9670,
+    entranceLng: 18.5265,
+    entranceName: 'Johnstone Road Gate',
     boundary: {
       type: 'Polygon',
       coordinates: [
@@ -57,6 +60,9 @@ export const MOCK_CEMETERIES: Cemetery[] = [
     originLat: -33.93908,
     originLng: 18.46112,
     originAlt: 18.0,
+    entranceLat: -33.9376,
+    entranceLng: 18.4619,
+    entranceName: 'Browning Road Main Gate',
     boundary: {
       type: 'Polygon',
       coordinates: [
@@ -89,6 +95,9 @@ export const MOCK_CEMETERIES: Cemetery[] = [
     denomination: 'Muslim',
     originLat: -33.9818,
     originLng: 18.5304,
+    entranceLat: -33.9811,
+    entranceLng: 18.5303,
+    entranceName: 'Mohan Avenue Gate',
     boundary: {
       type: 'Polygon',
       coordinates: [
@@ -126,6 +135,9 @@ export const MOCK_CEMETERIES: Cemetery[] = [
     denomination: 'Muslim',
     originLat: -34.00264,
     originLng: 18.46765,
+    entranceLat: -34.0028,
+    entranceLng: 18.4673,
+    entranceName: 'Brodie Road Gate',
     boundary: {
       type: 'Polygon',
       coordinates: [
