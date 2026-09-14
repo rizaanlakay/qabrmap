@@ -1,11 +1,21 @@
 // Central Data Store for QabrMap with Supabase Cloud Sync + Offline-First IndexedDB Hydration
 
-import { Cemetery, Grave, SurveySession, ProvenanceLog, Correction, GraveRelationship } from '@/types';
+import {
+  Cemetery,
+  Grave,
+  GravePhoto,
+  DeviceTelemetry,
+  SurveySession,
+  ProvenanceLog,
+  Correction,
+  GraveRelationship,
+} from '@/types';
 import { MOCK_CEMETERIES, MOCK_GRAVES, MOCK_ACTIVE_SURVEY_SESSION } from './mockData';
 import { offlineDb } from '../offline/db';
 import { supabase, isSupabaseConfigured } from '../supabase/client';
-import { mapDbCemetery, mapDbGrave, graveToDb, personToDb } from '../supabase/mappers';
-import { uploadGravePhoto } from '../supabase/storage';
+import { mapDbCemetery, mapDbGrave, mapDbGravePhoto, graveToDb, personToDb } from '../supabase/mappers';
+import { deleteGravePhoto, uploadGravePhoto } from '../supabase/storage';
+import { isMissingTableError } from '../supabase/errors';
 
 export interface MyCemeteryGraveEntry {
   grave: Grave;
@@ -417,6 +427,72 @@ class DataStore {
 
     const list = await this.getGraves();
     return list.find((g) => g.id === id);
+  }
+
+  // --- GRAVE PHOTOS ---
+  // Every photo for a grave, primary first then oldest first. Empty until the grave_photos migration is applied.
+  async getGravePhotos(graveId: string): Promise<GravePhoto[]> {
+    if (!isSupabaseConfigured || !supabase || typeof navigator === 'undefined' || !navigator.onLine) return [];
+    try {
+      const { data, error } = await supabase
+        .from('grave_photos')
+        .select('*')
+        .eq('grave_id', graveId)
+        .order('is_primary', { ascending: false })
+        .order('created_at', { ascending: true });
+      if (error) {
+        if (!isMissingTableError(error)) console.warn('Could not load grave photos:', error);
+        return [];
+      }
+      return (data || []).map(mapDbGravePhoto);
+    } catch (err) {
+      console.warn('Could not load grave photos:', err);
+      return [];
+    }
+  }
+
+  // Uploads a photo and attaches it to an existing grave. Needs a signed-in user and a connection.
+  async addGravePhoto(grave: Grave, imageDataUrl: string, telemetry?: DeviceTelemetry): Promise<GravePhoto> {
+    if (!isSupabaseConfigured || !supabase) throw new Error('Photo uploads are not available right now.');
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      throw new Error("You're offline. Connect to the internet to add this photo.");
+    }
+
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth?.user) throw new Error('Sign in to add photos to a grave.');
+
+    let upload: Awaited<ReturnType<typeof uploadGravePhoto>> = null;
+    try {
+      // A unique file name per upload, so no existing photo is ever overwritten
+      upload = await uploadGravePhoto({ file: imageDataUrl, cemeteryId: grave.cemeteryId, graveId: grave.id, upsert: false });
+    } catch {
+      upload = null;
+    }
+    if (!upload?.publicUrl) throw new Error('The photo could not be uploaded. Please try again.');
+
+    const { data, error } = await supabase
+      .from('grave_photos')
+      .insert({
+        grave_id: grave.id,
+        storage_path: upload.path || null,
+        public_url: upload.publicUrl,
+        uploaded_by: auth.user.id,
+        captured_at: telemetry?.timestamp ?? new Date().toISOString(),
+        capture_latitude: telemetry?.latitude ?? null,
+        capture_longitude: telemetry?.longitude ?? null,
+        gps_accuracy_meters: telemetry?.gpsAccuracy ?? null,
+        heading_degrees: telemetry?.headingDegrees ?? null,
+      })
+      .select()
+      .single();
+
+    if (error || !data) {
+      // Don't leave an orphaned file in storage when the photo row can't be saved
+      if (upload.path) await deleteGravePhoto(upload.path);
+      if (isMissingTableError(error)) throw new Error('Grave photos are not set up in the database yet.');
+      throw new Error('The photo was uploaded but could not be saved. Please try again.');
+    }
+    return mapDbGravePhoto(data);
   }
 
   async searchGraves(query: string, filterType: 'all' | 'saved' | 'names' | 'numbers' = 'all'): Promise<Grave[]> {

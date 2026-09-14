@@ -21,6 +21,7 @@ import { ARGuidanceScreen } from '@/components/screens/ARGuidanceScreen';
 import { CaptureScreen } from '@/components/screens/CaptureScreen';
 import { AIProcessingScreen } from '@/components/screens/AIProcessingScreen';
 import { ConfirmDetailsScreen } from '@/components/screens/ConfirmDetailsScreen';
+import { AddPhotoConfirmScreen } from '@/components/screens/AddPhotoConfirmScreen';
 import { SurveySessionScreen } from '@/components/screens/SurveySessionScreen';
 import { OfflineStatusScreen } from '@/components/screens/OfflineStatusScreen';
 import { MyCemeteriesScreen } from '@/components/screens/MyCemeteriesScreen';
@@ -46,6 +47,7 @@ export type ScreenId =
   | 'capture'
   | 'ai-processing'
   | 'confirm-details'
+  | 'add-photo'
   | 'survey-session'
   | 'offline-status'
   | 'profile'
@@ -74,6 +76,10 @@ function QabrMapAppContent() {
   const [selectedCemetery, setSelectedCemetery] = useState<Cemetery | null>(null);
   const [graves, setGraves] = useState<Grave[]>([]);
   const [selectedGrave, setSelectedGrave] = useState<Grave | null>(null);
+  // Grave that "Add a Photo" is capturing for; null when capture maps a new grave
+  const [photoTargetGrave, setPhotoTargetGrave] = useState<Grave | null>(null);
+  // Bumped after a photo is added so the grave details carousel reloads its photos
+  const [gravePhotosVersion, setGravePhotosVersion] = useState(0);
   const [surveySession, setSurveySession] = useState<SurveySession>(dataStore.getActiveSurveySession());
 
   // User simulated/real GPS (Cape Town Athlone Cemetery vicinity)
@@ -185,7 +191,10 @@ function QabrMapAppContent() {
     setCurrentNavTab(tab);
     if (tab === 'home') setCurrentScreen('home');
     if (tab === 'search') setCurrentScreen('search');
-    if (tab === 'capture') setCurrentScreen('capture');
+    if (tab === 'capture') {
+      setPhotoTargetGrave(null);
+      setCurrentScreen('capture');
+    }
     if (tab === 'surveys') setCurrentScreen('survey-session');
     if (tab === 'profile') setCurrentScreen('profile');
   };
@@ -219,7 +228,8 @@ function QabrMapAppContent() {
   const handleCaptureComplete = (dataUrl: string, telemetry: DeviceTelemetry) => {
     setCapturedImage(dataUrl);
     setCapturedTelemetry(telemetry);
-    setCurrentScreen('ai-processing');
+    // A photo for an existing grave skips the AI read and the new-grave form
+    setCurrentScreen(photoTargetGrave ? 'add-photo' : 'ai-processing');
   };
 
   // AI Pipeline Finished Handover
@@ -253,6 +263,7 @@ function QabrMapAppContent() {
     'capture',
     'ai-processing',
     'confirm-details',
+    'add-photo',
     'register',
   ].includes(currentScreen);
 
@@ -278,6 +289,7 @@ function QabrMapAppContent() {
                 setCurrentScreen('search');
               } else if (screen === 'capture') {
                 setCurrentNavTab('capture');
+                setPhotoTargetGrave(null);
                 setCurrentScreen('capture');
               } else if (screen === 'register') {
                 setCurrentScreen('register');
@@ -355,7 +367,16 @@ function QabrMapAppContent() {
           <GraveDetailsScreen
             grave={selectedGrave}
             onNavigateToGrave={handleStartNavigation}
-            onAddPhoto={() => setCurrentScreen('capture')}
+            onAddPhoto={(grave) => {
+              // Photos are attributed to an account, so signed-out visitors are asked to sign in first
+              if (!user) {
+                openAuthModal();
+                return;
+              }
+              setPhotoTargetGrave(grave);
+              setCurrentScreen('capture');
+            }}
+            photosVersion={gravePhotosVersion}
             onBack={() => {
               if (previousScreen === 'my-cemeteries') setCurrentScreen('my-cemeteries');
               else if (previousScreen === 'cemetery-map') setCurrentScreen('cemetery-map');
@@ -374,7 +395,7 @@ function QabrMapAppContent() {
                 : cemeteries.find((c) => c.id === selectedGrave.cemeteryId) || selectedCemetery || undefined
             }
             userLocation={userLocation}
-            onUpdateUserLocation={(newLoc) => setUserLocation(newLoc)}
+            onUpdateUserLocation={setUserLocation}
             onOpenARGuidance={() => setCurrentScreen('ar-guidance')}
             onEndNavigation={() => setCurrentScreen('grave-details')}
             onBack={() => setCurrentScreen('grave-details')}
@@ -392,7 +413,14 @@ function QabrMapAppContent() {
         {currentScreen === 'capture' && (
           <CaptureScreen
             onCaptureComplete={handleCaptureComplete}
-            onBack={() => setCurrentScreen('home')}
+            onBack={() => {
+              if (photoTargetGrave) {
+                setPhotoTargetGrave(null);
+                setCurrentScreen('grave-details');
+              } else {
+                setCurrentScreen('home');
+              }
+            }}
           />
         )}
 
@@ -413,6 +441,24 @@ function QabrMapAppContent() {
             cemeteryId={selectedCemetery?.id}
             onSaveGrave={handleSaveGrave}
             onBack={() => setCurrentScreen('capture')}
+          />
+        )}
+
+        {currentScreen === 'add-photo' && photoTargetGrave && (
+          <AddPhotoConfirmScreen
+            grave={photoTargetGrave}
+            capturedImage={capturedImage}
+            telemetry={capturedTelemetry}
+            onSaved={() => {
+              setPhotoTargetGrave(null);
+              setGravePhotosVersion((v) => v + 1);
+              setCurrentScreen('grave-details');
+            }}
+            onRetake={() => setCurrentScreen('capture')}
+            onCancel={() => {
+              setPhotoTargetGrave(null);
+              setCurrentScreen('grave-details');
+            }}
           />
         )}
 

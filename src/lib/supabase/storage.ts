@@ -29,6 +29,8 @@ export interface UploadPhotoOptions {
   cemeteryId?: string;
   graveId?: string;
   fileName?: string;
+  // Replace a file already at the same path; upserting also needs storage update permission
+  upsert?: boolean;
 }
 
 export interface UploadPhotoResult {
@@ -44,6 +46,7 @@ export async function uploadGravePhoto({
   cemeteryId = 'general',
   graveId = `grave_${Date.now()}`,
   fileName,
+  upsert = true,
 }: UploadPhotoOptions): Promise<UploadPhotoResult | null> {
   // If already a remote URL or default placeholder, do not re-upload
   if (
@@ -91,7 +94,7 @@ export async function uploadGravePhoto({
       .from(GRAVE_PHOTOS_BUCKET)
       .upload(filePath, fileBody, {
         contentType,
-        upsert: true,
+        upsert,
       });
 
     if (uploadError) {

@@ -1,7 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
-import Image from 'next/image';
+import React, { useEffect, useState } from 'react';
 import {
   ArrowLeft,
   Share2,
@@ -15,7 +14,8 @@ import {
   Heart,
   Users,
 } from 'lucide-react';
-import { Grave, GraveRelationship, RelationshipCategory } from '@/types';
+import { Grave, GravePhoto, GraveRelationship, RelationshipCategory } from '@/types';
+import { GravePhotoCarousel } from '@/components/common/GravePhotoCarousel';
 import { dataStore } from '@/lib/data/store';
 import { buildGraveShareUrl } from '@/lib/share/graveLink';
 
@@ -24,6 +24,8 @@ interface GraveDetailsScreenProps {
   onNavigateToGrave: (grave: Grave) => void;
   onAddPhoto: (grave: Grave) => void;
   onBack: () => void;
+  // Changes after a photo is added, to reload this grave's photos
+  photosVersion?: number;
 }
 
 export const GraveDetailsScreen: React.FC<GraveDetailsScreenProps> = ({
@@ -31,6 +33,7 @@ export const GraveDetailsScreen: React.FC<GraveDetailsScreenProps> = ({
   onNavigateToGrave,
   onAddPhoto,
   onBack,
+  photosVersion = 0,
 }) => {
   const [showProvenance, setShowProvenance] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
@@ -48,6 +51,18 @@ export const GraveDetailsScreen: React.FC<GraveDetailsScreenProps> = ({
   const [relNotes, setRelNotes] = useState(currentRel?.notes || '');
 
   const provenanceLogs = dataStore.getProvenanceLogs(grave.id);
+
+  // Real photos from grave_photos; the stored photo count is ignored because older data invented it
+  const [photos, setPhotos] = useState<GravePhoto[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    dataStore.getGravePhotos(grave.id).then((list) => {
+      if (!cancelled) setPhotos(list);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [grave.id, photosVersion]);
 
   // Format readable dates
   const formatDate = (dateStr?: string) => {
@@ -165,20 +180,12 @@ export const GraveDetailsScreen: React.FC<GraveDetailsScreenProps> = ({
         )}
       </div>
 
-      {/* Gravestone Photograph Hero */}
-      <div className="w-full bg-slate-900 relative aspect-[4/3] max-h-72 overflow-hidden shadow-inner">
-        <Image
-          src={grave.primaryPhotoUrl || '/sample-gravestone.svg'}
-          alt={grave.person?.fullName || 'Grave photo'}
-          fill
-          className="object-cover"
-          priority
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-        <div className="absolute bottom-3 left-4 text-white/90 text-[11px] font-medium bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20">
-          Photo 1 of {grave.photoCount}
-        </div>
-      </div>
+      {/* Gravestone Photograph Hero: swipe or use the side arrows when a grave has several photos */}
+      <GravePhotoCarousel
+        photos={photos.map((photo) => ({ id: photo.id, url: photo.url }))}
+        alt={grave.person?.fullName || `Grave ${grave.graveNumber}`}
+        fallbackUrl={grave.primaryPhotoUrl || '/sample-gravestone.svg'}
+      />
 
       {/* Main Grave Details Card matching Mockup Screen 5 */}
       <div className="p-5 flex-1 flex flex-col justify-between">
@@ -270,7 +277,7 @@ export const GraveDetailsScreen: React.FC<GraveDetailsScreenProps> = ({
 
             <div className="border-t border-slate-100 pt-3 flex items-center justify-between">
               <span className="text-slate-500 font-medium">Photos</span>
-              <span className="font-semibold text-slate-800">{grave.photoCount}</span>
+              <span className="font-semibold text-slate-800">{photos.length}</span>
             </div>
           </div>
         </div>

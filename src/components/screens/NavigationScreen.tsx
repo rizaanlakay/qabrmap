@@ -39,6 +39,9 @@ import {
   mapPaddingForSheet,
   shouldCollapseSheet,
 } from '@/lib/ui/bottomSheet';
+import { googleRasterStyle, registerGoogleTilesProtocol } from '@/lib/map/googleMapTiles';
+import { computeRouteProgress, formatManeuverDistance, shouldReroute } from '@/lib/geospatial/routeProgress';
+import { GoogleMapsAttribution } from '@/components/common/GoogleMapsAttribution';
 
 // Keeps a floating map control a fixed gap above the visible top edge of the bottom sheet
 function aboveSheetStyle(gapPx: number): React.CSSProperties {
@@ -47,6 +50,11 @@ function aboveSheetStyle(gapPx: number): React.CSSProperties {
     transition: `bottom var(--sheet-transition, 0ms) ${SHEET_EASING}`,
   };
 }
+
+// How long the vehicle arrow takes to glide to a new GPS fix
+const MARKER_GLIDE_MS = 900;
+// Beyond this the arrow jumps instead of gliding (first real fix, or a reroute)
+const MARKER_GLIDE_MAX_METERS = 200;
 
 interface RouteStep {
   instruction: string;
@@ -73,60 +81,9 @@ interface NavigationScreenProps {
   onBack: () => void;
 }
 
-// Google Maps Raster Tile Styles
-const GOOGLE_SATELLITE_STYLE: any = {
-  version: 8,
-  sources: {
-    'google-tiles': {
-      type: 'raster',
-      tiles: [
-        'https://mt0.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
-        'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
-        'https://mt2.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
-        'https://mt3.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
-      ],
-      tileSize: 256,
-      maxzoom: 21,
-      attribution: '© Google',
-    },
-  },
-  layers: [
-    {
-      id: 'google-tiles-layer',
-      type: 'raster',
-      source: 'google-tiles',
-      minzoom: 0,
-      maxzoom: 21,
-    },
-  ],
-};
-
-const GOOGLE_ROADMAP_STYLE: any = {
-  version: 8,
-  sources: {
-    'google-tiles': {
-      type: 'raster',
-      tiles: [
-        'https://mt0.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
-        'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
-        'https://mt2.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
-        'https://mt3.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
-      ],
-      tileSize: 256,
-      maxzoom: 21,
-      attribution: '© Google',
-    },
-  },
-  layers: [
-    {
-      id: 'google-tiles-layer',
-      type: 'raster',
-      source: 'google-tiles',
-      minzoom: 0,
-      maxzoom: 21,
-    },
-  ],
-};
+// Official Google Map Tiles, loaded through the gmaptiles:// protocol registered when the map starts
+const GOOGLE_SATELLITE_STYLE = googleRasterStyle('satellite');
+const GOOGLE_ROADMAP_STYLE = googleRasterStyle('roadmap');
 
 // Calculate compass bearing along a road route from a given coordinate looking ahead 25-40m
 function getRoadBearingAtCoordinate(
@@ -230,6 +187,8 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
   // User GPS position
   const [currentLoc, setCurrentLoc] = useState(initialUserLoc);
   const [headingDeg, setHeadingDeg] = useState(42);
+  // waiting: no fix yet, so the arrow still sits on the default start; denied/unavailable: no fixes are coming
+  const [gpsStatus, setGpsStatus] = useState<'waiting' | 'live' | 'denied' | 'unavailable'>('waiting');
   const [mapType, setMapType] = useState<'satellite' | 'roadmap'>('satellite');
   const [zoomDisplay, setZoomDisplay] = useState(100);
   const [isMapReady, setIsMapReady] = useState(false);
@@ -244,10 +203,12 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
   // Driving route data from /api/directions
   const [drivingRoute, setDrivingRoute] = useState<[number, number][] | null>(null);
   const [drivingSteps, setDrivingSteps] = useState<RouteStep[]>([]);
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  // A step the driver is previewing with the ‹ › buttons; null while following live progress along the route
+  const [previewStepIndex, setPreviewStepIndex] = useState<number | null>(null);
   const [drivingDistanceMeters, setDrivingDistanceMeters] = useState<number | null>(null);
   const [drivingDurationSeconds, setDrivingDurationSeconds] = useState<number | null>(null);
-  const lastFetchedLocRef = useRef<{ lat: number; lng: number } | null>(null);
+  const lastRouteFetchAtRef = useRef(0);
+  const routeRequestRef = useRef<AbortController | null>(null);
 
   // Screen position of midpoint on the route for floating distance pill
   const [midpointScreenPos, setMidpointScreenPos] = useState<{ x: number; y: number } | null>(null);
@@ -331,6 +292,20 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
     return currentLoc;
   }, [activeMode, drivingRoute, currentLoc]);
 
+  // Live position along the driving route: current step, distance to the next turn, and what's left of the trip
+  const routeProgress = useMemo(
+    () =>
+      activeMode === 'driving' && drivingRoute
+        ? computeRouteProgress({
+            route: drivingRoute,
+            steps: drivingSteps,
+            position: currentLoc,
+            totalDurationSeconds: drivingDurationSeconds,
+          })
+        : null,
+    [activeMode, drivingRoute, drivingSteps, currentLoc, drivingDurationSeconds]
+  );
+
   // Bearing & Cardinal to target grave
   const bearing = calculateBearing(
     currentLoc.lat,
@@ -363,66 +338,91 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
     };
   }, []);
 
-  // Real GPS Geolocation watcher if supported
+  // Latest location callback, read through a ref so a new function from the parent can't restart the GPS watch
+  const onUpdateUserLocationRef = useRef(onUpdateUserLocation);
+  useEffect(() => {
+    onUpdateUserLocationRef.current = onUpdateUserLocation;
+  }, [onUpdateUserLocation]);
+
+  // Real GPS Geolocation watcher if supported. Started once per visit: restarting it on every render
+  // switched location tracking off and on hundreds of times a second, flickering Android's status bar.
   useEffect(() => {
     if (typeof navigator !== 'undefined' && 'geolocation' in navigator) {
+      let lastFix: { lat: number; lng: number } | null = null;
       const watchId = navigator.geolocation.watchPosition(
         (pos) => {
+          setGpsStatus('live');
           const next = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          // A stationary device repeats the same fix; skip it rather than re-render the map for nothing
+          if (lastFix && lastFix.lat === next.lat && lastFix.lng === next.lng) return;
+          lastFix = next;
           setCurrentLoc(next);
-          if (onUpdateUserLocation) onUpdateUserLocation(next);
+          onUpdateUserLocationRef.current?.(next);
         },
-        () => {},
-        { enableHighAccuracy: true, maximumAge: 4000, timeout: 10000 }
+        (error) => {
+          // A denied permission is final; timeouts and lost signal usually recover with the next fix
+          setGpsStatus(error.code === error.PERMISSION_DENIED ? 'denied' : 'unavailable');
+        },
+        { enableHighAccuracy: true, maximumAge: 2000, timeout: 15000 }
       );
       return () => navigator.geolocation.clearWatch(watchId);
     }
-  }, [onUpdateUserLocation]);
+  }, []);
 
-  // Fetch authentic road driving directions when in driving mode
+  // Fetch road directions when driving: once at the start, then again only when the driver leaves the route
+  const offRouteMeters = routeProgress?.offRouteMeters ?? 0;
   useEffect(() => {
-    if (activeMode !== 'driving') return;
-
-    const last = lastFetchedLocRef.current;
-    if (last) {
-      const moved = calculateDistanceMeters(last.lat, last.lng, currentLoc.lat, currentLoc.lng);
-      if (moved < 40 && drivingRoute) return; // avoid unnecessary refetches
+    if (activeMode !== 'driving' || routeRequestRef.current) return;
+    if (
+      !shouldReroute({
+        hasRoute: Boolean(drivingRoute),
+        offRouteMeters,
+        msSinceLastFetch: Date.now() - lastRouteFetchAtRef.current,
+      })
+    ) {
+      return;
     }
 
-    let isMounted = true;
+    // Not cancelled when the position changes: with a GPS fix every second, that discarded every reroute mid-drive
+    const controller = new AbortController();
+    routeRequestRef.current = controller;
+    lastRouteFetchAtRef.current = Date.now();
     const fetchUrl = `/api/directions?startLng=${currentLoc.lng}&startLat=${currentLoc.lat}&endLng=${entranceLng}&endLat=${entranceLat}&mode=driving`;
 
-    fetch(fetchUrl)
+    fetch(fetchUrl, { signal: controller.signal })
       .then((res) => res.json())
       .then((data) => {
-        if (!isMounted) return;
         if (data.coordinates && data.coordinates.length > 0) {
           setDrivingRoute(data.coordinates);
           setDrivingDistanceMeters(data.distanceMeters);
           setDrivingDurationSeconds(data.durationSeconds);
           if (data.steps && data.steps.length > 0) {
             setDrivingSteps(data.steps);
-            setCurrentStepIndex(0);
+            setPreviewStepIndex(null);
           }
-          lastFetchedLocRef.current = { lat: currentLoc.lat, lng: currentLoc.lng };
         }
       })
       .catch((err) => {
-        if (!isMounted) return;
+        if (controller.signal.aborted) return;
         console.warn('Failed to fetch road directions:', err);
+      })
+      .finally(() => {
+        if (routeRequestRef.current === controller) routeRequestRef.current = null;
       });
+  }, [activeMode, currentLoc.lat, currentLoc.lng, entranceLat, entranceLng, drivingRoute, offRouteMeters]);
 
-    return () => {
-      isMounted = false;
-    };
-  }, [activeMode, currentLoc.lat, currentLoc.lng, entranceLat, entranceLng, drivingRoute]);
+  // Abandon an in-flight directions request when leaving the screen
+  useEffect(() => () => routeRequestRef.current?.abort(), []);
 
   // Direct bearing to entrance gate as foundational baseline
   const directEntranceBearing = useMemo(() => {
     return calculateBearing(currentLoc.lat, currentLoc.lng, entranceLat, entranceLng);
   }, [currentLoc.lat, currentLoc.lng, entranceLat, entranceLng]);
 
-  // Current turn instruction from OSRM
+  // Current turn instruction: the step live progress has reached, unless the driver is previewing another one
+  const liveStepIndex = routeProgress ? Math.min(routeProgress.stepIndex, Math.max(0, drivingSteps.length - 1)) : 0;
+  const isPreviewingStep = previewStepIndex !== null;
+  const currentStepIndex = previewStepIndex ?? liveStepIndex;
   const activeStep = drivingSteps[currentStepIndex] || drivingSteps[0];
   const nextStep = drivingSteps[currentStepIndex + 1];
 
@@ -433,39 +433,37 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
   }, [drivingSteps, activeStep, nextStep]);
 
   // Active vehicle marker location on map:
-  // When scrubbing/previewing an upcoming maneuver (currentStepIndex > 0), the vehicle marker moves with it to that maneuver's location.
-  // When live navigating (currentStepIndex === 0), it sits at displayedUserLoc (snapped to road).
+  // While previewing a manoeuvre, the vehicle marker moves to that manoeuvre's location.
+  // While live navigating, it sits at displayedUserLoc (snapped to road).
   const vehicleMarkerCoord = useMemo<[number, number]>(() => {
-    if (activeMode === 'driving' && currentStepIndex > 0 && activeStep?.location && activeStep.location[0] !== 0) {
+    if (activeMode === 'driving' && isPreviewingStep && activeStep?.location && activeStep.location[0] !== 0) {
       return activeStep.location;
     }
     return [displayedUserLoc.lng, displayedUserLoc.lat];
-  }, [activeMode, currentStepIndex, activeStep, displayedUserLoc.lng, displayedUserLoc.lat]);
+  }, [activeMode, isPreviewingStep, activeStep, displayedUserLoc.lng, displayedUserLoc.lat]);
 
   // Calculate forward road bearing so that "UP" on the map ALWAYS aligns with the road we travel in
   const activeRoadBearing = useMemo(() => {
-    // 1. If viewing an upcoming maneuver (step > 0), use that maneuver's bearingAfter
-    if (currentStepIndex > 0 && activeStep?.bearingAfter !== undefined && activeStep.bearingAfter !== null) {
+    // 1. Previewing a manoeuvre: face the way the road goes after it
+    if (isPreviewingStep && activeStep?.bearingAfter !== undefined && activeStep.bearingAfter !== null) {
       return activeStep.bearingAfter;
     }
 
-    // 2. If active step has bearingAfter from OSRM, use it:
+    // 2. Live: follow the road just ahead of the driver so the map turns through bends as they drive
+    if (drivingRoute && drivingRoute.length > 1) {
+      const coord: [number, number] =
+        isPreviewingStep && activeStep?.location && activeStep.location[0] !== 0
+          ? activeStep.location
+          : [displayedUserLoc.lng, displayedUserLoc.lat];
+      return getRoadBearingAtCoordinate(drivingRoute, coord, activeStep?.bearingAfter ?? directEntranceBearing);
+    }
+
+    // 3. No route yet: the step's own bearing, otherwise straight towards the gate
     if (activeStep?.bearingAfter !== undefined && activeStep.bearingAfter !== null) {
       return activeStep.bearingAfter;
     }
-
-    // 3. Otherwise calculate tangent bearing from the immediate route segment ahead of current location
-    if (drivingRoute && drivingRoute.length > 1) {
-      const coord: [number, number] =
-        currentStepIndex > 0 && activeStep?.location && activeStep.location[0] !== 0
-          ? activeStep.location
-          : [displayedUserLoc.lng, displayedUserLoc.lat];
-      return getRoadBearingAtCoordinate(drivingRoute, coord, directEntranceBearing);
-    }
-
-    // Fallback: direct bearing to entrance gate
     return directEntranceBearing;
-  }, [currentStepIndex, activeStep, drivingRoute, displayedUserLoc.lat, displayedUserLoc.lng, directEntranceBearing]);
+  }, [isPreviewingStep, activeStep, drivingRoute, displayedUserLoc.lat, displayedUserLoc.lng, directEntranceBearing]);
 
   // Center camera in Garmin / Google Maps driver view:
   // User placed near bottom third of the screen with 3D forward perspective and road aligned UP
@@ -474,10 +472,10 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
       if (!map) return;
 
       if (activeMode === 'driving') {
-        // When previewing an upcoming maneuver (step > 0), frame on the maneuver location;
+        // When previewing a manoeuvre, frame on its location;
         // When live navigating, center on user's road-snapped location:
         const targetCenter: [number, number] =
-          currentStepIndex > 0 && activeStep?.location && activeStep.location[0] !== 0
+          isPreviewingStep && activeStep?.location && activeStep.location[0] !== 0
             ? [activeStep.location[0], activeStep.location[1]]
             : [displayedUserLoc.lng, displayedUserLoc.lat];
 
@@ -521,14 +519,16 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
         }
       }
     },
-    [activeMode, currentStepIndex, activeStep, displayedUserLoc.lat, displayedUserLoc.lng, currentLoc.lat, currentLoc.lng, activeRoadBearing, targetGrave.latitude, targetGrave.longitude]
+    [activeMode, isPreviewingStep, activeStep, displayedUserLoc.lat, displayedUserLoc.lng, currentLoc.lat, currentLoc.lng, activeRoadBearing, targetGrave.latitude, targetGrave.longitude]
   );
 
   // Handle step selection (e.g. clicking ‹ / › on the maneuver badge)
   const handleSelectStep = useCallback(
     (newIndex: number) => {
       if (!drivingSteps || newIndex < 0 || newIndex >= drivingSteps.length) return;
-      setCurrentStepIndex(newIndex);
+      // Stepping back to where the driver actually is resumes live guidance
+      const isLiveStep = newIndex === liveStepIndex;
+      setPreviewStepIndex(isLiveStep ? null : newIndex);
 
       const step = drivingSteps[newIndex];
       const map = mapInstanceRef.current;
@@ -542,7 +542,7 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
       }
 
       const targetCoord: [number, number] =
-        newIndex === 0
+        isLiveStep
           ? [displayedUserLoc.lng, displayedUserLoc.lat]
           : step.location && step.location[0] !== 0
           ? step.location
@@ -563,7 +563,7 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
         duration: 700,
       });
     },
-    [drivingSteps, drivingRoute, displayedUserLoc.lng, displayedUserLoc.lat, directEntranceBearing]
+    [drivingSteps, drivingRoute, displayedUserLoc.lng, displayedUserLoc.lat, directEntranceBearing, liveStepIndex]
   );
 
   // Setup / Update Direction Line on top of Google Maps
@@ -699,6 +699,7 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
       try {
         const mod = await import('maplibre-gl');
         const maplibregl = mod.default || mod;
+        registerGoogleTilesProtocol(maplibregl);
 
         if (isCancelled || !mapContainerRef.current) return;
 
@@ -853,6 +854,38 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
     });
   }, [mapType, isMapReady, setupRouteLayers]);
 
+  // Glide the vehicle arrow between GPS fixes instead of jumping, like in-car navigation
+  const markerAnimationRef = useRef<number | null>(null);
+  const animateUserMarkerTo = useCallback((target: [number, number], durationMs: number) => {
+    const marker = userMarkerRef.current;
+    if (!marker) return;
+    if (markerAnimationRef.current !== null) cancelAnimationFrame(markerAnimationRef.current);
+    markerAnimationRef.current = null;
+
+    const from = marker.getLngLat();
+    const glideMeters = from ? calculateDistanceMeters(from.lat, from.lng, target[1], target[0]) : Infinity;
+    if (durationMs <= 0 || glideMeters > MARKER_GLIDE_MAX_METERS) {
+      marker.setLngLat(target);
+      return;
+    }
+
+    const start = performance.now();
+    const frame = (now: number) => {
+      const t = Math.min(1, (now - start) / durationMs);
+      const eased = 1 - Math.pow(1 - t, 3);
+      marker.setLngLat([from.lng + (target[0] - from.lng) * eased, from.lat + (target[1] - from.lat) * eased]);
+      markerAnimationRef.current = t < 1 ? requestAnimationFrame(frame) : null;
+    };
+    markerAnimationRef.current = requestAnimationFrame(frame);
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (markerAnimationRef.current !== null) cancelAnimationFrame(markerAnimationRef.current);
+    },
+    []
+  );
+
   // Update route layer, markers, and follow-me tracking as user moves or scrubs steps
   useEffect(() => {
     const map = mapInstanceRef.current;
@@ -860,7 +893,7 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
       setupRouteLayers(map);
 
       if (userMarkerRef.current) {
-        userMarkerRef.current.setLngLat(vehicleMarkerCoord);
+        animateUserMarkerTo(vehicleMarkerCoord, isPreviewingStep ? 0 : MARKER_GLIDE_MS);
         const el = userMarkerRef.current.getElement();
         if (el) {
           el.innerHTML = getUserMarkerHtml(activeMode, headingDeg);
@@ -871,7 +904,7 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
       }
 
       // Follow user camera in driving mode when not previewing an upcoming turn
-      if (isFollowingUser && currentStepIndex === 0) {
+      if (isFollowingUser && !isPreviewingStep) {
         applyDriverCameraView(map, true);
       }
     }
@@ -879,7 +912,7 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
     activeMode,
     drivingRoute,
     vehicleMarkerCoord,
-    currentStepIndex,
+    isPreviewingStep,
     entranceLat,
     entranceLng,
     headingDeg,
@@ -887,6 +920,7 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
     isMapReady,
     setupRouteLayers,
     applyDriverCameraView,
+    animateUserMarkerTo,
   ]);
 
   // Zoom handlers
@@ -901,7 +935,7 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
   // Re-center follow-me mode (Garmin / Google Maps driver view)
   const handleRecenter = () => {
     setIsFollowingUser(true);
-    setCurrentStepIndex(0);
+    setPreviewStepIndex(null);
     if (userMarkerRef.current) {
       userMarkerRef.current.setLngLat([displayedUserLoc.lng, displayedUserLoc.lat]);
     }
@@ -969,7 +1003,7 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
   // Re-frame the followed route into the space the sheet frees up or covers
   useEffect(() => {
     const map = mapInstanceRef.current;
-    if (!map || !isMapReady || !isFollowingUser || currentStepIndex !== 0) return;
+    if (!map || !isMapReady || !isFollowingUser || isPreviewingStep) return;
     applyDriverCameraView(map, true);
   }, [isSheetExpanded]);
 
@@ -1171,7 +1205,13 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline space-x-2 flex-wrap">
                   <span className="text-xl font-black tracking-tight text-white whitespace-nowrap shrink-0">
-                    {activeStep ? `${activeStep.distanceMeters} m` : 'Drive'}
+                    {activeStep
+                      ? formatManeuverDistance(
+                          !isPreviewingStep && routeProgress
+                            ? routeProgress.distanceToNextManeuverMeters
+                            : activeStep.distanceMeters
+                        )
+                      : 'Drive'}
                   </span>
                   <span className="text-xs font-semibold text-emerald-200 truncate max-w-[260px]">
                     {activeStep?.instruction || `Proceed towards ${entranceName}`}
@@ -1210,8 +1250,31 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
           </div>
         )}
 
+        {/* GPS status: tells the driver when the arrow isn't following their real position */}
+        {gpsStatus !== 'live' && (
+          <div
+            className={`absolute left-3.5 z-20 pointer-events-none ${activeMode === 'driving' ? 'top-44' : 'top-16'}`}
+            role="status"
+          >
+            <div
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full shadow-lg text-[11px] font-semibold backdrop-blur-md ${
+                gpsStatus === 'waiting' ? 'bg-slate-900/85 text-white' : 'bg-amber-500/95 text-amber-950'
+              }`}
+            >
+              <Crosshair className={`w-3.5 h-3.5 ${gpsStatus === 'waiting' ? 'animate-pulse' : ''}`} />
+              <span>
+                {gpsStatus === 'waiting'
+                  ? 'Waiting for GPS…'
+                  : gpsStatus === 'denied'
+                  ? 'Location access is blocked'
+                  : 'GPS signal lost'}
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Re-center / Resume Live Navigation Button (Appears if user panned away or is scrubbing turns) */}
-        {(!isFollowingUser || currentStepIndex > 0) && activeMode === 'driving' && (
+        {(!isFollowingUser || isPreviewingStep) && activeMode === 'driving' && (
           <div
             className="absolute left-1/2 -translate-x-1/2 z-20 pointer-events-auto"
             style={aboveSheetStyle(14)}
@@ -1221,7 +1284,7 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
               className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2.5 rounded-full shadow-2xl border-2 border-white flex items-center space-x-2 active:scale-95 transition-all"
             >
               <Navigation className="w-4 h-4 fill-white" />
-              <span>{currentStepIndex > 0 ? 'Resume Live Navigation' : 'Re-center Driver View'}</span>
+              <span>{isPreviewingStep ? 'Resume Live Navigation' : 'Re-center Driver View'}</span>
             </button>
           </div>
         )}
@@ -1288,11 +1351,9 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
           </div>
         </div>
 
-        {/* Google Maps Attribution Badge */}
+        {/* Google Maps logo and imagery copyright, required by the Map Tiles API terms */}
         <div className="absolute left-2.5 z-10 pointer-events-none" style={aboveSheetStyle(6)}>
-          <div className="bg-black/50 backdrop-blur-xs px-2 py-0.5 rounded text-[10px] text-white/90 font-medium tracking-tight">
-            <span className="font-bold">Google</span> Imagery ©2026
-          </div>
+          <GoogleMapsAttribution map={mapInstanceRef.current} mapType={mapType} isMapReady={isMapReady} />
         </div>
       </div>
 
@@ -1328,9 +1389,7 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
             <div className="grid grid-cols-3 gap-3 text-center">
               <div className="bg-slate-50 rounded-2xl p-3 border border-slate-100">
                 <div className="text-xl font-extrabold text-blue-700">
-                  {drivingDistanceMeters
-                    ? `${(drivingDistanceMeters / 1000).toFixed(1)} km`
-                    : `${(distToEntrance / 1000).toFixed(1)} km`}
+                  {`${((routeProgress?.remainingMeters ?? drivingDistanceMeters ?? distToEntrance) / 1000).toFixed(1)} km`}
                 </div>
                 <div className="text-[11px] text-slate-500 font-medium mt-0.5">Drive Distance</div>
               </div>
@@ -1338,9 +1397,10 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
               <div className="bg-slate-50 rounded-2xl p-3 border border-slate-100">
                 <div className="text-xl font-extrabold text-slate-900">
                   ~
-                  {drivingDurationSeconds
-                    ? Math.max(1, Math.round(drivingDurationSeconds / 60))
-                    : Math.max(1, Math.round(distToEntrance / 12.5 / 60))}{' '}
+                  {Math.max(
+                    1,
+                    Math.round((routeProgress?.remainingSeconds ?? drivingDurationSeconds ?? distToEntrance / 12.5) / 60)
+                  )}{' '}
                   min
                 </div>
                 <div className="text-[11px] text-slate-500 font-medium mt-0.5">Drive Time</div>

@@ -12,7 +12,7 @@ const SHELL_ASSETS = [
   '/icons/icon-192.png',
   '/icons/icon-512.png',
   '/icons/icon-maskable-512.png',
-  '/sample-gravestone.jpg',
+  '/sample-gravestone.svg',
 ];
 const MAX_STATIC_ENTRIES = 200;
 

@@ -95,6 +95,17 @@ export interface Grave {
   updatedAt: string;
 }
 
+export interface GravePhoto {
+  id: string;
+  graveId: string;
+  url: string;
+  storagePath?: string;
+  uploadedBy?: string;
+  isPrimary: boolean;
+  capturedAt?: string;
+  createdAt: string;
+}
+
 export type RelationshipCategory = 'family' | 'friend' | 'coworker' | 'mentor' | 'other';
 
 export interface GraveRelationship {

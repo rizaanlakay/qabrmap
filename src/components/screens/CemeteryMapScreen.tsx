@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { Cemetery, Grave } from '@/types';
 import { useWakeLock } from '@/lib/device/useWakeLock';
+import { googleRasterStyle, registerGoogleTilesProtocol } from '@/lib/map/googleMapTiles';
+import { GoogleMapsAttribution } from '@/components/common/GoogleMapsAttribution';
 
 interface CemeteryMapScreenProps {
   cemetery: Cemetery;
@@ -25,60 +27,9 @@ interface CemeteryMapScreenProps {
   onSwitchCemetery: () => void;
 }
 
-// Google Maps Tile Styles
-const GOOGLE_SATELLITE_STYLE: any = {
-  version: 8,
-  sources: {
-    'google-tiles': {
-      type: 'raster',
-      tiles: [
-        'https://mt0.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
-        'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
-        'https://mt2.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
-        'https://mt3.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
-      ],
-      tileSize: 256,
-      maxzoom: 21,
-      attribution: '© Google',
-    },
-  },
-  layers: [
-    {
-      id: 'google-tiles-layer',
-      type: 'raster',
-      source: 'google-tiles',
-      minzoom: 0,
-      maxzoom: 21,
-    },
-  ],
-};
-
-const GOOGLE_ROADMAP_STYLE: any = {
-  version: 8,
-  sources: {
-    'google-tiles': {
-      type: 'raster',
-      tiles: [
-        'https://mt0.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
-        'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
-        'https://mt2.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
-        'https://mt3.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
-      ],
-      tileSize: 256,
-      maxzoom: 21,
-      attribution: '© Google',
-    },
-  },
-  layers: [
-    {
-      id: 'google-tiles-layer',
-      type: 'raster',
-      source: 'google-tiles',
-      minzoom: 0,
-      maxzoom: 21,
-    },
-  ],
-};
+// Official Google Map Tiles, loaded through the gmaptiles:// protocol registered when the map starts
+const GOOGLE_SATELLITE_STYLE = googleRasterStyle('satellite');
+const GOOGLE_ROADMAP_STYLE = googleRasterStyle('roadmap');
 
 export const CemeteryMapScreen: React.FC<CemeteryMapScreenProps> = ({
   cemetery,
@@ -259,6 +210,7 @@ export const CemeteryMapScreen: React.FC<CemeteryMapScreenProps> = ({
       try {
         const mod = await import('maplibre-gl');
         const maplibregl = mod.default || mod;
+        registerGoogleTilesProtocol(maplibregl);
 
         if (isCancelled || !mapContainerRef.current) return;
 
@@ -573,10 +525,9 @@ export const CemeteryMapScreen: React.FC<CemeteryMapScreenProps> = ({
           </div>
         </div>
 
-        {/* Google Maps Attribution Badge */}
-        <div className="absolute bottom-14 left-3.5 z-10 pointer-events-none flex items-center space-x-1.5 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-md border border-white/10 text-white shadow-sm">
-          <span className="text-[10px] font-bold tracking-tight text-white">Google</span>
-          <span className="text-[8px] text-slate-300 font-medium opacity-80">Imagery ©2026</span>
+        {/* Google Maps logo and imagery copyright, required by the Map Tiles API terms */}
+        <div className="absolute bottom-14 left-3.5 z-10 pointer-events-none">
+          <GoogleMapsAttribution map={mapInstanceRef.current} mapType={mapType} isMapReady={isMapReady} />
         </div>
 
         {/* Map Legend at Bottom */}
