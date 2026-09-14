@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import Image from 'next/image';
 import {
   ArrowLeft,
   Zap,
@@ -10,14 +9,29 @@ import {
   MapPin,
   Compass,
   Upload,
-  RefreshCw,
+  CameraOff,
+  Loader2,
 } from 'lucide-react';
 import { DeviceTelemetry } from '@/types';
+import { formatBearingToCardinal } from '@/lib/geospatial';
+import { isUsableGpsFix } from '@/lib/geospatial/routeProgress';
+import { describeCameraError } from '@/lib/device/cameraErrors';
 
 interface CaptureScreenProps {
   onCaptureComplete: (imageDataUrl: string, telemetry: DeviceTelemetry) => void;
   onBack: () => void;
 }
+
+type CameraStatus = 'starting' | 'live' | 'unavailable';
+
+interface PositionFix {
+  lat: number;
+  lng: number;
+  accuracy: number;
+}
+
+// Used only for uploaded photos taken before any GPS fix, which is how uploads have always behaved
+const UPLOAD_FALLBACK_POSITION: PositionFix = { lat: -33.967521, lng: 18.503277, accuracy: 4.2 };
 
 export const CaptureScreen: React.FC<CaptureScreenProps> = ({
   onCaptureComplete,
@@ -26,98 +40,109 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const [hasStream, setHasStream] = useState(false);
+  const [cameraStatus, setCameraStatus] = useState<CameraStatus>('starting');
+  const [cameraError, setCameraError] = useState<string | null>(null);
   const [flashOn, setFlashOn] = useState(false);
   const [showGrid, setShowGrid] = useState(true);
 
-  // Live telemetry matching mockup Screen 8
-  const [lat, setLat] = useState(-33.967521);
-  const [lng, setLng] = useState(18.503277);
-  const [accuracy, setAccuracy] = useState(4.2);
-  const [heading, setHeading] = useState(62);
+  // Real device readings; null until the device reports one
+  const [fix, setFix] = useState<PositionFix | null>(null);
+  const [heading, setHeading] = useState<number | null>(null);
 
-  // Initialize camera
+  // Start the rear camera. The <video> element is always mounted so the stream attaches the moment it arrives;
+  // it used to render only after attaching, so the live feed never showed and a demo gravestone sat in its place.
   useEffect(() => {
+    const video = videoRef.current;
+    let cancelled = false;
     let stream: MediaStream | null = null;
-    if (typeof navigator !== 'undefined' && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      navigator.mediaDevices
-        .getUserMedia({
-          video: { facingMode: { ideal: 'environment' } },
-          audio: false,
-        })
-        .then((s) => {
-          stream = s;
-          if (videoRef.current) {
-            videoRef.current.srcObject = s;
-            videoRef.current.play().catch(() => {});
-            setHasStream(true);
-          }
-        })
-        .catch(() => {
-          setHasStream(false);
-        });
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraError(window.isSecureContext ? 'Camera not supported in this browser' : 'Camera requires HTTPS');
+      setCameraStatus('unavailable');
+      return;
     }
 
-    // Geolocation listener
-    if (typeof navigator !== 'undefined' && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setLat(Number(pos.coords.latitude.toFixed(6)));
-          setLng(Number(pos.coords.longitude.toFixed(6)));
-          setAccuracy(Number(pos.coords.accuracy.toFixed(1)));
-        },
-        () => {},
-        { enableHighAccuracy: true }
-      );
-    }
+    navigator.mediaDevices
+      .getUserMedia({
+        video: { facingMode: { ideal: 'environment' } },
+        audio: false,
+      })
+      .then((s) => {
+        if (cancelled) {
+          s.getTracks().forEach((track) => track.stop());
+          return;
+        }
+        stream = s;
+        if (video) {
+          video.srcObject = s;
+          video.play().catch(() => {});
+        }
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setCameraError(describeCameraError(err));
+        setCameraStatus('unavailable');
+      });
 
-    // Compass heading listener
+    return () => {
+      cancelled = true;
+      stream?.getTracks().forEach((track) => track.stop());
+      if (video) video.srcObject = null;
+    };
+  }, []);
+
+  // Keep the position current while the gravestone is being framed
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        if (!isUsableGpsFix(pos.coords.latitude, pos.coords.longitude)) return;
+        setFix({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy });
+      },
+      () => {},
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 }
+    );
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, []);
+
+  // Compass heading listener
+  useEffect(() => {
     const handleOrientation = (e: DeviceOrientationEvent) => {
       // @ts-expect-error - webkitCompassHeading
       const h = e.webkitCompassHeading || (e.alpha ? 360 - e.alpha : null);
       if (h !== null) setHeading(Math.round(h));
     };
 
-    if (typeof window !== 'undefined' && window.DeviceOrientationEvent) {
+    if (window.DeviceOrientationEvent) {
       window.addEventListener('deviceorientation', handleOrientation);
     }
-
-    return () => {
-      if (stream) stream.getTracks().forEach((track) => track.stop());
-      if (typeof window !== 'undefined') {
-        window.removeEventListener('deviceorientation', handleOrientation);
-      }
-    };
+    return () => window.removeEventListener('deviceorientation', handleOrientation);
   }, []);
 
+  const cameraLive = cameraStatus === 'live';
+  // A grave's position comes from this photo, so the shutter waits for both a live camera and a real GPS fix
+  const canTakePhoto = cameraLive && fix !== null;
+
+  const buildTelemetry = (position: PositionFix): DeviceTelemetry => ({
+    latitude: position.lat,
+    longitude: position.lng,
+    gpsAccuracy: Number(position.accuracy.toFixed(1)),
+    headingDegrees: heading ?? undefined,
+    timestamp: new Date().toISOString(),
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  });
+
   const handleTriggerShutter = () => {
-    let capturedDataUrl = '/sample-gravestone.svg';
+    const video = videoRef.current;
+    if (!canTakePhoto || !video || !fix) return;
 
-    if (videoRef.current && hasStream) {
-      try {
-        const canvas = document.createElement('canvas');
-        canvas.width = videoRef.current.videoWidth || 640;
-        canvas.height = videoRef.current.videoHeight || 480;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-          capturedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
-        }
-      } catch {
-        capturedDataUrl = '/sample-gravestone.svg';
-      }
-    }
-
-    const telemetry: DeviceTelemetry = {
-      latitude: lat,
-      longitude: lng,
-      gpsAccuracy: accuracy,
-      headingDegrees: heading,
-      timestamp: new Date().toISOString(),
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    };
-
-    onCaptureComplete(capturedDataUrl, telemetry);
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 1280;
+    canvas.height = video.videoHeight || 960;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    onCaptureComplete(canvas.toDataURL('image/jpeg', 0.85), buildTelemetry(fix));
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -126,15 +151,7 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({
 
     const reader = new FileReader();
     reader.onload = () => {
-      const dataUrl = reader.result as string;
-      const telemetry: DeviceTelemetry = {
-        latitude: lat,
-        longitude: lng,
-        gpsAccuracy: accuracy,
-        headingDegrees: heading,
-        timestamp: new Date().toISOString(),
-      };
-      onCaptureComplete(dataUrl, telemetry);
+      onCaptureComplete(reader.result as string, buildTelemetry(fix ?? UPLOAD_FALLBACK_POSITION));
     };
     reader.readAsDataURL(file);
   };
@@ -150,23 +167,33 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({
         className="hidden"
       />
 
-      {/* Camera Stream or Realistic Cemetery Gravestone Viewfinder */}
-      {hasStream ? (
-        <video
-          ref={videoRef}
-          playsInline
-          muted
-          autoPlay
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-      ) : (
-        <div className="absolute inset-0 w-full h-full relative">
-          <Image
-            src="/sample-gravestone.svg"
-            alt="Cemetery Gravestone"
-            fill
-            className="object-cover brightness-95"
-          />
+      {/* Live camera feed, faded in once it is actually playing */}
+      <video
+        ref={videoRef}
+        playsInline
+        muted
+        autoPlay
+        onPlaying={() => setCameraStatus('live')}
+        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
+          cameraLive ? 'opacity-100' : 'opacity-0'
+        }`}
+      />
+
+      {/* Camera starting or unavailable */}
+      {!cameraLive && (
+        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 z-10 flex flex-col items-center px-12 text-center pointer-events-none">
+          {cameraStatus === 'starting' ? (
+            <>
+              <Loader2 className="w-7 h-7 text-white/70 animate-spin" />
+              <p className="mt-3 text-sm font-semibold text-white/80">Starting camera…</p>
+            </>
+          ) : (
+            <>
+              <CameraOff className="w-7 h-7 text-amber-300" />
+              <p className="mt-3 text-sm font-semibold text-white">{cameraError || 'Camera unavailable'}</p>
+              <p className="mt-1 text-xs text-white/60">You can still upload a photo of the gravestone.</p>
+            </>
+          )}
         </div>
       )}
 
@@ -233,42 +260,47 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({
 
         {/* Guidance Instruction Pill */}
         <div className="mt-4 bg-black/55 backdrop-blur-md text-white text-xs font-medium py-1.5 px-4 rounded-full border border-white/15">
-          Position the gravestone in the frame
+          {cameraLive && !fix ? 'Waiting for GPS before taking the photo' : 'Position the gravestone in the frame'}
         </div>
 
         {/* Live Telemetry Pill matching Screen 8 */}
         <div className="mt-4 bg-black/75 backdrop-blur-md rounded-2xl py-2 px-4 border border-white/20 text-white text-[11px] space-y-1 shadow-xl">
           <div className="flex items-center space-x-1.5 text-emerald-300 font-mono">
             <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-            <span>{lat.toFixed(6)}, {lng.toFixed(6)}</span>
-            <span className="text-white/60">± {accuracy} m</span>
+            {fix ? (
+              <>
+                <span>
+                  {fix.lat.toFixed(6)}, {fix.lng.toFixed(6)}
+                </span>
+                <span className="text-white/60">± {Math.round(fix.accuracy)} m</span>
+              </>
+            ) : (
+              <span className="text-white/70 font-sans">Locating…</span>
+            )}
           </div>
           <div className="flex items-center space-x-1.5 text-slate-200">
             <Compass className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-            <span>Heading {heading}° NE</span>
+            <span>{heading !== null ? `Heading ${formatBearingToCardinal(heading)}` : 'Compass not available'}</span>
           </div>
         </div>
       </div>
 
       {/* Bottom Shutter Controls matching Screen 8 */}
       <div className="h-28 bg-gradient-to-t from-black via-black/80 to-transparent flex items-center justify-around px-8 z-30 shrink-0 pb-3">
-        {/* Recent Photo Thumbnail */}
-        <div className="w-12 h-12 rounded-xl overflow-hidden relative border-2 border-white/40 bg-slate-800 shrink-0">
-          <Image
-            src="/sample-gravestone.svg"
-            alt="Recent Thumbnail"
-            fill
-            className="object-cover"
-          />
-        </div>
+        {/* Keeps the shutter centred between the side controls */}
+        <div className="w-12 h-12 shrink-0" aria-hidden="true" />
 
         {/* Big Circular White Shutter Button */}
         <button
           onClick={handleTriggerShutter}
-          className="w-18 h-18 rounded-full border-4 border-white flex items-center justify-center p-1 group active:scale-95 transition-transform"
+          disabled={!canTakePhoto}
+          className="w-18 h-18 rounded-full border-4 border-white flex items-center justify-center p-1 group active:scale-95 transition-transform disabled:opacity-40 disabled:active:scale-100"
           aria-label="Take Photo"
+          title={
+            !cameraLive ? 'Camera is not available' : !fix ? 'Waiting for a GPS fix' : 'Take photo'
+          }
         >
-          <div className="w-14 h-14 rounded-full bg-white group-hover:bg-emerald-100 transition-colors" />
+          <div className="w-14 h-14 rounded-full bg-white group-hover:bg-emerald-100 group-disabled:group-hover:bg-white transition-colors" />
         </button>
 
         {/* Upload Existing Photo Button */}
