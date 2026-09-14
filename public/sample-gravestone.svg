@@ -1,4 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" width="100%" height="100%">
+  <!-- Generic unmarked gravestone for places with no grave details to engrave (cemetery thumbnails, AR preview).
+       Graves without a photo are drawn by the GravestonePlaceholder component with their own inscription. -->
   <defs>
     <!-- Background Cemetery Nature -->
     <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -31,14 +33,14 @@
 
   <!-- Sky & Horizon -->
   <rect width="600" height="480" fill="url(#skyGrad)"/>
-  
+
   <!-- Distant Trees & Foliage -->
   <path d="M0 430 Q80 370 160 410 T320 380 T480 400 T600 370 L600 500 L0 500 Z" fill="#4B6347"/>
   <path d="M0 450 Q100 410 220 440 T440 420 T600 440 L600 520 L0 520 Z" fill="#3D5039"/>
 
   <!-- Cemetery Ground Grass -->
   <rect y="480" width="600" height="320" fill="url(#groundGrad)"/>
-  
+
   <!-- Surrounding Graves (Distant Perspective) -->
   <path d="M40 450 L75 440 L90 475 L55 485 Z" fill="#C5CAC2" opacity="0.6"/>
   <path d="M505 455 L545 445 L560 480 L520 490 Z" fill="#BCC2B9" opacity="0.6"/>
@@ -61,34 +63,6 @@
   <!-- Engraved Arabic Bismillah Motif at Arched Peak -->
   <text x="300" y="245" font-family="'Amiri', 'Traditional Arabic', serif" font-size="28" font-weight="bold" fill="#2C3529" text-anchor="middle" opacity="0.85">
     بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
-  </text>
-
-  <!-- Engraved Text on Stone (Exact Replica of Mockup) -->
-  <!-- Grave Number -->
-  <text x="300" y="305" font-family="'Inter', 'Arial Black', sans-serif" font-size="44" font-weight="900" fill="#1A2218" text-anchor="middle" letter-spacing="4">
-    8660
-  </text>
-
-  <!-- Name Lines -->
-  <text x="300" y="375" font-family="'Inter', sans-serif" font-size="38" font-weight="800" fill="#1E271C" text-anchor="middle" letter-spacing="3">
-    ABDUL
-  </text>
-  <text x="300" y="435" font-family="'Inter', sans-serif" font-size="38" font-weight="800" fill="#1E271C" text-anchor="middle" letter-spacing="3">
-    WAHAB
-  </text>
-  <text x="300" y="495" font-family="'Inter', sans-serif" font-size="38" font-weight="800" fill="#1E271C" text-anchor="middle" letter-spacing="3">
-    HASSAN
-  </text>
-  <text x="300" y="555" font-family="'Inter', sans-serif" font-size="38" font-weight="800" fill="#1E271C" text-anchor="middle" letter-spacing="3">
-    NARKER
-  </text>
-
-  <!-- Dates -->
-  <text x="300" y="625" font-family="'Inter', monospace" font-size="26" font-weight="700" fill="#253023" text-anchor="middle" letter-spacing="2">
-    B. 28-01-1947
-  </text>
-  <text x="300" y="675" font-family="'Inter', monospace" font-size="26" font-weight="700" fill="#253023" text-anchor="middle" letter-spacing="2">
-    D. 23-09-2016
   </text>
 
   <!-- Base Gravel / Grass tufts in foreground -->

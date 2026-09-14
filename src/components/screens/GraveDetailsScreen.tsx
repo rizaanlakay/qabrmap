@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Grave, GravePhoto, GraveRelationship, RelationshipCategory } from '@/types';
 import { GravePhotoCarousel } from '@/components/common/GravePhotoCarousel';
+import { GraveImage } from '@/components/common/GraveImage';
 import { dataStore } from '@/lib/data/store';
 import { buildGraveShareUrl } from '@/lib/share/graveLink';
 
@@ -184,7 +185,7 @@ export const GraveDetailsScreen: React.FC<GraveDetailsScreenProps> = ({
       <GravePhotoCarousel
         photos={photos.map((photo) => ({ id: photo.id, url: photo.url }))}
         alt={grave.person?.fullName || `Grave ${grave.graveNumber}`}
-        fallbackUrl={grave.primaryPhotoUrl || '/sample-gravestone.svg'}
+        fallback={<GraveImage grave={grave} priority />}
       />
 
       {/* Main Grave Details Card matching Mockup Screen 5 */}

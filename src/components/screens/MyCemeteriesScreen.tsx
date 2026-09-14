@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
+import { GraveImage } from '@/components/common/GraveImage';
 import {
   ArrowLeft,
   Heart,
@@ -206,12 +206,7 @@ export const MyCemeteriesScreen: React.FC<MyCemeteriesScreenProps> = ({
                         <div className="flex items-start space-x-3 min-w-0 flex-1">
                           {/* Photo Thumbnail */}
                           <div className="w-14 h-16 rounded-xl overflow-hidden relative shrink-0 bg-slate-100 border border-slate-200/60">
-                            <Image
-                              src={grave.primaryPhotoUrl || '/sample-gravestone.svg'}
-                              alt={fullName}
-                              fill
-                              className="object-cover"
-                            />
+                            <GraveImage grave={grave} alt={fullName} />
                           </div>
 
                           {/* Deceased Name and Surname & Details */}

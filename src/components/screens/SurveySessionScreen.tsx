@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import Image from 'next/image';
+import { GravestonePlaceholder } from '@/components/common/GravestonePlaceholder';
 import {
   ArrowLeft,
   Camera,
@@ -126,12 +126,7 @@ export const SurveySessionScreen: React.FC<SurveySessionScreenProps> = ({
               >
                 <div className="flex items-center space-x-3">
                   <div className="w-11 h-11 rounded-lg overflow-hidden relative bg-slate-100 shrink-0 border border-slate-200">
-                    <Image
-                      src="/sample-gravestone.svg"
-                      alt={`Grave ${cap.graveNumber}`}
-                      fill
-                      className="object-cover"
-                    />
+                    <GravestonePlaceholder graveNumber={cap.graveNumber} className="absolute inset-0 w-full h-full" />
                   </div>
                   <div>
                     <div className="text-xs font-bold text-slate-900">

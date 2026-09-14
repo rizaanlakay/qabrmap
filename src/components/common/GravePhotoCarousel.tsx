@@ -14,10 +14,10 @@ interface GravePhotoCarouselProps {
   photos: CarouselPhoto[];
   alt: string;
   // Shown when the grave has no photos yet
-  fallbackUrl: string;
+  fallback: React.ReactNode;
 }
 
-export const GravePhotoCarousel: React.FC<GravePhotoCarouselProps> = ({ photos, alt, fallbackUrl }) => {
+export const GravePhotoCarousel: React.FC<GravePhotoCarouselProps> = ({ photos, alt, fallback }) => {
   const [index, setIndex] = useState(0);
   const pointerStart = useRef<{ x: number; y: number } | null>(null);
   const count = photos.length;
@@ -53,11 +53,9 @@ export const GravePhotoCarousel: React.FC<GravePhotoCarouselProps> = ({ photos, 
     }
   };
 
-  const slides = count > 0 ? photos : [{ id: 'fallback', url: fallbackUrl }];
-
   return (
     <div
-      className="w-full bg-slate-900 relative aspect-[4/3] max-h-72 overflow-hidden shadow-inner select-none touch-pan-y focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/70"
+      className="w-full shrink-0 bg-slate-900 relative aspect-[4/3] max-h-72 overflow-hidden shadow-inner select-none touch-pan-y focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/70"
       role="region"
       aria-roledescription="carousel"
       aria-label={`${alt} photos`}
@@ -70,20 +68,31 @@ export const GravePhotoCarousel: React.FC<GravePhotoCarouselProps> = ({ photos, 
       {/* Slide strip */}
       <div
         className="absolute inset-0 flex transition-transform duration-300 ease-out"
-        style={{ transform: `translateX(-${wrapPhotoIndex(index, slides.length) * 100}%)` }}
+        style={{ transform: `translateX(-${wrapPhotoIndex(index, count) * 100}%)` }}
       >
-        {slides.map((photo, i) => (
+        {count > 0 ? (
+          photos.map((photo, i) => (
+            <div
+              key={photo.id}
+              className="relative w-full h-full shrink-0"
+              role="group"
+              aria-roledescription="slide"
+              aria-label={photoCounterLabel(i, count)}
+              aria-hidden={i !== index}
+            >
+              <Image src={photo.url} alt={`${alt}, photo ${i + 1}`} fill className="object-cover" priority={i === 0} draggable={false} />
+            </div>
+          ))
+        ) : (
           <div
-            key={photo.id}
             className="relative w-full h-full shrink-0"
             role="group"
             aria-roledescription="slide"
-            aria-label={photoCounterLabel(i, count)}
-            aria-hidden={i !== index}
+            aria-label={photoCounterLabel(0, 0)}
           >
-            <Image src={photo.url} alt={`${alt}, photo ${i + 1}`} fill className="object-cover" priority={i === 0} draggable={false} />
+            {fallback}
           </div>
-        ))}
+        )}
       </div>
 
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />

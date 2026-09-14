@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
 import { ArrowLeft, Search as SearchIcon, X, ChevronRight, Heart } from 'lucide-react';
 import { Grave } from '@/types';
+import { GraveImage } from '@/components/common/GraveImage';
 import { dataStore } from '@/lib/data/store';
 
 interface SearchScreenProps {
@@ -112,12 +112,7 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
               >
                 {/* Gravestone Thumbnail */}
                 <div className="w-14 h-16 rounded-xl overflow-hidden relative shrink-0 bg-slate-100 mr-3.5 border border-slate-200/60">
-                  <Image
-                    src={grave.primaryPhotoUrl || '/sample-gravestone.svg'}
-                    alt={grave.person?.fullName || 'Gravestone'}
-                    fill
-                    className="object-cover"
-                  />
+                  <GraveImage grave={grave} alt={grave.person?.fullName || 'Gravestone'} />
                 </div>
 
                 {/* Deceased Info */}
