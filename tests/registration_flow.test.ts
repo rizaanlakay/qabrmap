@@ -66,7 +66,7 @@ describe('New User Registration & Onboarding Flow', () => {
 
   it('should maintain user count when new relationships are added', () => {
     const initialCount = dataStore.getMyCemeteriesGraveCount();
-    expect(initialCount).toBeGreaterThanOrEqual(2); // Seeded grandfather/father + previous test
+    expect(initialCount).toBeGreaterThanOrEqual(1); // The loved one registered in the previous test
   });
 
   it('supports Google OAuth provider for Sign In and Account Creation', async () => {

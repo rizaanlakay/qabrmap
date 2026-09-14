@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import { ArrowLeft, Search, ChevronRight, Heart } from 'lucide-react';
 import { Cemetery } from '@/types';
+import { formatGravesMapped } from '@/lib/data/cemeteryStats';
 
 interface CemeterySelectScreenProps {
   cemeteries: Cemetery[];
@@ -155,9 +156,14 @@ export const CemeterySelectScreen: React.FC<CemeterySelectScreenProps> = ({
                     {cem.city}, {cem.province}
                   </p>
                   <div className="flex items-center text-[11px] text-slate-600 mt-1">
-                    <span>{cem.mappedGravesCount.toLocaleString()} graves mapped</span>
-                    <span className="mx-1.5 text-slate-300">•</span>
-                    <span className="font-semibold text-emerald-700">{cem.coveragePercentage}% coverage</span>
+                    <span>{formatGravesMapped(cem.mappedGravesCount)}</span>
+                    {/* Coverage needs a real total for the cemetery, so it stays hidden until one is recorded */}
+                    {cem.totalGravesEstimate > 0 && (
+                      <>
+                        <span className="mx-1.5 text-slate-300">•</span>
+                        <span className="font-semibold text-emerald-700">{cem.coveragePercentage}% coverage</span>
+                      </>
+                    )}
                   </div>
                 </div>
 

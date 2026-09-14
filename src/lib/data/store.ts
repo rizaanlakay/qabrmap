@@ -16,6 +16,12 @@ import { supabase, isSupabaseConfigured } from '../supabase/client';
 import { mapDbCemetery, mapDbGrave, mapDbGravePhoto, graveToDb, personToDb } from '../supabase/mappers';
 import { deleteGravePhoto, uploadGravePhoto } from '../supabase/storage';
 import { isMissingTableError } from '../supabase/errors';
+import { cemeteryCoveragePercent } from './cemeteryStats';
+
+// Earlier builds seeded these sample graves into every device's offline cache, and saved two of them as
+// "Father" and "Grandmother"; they are cleared on start-up so they never reappear
+const SAMPLE_GRAVE_IDS = MOCK_GRAVES.map((grave) => grave.id);
+const SAMPLE_SAVED_GRAVE_IDS = ['grave_8660', 'grave_mowbray_grandmother'];
 
 export interface MyCemeteryGraveEntry {
   grave: Grave;
@@ -26,33 +32,13 @@ export interface MyCemeteryGraveEntry {
 class DataStore {
   private isInitialized = false;
   private memoryCemeteries: Cemetery[] = [...MOCK_CEMETERIES];
-  private memoryGraves: Grave[] = [...MOCK_GRAVES];
+  // Only graves saved on this device when the cloud is unavailable; there is no built-in sample data
+  private memoryGraves: Grave[] = [];
   private activeSurvey: SurveySession = { ...MOCK_ACTIVE_SURVEY_SESSION };
   private corrections: Correction[] = [];
-  private savedCemeteries: Set<string> = new Set(['cem_athlone', 'cem_mowbray']);
-  private savedGraveIds: Set<string> = new Set(['grave_8660', 'grave_mowbray_grandmother']);
-  private relationships: Map<string, GraveRelationship> = new Map([
-    [
-      'grave_8660',
-      {
-        graveId: 'grave_8660',
-        category: 'family',
-        specificRelation: 'Father',
-        notes: 'May Allah grant him Jannatul Firdaus',
-        savedAt: '2026-09-12T10:00:00Z',
-      },
-    ],
-    [
-      'grave_mowbray_grandmother',
-      {
-        graveId: 'grave_mowbray_grandmother',
-        category: 'family',
-        specificRelation: 'Grandmother',
-        notes: 'Beloved Grandmother, dearly missed',
-        savedAt: '2026-09-12T10:30:00Z',
-      },
-    ],
-  ]);
+  private savedCemeteries: Set<string> = new Set();
+  private savedGraveIds: Set<string> = new Set();
+  private relationships: Map<string, GraveRelationship> = new Map();
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -69,6 +55,18 @@ class DataStore {
         if (storedRels) {
           const arr = JSON.parse(storedRels) as GraveRelationship[];
           arr.forEach((r) => this.relationships.set(r.graveId, r));
+        }
+
+        const hadSampleSaves = SAMPLE_SAVED_GRAVE_IDS.some(
+          (id) => this.savedGraveIds.has(id) || this.relationships.has(id)
+        );
+        if (hadSampleSaves) {
+          SAMPLE_SAVED_GRAVE_IDS.forEach((id) => {
+            this.savedGraveIds.delete(id);
+            this.relationships.delete(id);
+          });
+          this.persistSavedGraves();
+          this.persistRelationships();
         }
       } catch (e) {
         console.warn('LocalStorage load error', e);
@@ -298,10 +296,7 @@ class DataStore {
     try {
       // 1. Initialize Dexie offline tables
       await offlineDb.cemeteries.bulkPut(this.memoryCemeteries);
-      const graveCount = await offlineDb.graves.count();
-      if (graveCount === 0 || graveCount < this.memoryGraves.length) {
-        await offlineDb.graves.bulkPut(this.memoryGraves);
-      }
+      await offlineDb.graves.bulkDelete(SAMPLE_GRAVE_IDS);
       const sessCount = await offlineDb.surveySessions.count();
       if (sessCount === 0) {
         await offlineDb.surveySessions.put(this.activeSurvey);
@@ -322,6 +317,43 @@ class DataStore {
 
   // --- CEMETERIES ---
   async getCemeteries(): Promise<Cemetery[]> {
+    return this.withLiveGraveCounts(await this.loadCemeteries());
+  }
+
+  // "Graves mapped" is counted from the graves themselves; the stored figure was seed data
+  private async withLiveGraveCounts(cemeteries: Cemetery[]): Promise<Cemetery[]> {
+    const counts = await Promise.all(cemeteries.map((cemetery) => this.countGraves(cemetery.id)));
+    return cemeteries.map((cemetery, i) => {
+      const mapped = counts[i] ?? 0;
+      return {
+        ...cemetery,
+        mappedGravesCount: mapped,
+        coveragePercentage: cemeteryCoveragePercent(mapped, cemetery.totalGravesEstimate) ?? 0,
+      };
+    });
+  }
+
+  private async countGraves(cemeteryId: string): Promise<number | null> {
+    if (isSupabaseConfigured && supabase && typeof navigator !== 'undefined' && navigator.onLine) {
+      try {
+        const { count, error } = await supabase
+          .from('graves')
+          .select('id', { count: 'exact', head: true })
+          .eq('cemetery_id', cemeteryId);
+        if (!error && count !== null) return count;
+      } catch (err) {
+        console.warn('Could not count graves, using this device:', err);
+      }
+    }
+    if (typeof window === 'undefined') return null;
+    try {
+      return await offlineDb.graves.where('cemeteryId').equals(cemeteryId).count();
+    } catch {
+      return null;
+    }
+  }
+
+  private async loadCemeteries(): Promise<Cemetery[]> {
     // 1. Try Supabase Cloud
     if (isSupabaseConfigured && supabase && typeof navigator !== 'undefined' && navigator.onLine) {
       try {
@@ -359,8 +391,9 @@ class DataStore {
   // --- GRAVES ---
   async getGraves(cemeteryId?: string): Promise<Grave[]> {
     let resultList: Grave[] = [];
+    let loadedFromCloud = false;
 
-    // 1. Try Supabase Cloud
+    // 1. Try Supabase Cloud. A successful answer is the truth, even when it has no graves.
     if (isSupabaseConfigured && supabase && typeof navigator !== 'undefined' && navigator.onLine) {
       try {
         let query = supabase.from('graves').select('*, person:persons(*)');
@@ -368,10 +401,11 @@ class DataStore {
           query = query.eq('cemetery_id', cemeteryId);
         }
         const { data, error } = await query;
-        if (!error && data && data.length > 0) {
+        if (!error && data) {
+          loadedFromCloud = true;
           resultList = data.map(mapDbGrave);
           // Sync to Dexie IndexedDB in background
-          if (typeof window !== 'undefined') {
+          if (typeof window !== 'undefined' && resultList.length > 0) {
             offlineDb.graves.bulkPut(resultList).catch(() => {});
           }
         }
@@ -380,8 +414,8 @@ class DataStore {
       }
     }
 
-    // 2. Fallback to Dexie IndexedDB
-    if (resultList.length === 0 && typeof window !== 'undefined') {
+    // 2. Offline or unreachable: use the graves cached on this device
+    if (!loadedFromCloud && typeof window !== 'undefined') {
       try {
         if (cemeteryId) {
           resultList = await offlineDb.graves.where('cemeteryId').equals(cemeteryId).toArray();
@@ -391,8 +425,8 @@ class DataStore {
       } catch (e) {}
     }
 
-    // 3. Fallback to memory
-    if (resultList.length === 0) {
+    // 3. No cloud and no cache: only graves saved during this visit
+    if (!loadedFromCloud && resultList.length === 0) {
       if (cemeteryId) {
         resultList = this.memoryGraves.filter((g) => g.cemeteryId === cemeteryId);
       } else {

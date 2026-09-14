@@ -98,18 +98,15 @@ function QabrMapAppContent() {
     timestamp: new Date().toISOString(),
   });
   const [extractedData, setExtractedData] = useState<AIStructuredExtraction>({
-    graveNumber: '8660',
-    firstName: 'Abdul',
-    middleNames: ['Wahab'],
-    surname: 'Hassan Narker',
-    fullName: 'Abdul Wahab Hassan Narker',
-    birthDate: '1947-01-28',
-    deathDate: '2016-09-23',
-    gender: 'male',
-    confidence: 0.97,
-    rawOcrText: '8660\nABDUL\nWAHAB\nHASSAN\nNARKER\nB. 28-01-1947\nD. 23-09-2016',
+    graveNumber: '',
+    firstName: '',
+    middleNames: [],
+    surname: '',
+    fullName: '',
+    confidence: 0,
+    rawOcrText: '',
     otherText: [],
-    fieldConfidences: { graveNumber: 0.99, fullName: 0.98, dates: 0.96 },
+    fieldConfidences: { graveNumber: 0, fullName: 0, dates: 0 },
   });
 
   // True while a shared ?grave= link is being resolved, so the URL sync below doesn't strip it early
@@ -161,7 +158,7 @@ function QabrMapAppContent() {
 
     dataStore.getGraves('cem_athlone').then((gList) => {
       setGraves(gList);
-      const defaultGrave = gList.find((g) => g.graveNumber === '8660') || gList[0];
+      const defaultGrave = gList[0];
       // Don't override a grave opened from a shared link
       if (defaultGrave) setSelectedGrave((prev) => prev ?? defaultGrave);
     });
@@ -277,7 +274,7 @@ function QabrMapAppContent() {
       <main className="flex-1 flex flex-col relative overflow-hidden">
         {currentScreen === 'home' && (
           <HomeScreen
-            myCemeteryCount={mounted ? dataStore.getMyCemeteryCount() : 2}
+            myCemeteryCount={mounted ? dataStore.getMyCemeteryCount() : 0}
             onNavigate={(screen) => {
               if (screen === 'cemetery-select') {
                 setCemeteryFilter('nearby');
@@ -357,7 +354,6 @@ function QabrMapAppContent() {
 
         {currentScreen === 'search' && (
           <SearchScreen
-            initialQuery="Abdul Wahab"
             onSelectGrave={handleOpenGrave}
             onBack={() => setCurrentScreen('home')}
           />

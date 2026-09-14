@@ -22,15 +22,16 @@ export const ConfirmDetailsScreen: React.FC<ConfirmDetailsScreenProps> = ({
   onSaveGrave,
   onBack,
 }) => {
-  const [graveNumber, setGraveNumber] = useState(initialData.graveNumber || '8660');
-  const [firstName, setFirstName] = useState(initialData.firstName || 'Abdul');
-  const [middleNames, setMiddleNames] = useState(initialData.middleNames?.join(' ') || 'Wahab');
-  const [surname, setSurname] = useState(initialData.surname || 'Hassan Narker');
-  const [birthDate, setBirthDate] = useState(initialData.birthDate || '1947-01-28');
-  const [deathDate, setDeathDate] = useState(initialData.deathDate || '2016-09-23');
+  // Blank when the stone couldn't be read, so nobody saves a grave under another person's details
+  const [graveNumber, setGraveNumber] = useState(initialData.graveNumber || '');
+  const [firstName, setFirstName] = useState(initialData.firstName || '');
+  const [middleNames, setMiddleNames] = useState(initialData.middleNames?.join(' ') || '');
+  const [surname, setSurname] = useState(initialData.surname || '');
+  const [birthDate, setBirthDate] = useState(initialData.birthDate || '');
+  const [deathDate, setDeathDate] = useState(initialData.deathDate || '');
   const [isEditing, setIsEditing] = useState(false);
 
-  const confidencePercent = Math.round((initialData.confidence || 0.97) * 100);
+  const confidencePercent = Math.round((initialData.confidence ?? 0) * 100);
 
   const handleConfirm = () => {
     const fullName = [firstName, middleNames, surname].filter(Boolean).join(' ');
@@ -197,17 +198,17 @@ export const ConfirmDetailsScreen: React.FC<ConfirmDetailsScreenProps> = ({
               <span className="text-emerald-700 font-medium">Tesseract Multi-Lingual</span>
             </div>
             <pre className="bg-white p-2 rounded-lg text-[11px] font-mono text-slate-700 whitespace-pre-wrap border border-slate-200/70 max-h-24 overflow-y-auto">
-              {initialData.rawOcrText || '8660\nABDUL WAHAB HASSAN NARKER\nB. 28-01-1947\nD. 23-09-2016\nبِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ'}
+              {initialData.rawOcrText || 'No text could be read from this photo.'}
             </pre>
             <div className="grid grid-cols-3 gap-1 mt-2 text-[10px] text-slate-500 text-center">
               <div className="bg-white p-1 rounded border">
-                No: <b>{Math.round((initialData.fieldConfidences?.graveNumber || 0.99) * 100)}%</b>
+                No: <b>{Math.round((initialData.fieldConfidences?.graveNumber ?? 0) * 100)}%</b>
               </div>
               <div className="bg-white p-1 rounded border">
-                Name: <b>{Math.round((initialData.fieldConfidences?.fullName || 0.98) * 100)}%</b>
+                Name: <b>{Math.round((initialData.fieldConfidences?.fullName ?? 0) * 100)}%</b>
               </div>
               <div className="bg-white p-1 rounded border">
-                Dates: <b>{Math.round((initialData.fieldConfidences?.dates || 0.96) * 100)}%</b>
+                Dates: <b>{Math.round((initialData.fieldConfidences?.dates ?? 0) * 100)}%</b>
               </div>
             </div>
           </div>

@@ -58,4 +58,28 @@ describe('AI Gravestone Extraction Unit Tests', () => {
     expect(result.birthDate).toBe('1955-06-15');
     expect(result.deathDate).toBe('2021-11-20');
   });
+
+  it('leaves every field blank when nothing could be read, instead of inventing a person', async () => {
+    const result = await extractor.extractStructuredData('', []);
+    expect(result.graveNumber).toBe('');
+    expect(result.firstName).toBe('');
+    expect(result.middleNames).toEqual([]);
+    expect(result.surname).toBe('');
+    expect(result.fullName).toBe('');
+    expect(result.birthDate).toBeUndefined();
+    expect(result.deathDate).toBeUndefined();
+    expect(result.gender).toBeUndefined();
+    expect(result.confidence).toBe(0);
+    expect(result.fieldConfidences).toEqual({ graveNumber: 0, fullName: 0, dates: 0 });
+  });
+
+  it('scores only the fields it found', async () => {
+    const lines = [{ text: 'GRAVE 1203', confidence: 0.9, language: 'en' }];
+    const result = await extractor.extractStructuredData('GRAVE 1203', lines);
+    expect(result.graveNumber).toBe('1203');
+    expect(result.fieldConfidences.graveNumber).toBeCloseTo(0.9);
+    expect(result.fieldConfidences.fullName).toBe(0);
+    expect(result.fieldConfidences.dates).toBe(0);
+    expect(result.confidence).toBeCloseTo(0.3);
+  });
 });

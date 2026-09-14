@@ -131,26 +131,14 @@ export class DefaultOCRProvider implements OCRProvider {
         }
       }
     } catch (err) {
-      console.warn('Tesseract OCR fallback to template parser:', err);
+      console.warn('Tesseract OCR could not read the photo:', err);
     }
 
-    // Default robust Islamic gravestone template fallback (e.g. for SVG test captures or faded stones)
-    const lines: OCRLine[] = [
-      { text: '8660', confidence: 0.99, language: 'en' },
-      { text: 'ABDUL', confidence: 0.98, language: 'en' },
-      { text: 'WAHAB', confidence: 0.97, language: 'en' },
-      { text: 'HASSAN', confidence: 0.98, language: 'en' },
-      { text: 'NARKER', confidence: 0.99, language: 'en' },
-      { text: 'B. 28-01-1947', confidence: 0.96, language: 'en' },
-      { text: 'D. 23-09-2016', confidence: 0.97, language: 'en' },
-      { text: 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ', confidence: 0.95, language: 'ar' },
-    ];
-
-    const rawOcrText = lines.map((l) => l.text).join('\n');
+    // Nothing readable: return no text so the user fills in the details, rather than inventing a person
     return {
-      rawOcrText,
-      lines,
-      detectedLanguages: ['en', 'ar'],
+      rawOcrText: '',
+      lines: [],
+      detectedLanguages: [],
     };
   }
 }
@@ -261,23 +249,32 @@ export class DefaultExtractionProvider implements ExtractionProvider {
 
     const fullName = [firstName, ...middleNames, surname].filter(Boolean).join(' ');
 
+    // Confidence comes from what was actually read: a field that wasn't found scores 0
+    const readConfidence =
+      lines.length > 0
+        ? lines.reduce((sum, l) => sum + (l.confidence || 0), 0) / lines.length
+        : rawOcrText.trim()
+          ? 0.85
+          : 0;
+    const fieldConfidences = {
+      graveNumber: graveNumber ? readConfidence : 0,
+      fullName: fullName ? readConfidence : 0,
+      dates: birthDate || deathDate ? readConfidence : 0,
+    };
+    const confidence = (fieldConfidences.graveNumber + fieldConfidences.fullName + fieldConfidences.dates) / 3;
+
     return {
-      graveNumber: graveNumber || '8660',
-      firstName: firstName || 'Abdul',
-      middleNames: middleNames.length > 0 ? middleNames : ['Wahab'],
-      surname: surname || 'Hassan Narker',
-      fullName: fullName || 'Abdul Wahab Hassan Narker',
-      birthDate: birthDate || '1947-01-28',
-      deathDate: deathDate || '2016-09-23',
-      gender: 'male',
-      confidence: 0.97, // 97% confidence matching mockup Screen 10
+      graveNumber,
+      firstName,
+      middleNames,
+      surname,
+      fullName,
+      birthDate,
+      deathDate,
+      confidence,
       rawOcrText,
-      otherText: ['بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ'],
-      fieldConfidences: {
-        graveNumber: 0.99,
-        fullName: 0.98,
-        dates: 0.96,
-      },
+      otherText: tokenLines.filter((line) => /[؀-ۿ]/.test(line)),
+      fieldConfidences,
     };
   }
 }

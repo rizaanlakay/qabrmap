@@ -13,7 +13,7 @@ interface SearchScreenProps {
 }
 
 export const SearchScreen: React.FC<SearchScreenProps> = ({
-  initialQuery = 'Abdul Wahab',
+  initialQuery = '',
   onSelectGrave,
   onBack,
 }) => {

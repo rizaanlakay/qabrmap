@@ -148,7 +148,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   {cemetery.mappedGravesCount.toLocaleString()}
                 </div>
                 <div className="text-[11px] text-emerald-700 font-semibold mt-1">
-                  {cemetery.coveragePercentage}% of cemetery total
+                  {cemetery.totalGravesEstimate > 0
+                    ? `${cemetery.coveragePercentage}% of cemetery total`
+                    : 'Cemetery total not recorded'}
                 </div>
               </div>
 

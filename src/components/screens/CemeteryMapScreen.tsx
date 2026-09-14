@@ -12,6 +12,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { Cemetery, Grave } from '@/types';
+import { formatGravesMapped } from '@/lib/data/cemeteryStats';
 import { useWakeLock } from '@/lib/device/useWakeLock';
 import { googleRasterStyle, registerGoogleTilesProtocol } from '@/lib/map/googleMapTiles';
 import { GoogleMapsAttribution } from '@/components/common/GoogleMapsAttribution';
@@ -411,7 +412,8 @@ export const CemeteryMapScreen: React.FC<CemeteryMapScreenProps> = ({
             <ChevronDown className="w-4 h-4 opacity-80 shrink-0" />
           </div>
           <span className="text-[11px] text-emerald-300/90 font-medium">
-            {cemetery.mappedGravesCount.toLocaleString()} graves mapped ({cemetery.coveragePercentage}%)
+            {formatGravesMapped(cemetery.mappedGravesCount)}
+            {cemetery.totalGravesEstimate > 0 && ` (${cemetery.coveragePercentage}%)`}
           </span>
         </button>
 
