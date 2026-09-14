@@ -121,6 +121,13 @@ export function computeRouteProgress({
   };
 }
 
+// Devices and emulators with no real position sometimes report 0,0 ("Null Island") or non-numbers
+export function isUsableGpsFix(lat: number, lng: number): boolean {
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false;
+  if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return false;
+  return !(lat === 0 && lng === 0);
+}
+
 export function shouldReroute({
   hasRoute,
   offRouteMeters,

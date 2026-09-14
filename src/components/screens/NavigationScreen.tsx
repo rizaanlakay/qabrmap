@@ -40,7 +40,12 @@ import {
   shouldCollapseSheet,
 } from '@/lib/ui/bottomSheet';
 import { googleRasterStyle, registerGoogleTilesProtocol } from '@/lib/map/googleMapTiles';
-import { computeRouteProgress, formatManeuverDistance, shouldReroute } from '@/lib/geospatial/routeProgress';
+import {
+  computeRouteProgress,
+  formatManeuverDistance,
+  isUsableGpsFix,
+  shouldReroute,
+} from '@/lib/geospatial/routeProgress';
 import { GoogleMapsAttribution } from '@/components/common/GoogleMapsAttribution';
 
 // Keeps a floating map control a fixed gap above the visible top edge of the bottom sheet
@@ -351,8 +356,10 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
       let lastFix: { lat: number; lng: number } | null = null;
       const watchId = navigator.geolocation.watchPosition(
         (pos) => {
-          setGpsStatus('live');
           const next = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          // A 0,0 or malformed fix means the device has no real position; keep the last good one instead
+          if (!isUsableGpsFix(next.lat, next.lng)) return;
+          setGpsStatus('live');
           // A stationary device repeats the same fix; skip it rather than re-render the map for nothing
           if (lastFix && lastFix.lat === next.lat && lastFix.lng === next.lng) return;
           lastFix = next;

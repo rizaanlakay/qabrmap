@@ -5,6 +5,7 @@ import {
   REROUTE_OFF_ROUTE_METERS,
   computeRouteProgress,
   formatManeuverDistance,
+  isUsableGpsFix,
   projectOntoRoute,
   shouldReroute,
 } from '../src/lib/geospatial/routeProgress';
@@ -63,6 +64,14 @@ describe('Driving Route Progress Tests', () => {
     expect(formatManeuverDistance(995)).toBe('1.0 km');
     expect(formatManeuverDistance(1234)).toBe('1.2 km');
     expect(formatManeuverDistance(-5)).toBe('0 m');
+  });
+
+  it('ignores GPS fixes that are not a real position', () => {
+    expect(isUsableGpsFix(-33.966843, 18.515116)).toBe(true);
+    expect(isUsableGpsFix(0, 0)).toBe(false);
+    expect(isUsableGpsFix(Number.NaN, 18.5)).toBe(false);
+    expect(isUsableGpsFix(-91, 18.5)).toBe(false);
+    expect(isUsableGpsFix(0, 18.5)).toBe(true);
   });
 
   it('returns nothing for a route too short to follow', () => {
