@@ -41,6 +41,7 @@ import {
 } from '@/lib/ui/bottomSheet';
 import { googleRasterStyle, registerGoogleTilesProtocol } from '@/lib/map/googleMapTiles';
 import {
+  REROUTE_OFF_ROUTE_METERS,
   computeRouteProgress,
   formatManeuverDistance,
   isUsableGpsFix,
@@ -60,6 +61,8 @@ function aboveSheetStyle(gapPx: number): React.CSSProperties {
 const MARKER_GLIDE_MS = 900;
 // Beyond this the arrow jumps instead of gliding (first real fix, or a reroute)
 const MARKER_GLIDE_MAX_METERS = 200;
+// How often to check again for directions while the route is missing or wrong, even if the phone isn't moving
+const ROUTE_RETRY_INTERVAL_MS = 5000;
 
 interface RouteStep {
   instruction: string;
@@ -378,9 +381,25 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
 
   // Fetch road directions when driving: once at the start, then again only when the driver leaves the route
   const offRouteMeters = routeProgress?.offRouteMeters ?? 0;
+  const needsRoute = activeMode === 'driving' && (!drivingRoute || offRouteMeters > REROUTE_OFF_ROUTE_METERS);
+  // Whether the current route was planned from a real GPS fix rather than the default start position
+  const routeFromLiveFixRef = useRef(false);
+  const [routeRetryTick, setRouteRetryTick] = useState(0);
+
+  // A parked phone produces no new GPS fixes, so check again on a timer while the route is missing or wrong
+  useEffect(() => {
+    if (!needsRoute) return;
+    const timer = window.setInterval(() => setRouteRetryTick((tick) => tick + 1), ROUTE_RETRY_INTERVAL_MS);
+    return () => window.clearInterval(timer);
+  }, [needsRoute]);
+
   useEffect(() => {
     if (activeMode !== 'driving' || routeRequestRef.current) return;
+    // The first real GPS fix replaces a route planned from the default start straight away, without the reroute wait
+    const plannedFromStartGuess =
+      Boolean(drivingRoute) && !routeFromLiveFixRef.current && gpsStatus === 'live' && offRouteMeters > REROUTE_OFF_ROUTE_METERS;
     if (
+      !plannedFromStartGuess &&
       !shouldReroute({
         hasRoute: Boolean(drivingRoute),
         offRouteMeters,
@@ -394,6 +413,7 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
     const controller = new AbortController();
     routeRequestRef.current = controller;
     lastRouteFetchAtRef.current = Date.now();
+    routeFromLiveFixRef.current = gpsStatus === 'live';
     const fetchUrl = `/api/directions?startLng=${currentLoc.lng}&startLat=${currentLoc.lat}&endLng=${entranceLng}&endLat=${entranceLat}&mode=driving`;
 
     fetch(fetchUrl, { signal: controller.signal })
@@ -416,7 +436,7 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
       .finally(() => {
         if (routeRequestRef.current === controller) routeRequestRef.current = null;
       });
-  }, [activeMode, currentLoc.lat, currentLoc.lng, entranceLat, entranceLng, drivingRoute, offRouteMeters]);
+  }, [activeMode, currentLoc.lat, currentLoc.lng, entranceLat, entranceLng, drivingRoute, offRouteMeters, gpsStatus, routeRetryTick]);
 
   // Abandon an in-flight directions request when leaving the screen
   useEffect(() => () => routeRequestRef.current?.abort(), []);
@@ -680,6 +700,11 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
           }
         }
       } catch (err) {
+        // Adding layers while a style is still (re)loading throws; draw the line once it has loaded instead of dropping it
+        if (err instanceof Error && /style is not done loading/i.test(err.message)) {
+          map.once('style.load', () => setupRouteLayersRef.current(map));
+          return;
+        }
         console.warn('Error setting up navigation route layer:', err);
       }
     },
@@ -694,6 +719,12 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
       targetGrave.longitude,
     ]
   );
+
+  // Latest route drawer, for redrawing after a style finishes loading
+  const setupRouteLayersRef = useRef(setupRouteLayers);
+  useEffect(() => {
+    setupRouteLayersRef.current = setupRouteLayers;
+  }, [setupRouteLayers]);
 
   // Initialize MapLibre GL with Google Maps raster tiles
   useEffect(() => {
@@ -781,8 +812,12 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
           .setLngLat(vehicleMarkerCoord)
           .addTo(map);
 
-        map.on('load', () => {
-          if (isCancelled) return;
+        // Draw the route as soon as the style is ready. The 'load' event only fires once every visible satellite
+        // tile has downloaded, which in the tilted driving view kept the line off the map for seconds.
+        let styleReadyHandled = false;
+        const handleStyleReady = () => {
+          if (isCancelled || styleReadyHandled) return;
+          styleReadyHandled = true;
           setIsMapReady(true);
           setupRouteLayers(map);
           applyDriverCameraView(map, false);
@@ -793,7 +828,9 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
               setZoomDisplay(100);
             }
           }, 80);
-        });
+        };
+        map.once('style.load', handleStyleReady);
+        if (map.isStyleLoaded()) handleStyleReady();
 
         // User drag gesture unlocks follow mode (free look)
         map.on('dragstart', () => {
