@@ -13,6 +13,9 @@ import {
   slugify,
 } from '../tools/burial-sites/lib/sources.mjs';
 import { loadEnvLocal } from '../tools/burial-sites/lib/env.mjs';
+import { ANCHOR_LIMITS, haversineMeters, nameTokens, rankCandidates, scoreCandidate } from '../tools/burial-sites/lib/score.mjs';
+import { aroundQuery, chooseOutline, elementToRing, ringAreaSquareMeters, wayQuery } from '../tools/burial-sites/lib/overpass.mjs';
+import { MATCH_RADIUS_METERS, matchExisting } from '../tools/burial-sites/lib/match.mjs';
 
 const SOURCE = readFileSync(path.resolve(__dirname, '../data/burial-sites/source.csv'), 'utf8');
 
@@ -116,5 +119,134 @@ describe('loadEnvLocal', () => {
 
   it('returns an empty object when the file is missing', () => {
     expect(loadEnvLocal(path.resolve(__dirname, '../data/burial-sites/does-not-exist'))).toEqual({});
+  });
+});
+
+describe('score', () => {
+  const anchor = { lat: -33.93908, lng: 18.46112 };
+  const google = (displayName: string, lat: number, lng: number, types: string[] = ['cemetery']) => ({
+    displayName,
+    location: { latitude: lat, longitude: lng },
+    types,
+  });
+
+  it('measures distance with the haversine formula', () => {
+    expect(haversineMeters(-33.967, 18.5265, -33.9675, 18.5265)).toBeCloseTo(55.6, 0);
+  });
+
+  it('drops filler words from names before comparing', () => {
+    expect(nameTokens('Mowbray Muslim Cemetery / Gamedia Maqbara')).toEqual(['mowbray', 'gamedia']);
+    expect(nameTokens('Klip Road North Muslim Cemetery')).toEqual(['klip', 'north']);
+  });
+
+  it('rejects a candidate beyond the anchor limit and scores closer, better-named cemeteries higher', () => {
+    expect(ANCHOR_LIMITS).toEqual({ row: 1000, town: 30_000 });
+    const far = google('Mowbray Cemetery', -33.95, 18.46112);
+    expect(scoreCandidate({ csvName: 'Mowbray Muslim Cemetery', anchor, anchorKind: 'row', candidate: far })).toBeNull();
+    const exact = google('Mowbray Muslim Cemetery', -33.93908, 18.46112);
+    const vague = google('Mowbray Park', -33.9392, 18.4612, ['park']);
+    const exactScore = scoreCandidate({ csvName: 'Mowbray Muslim Cemetery', anchor, anchorKind: 'row', candidate: exact });
+    const vagueScore = scoreCandidate({ csvName: 'Mowbray Muslim Cemetery', anchor, anchorKind: 'row', candidate: vague });
+    expect(exactScore).toBeGreaterThan(vagueScore as number);
+    expect(exactScore).toBeCloseTo(2.5, 5);
+  });
+
+  it('ranks candidates best first and keeps at most three', () => {
+    const ranked = rankCandidates(
+      { cemetery_name: 'Mowbray Muslim Cemetery' },
+      anchor,
+      'town',
+      [
+        google('Mowbray Park', -33.9392, 18.4612, ['park']),
+        google('Mowbray Muslim Cemetery', -33.93908, 18.46112),
+        google('Somewhere', -33.939, 18.461, ['store']),
+        google('Another Cemetery', -33.94, 18.462),
+        google('Too Far', -34.5, 18.46112),
+      ]
+    );
+    expect(ranked).toHaveLength(3);
+    expect(ranked[0].candidate.displayName).toBe('Mowbray Muslim Cemetery');
+    expect(ranked[0].distanceMeters).toBeCloseTo(0, 0);
+  });
+});
+
+describe('overpass', () => {
+  it('asks for cemetery ways and relations around a point, with geometry', () => {
+    const q = aroundQuery(-33.9, 18.5, 400);
+    expect(q).toContain('way["landuse"="cemetery"](around:400,-33.9,18.5)');
+    expect(q).toContain('way["amenity"="grave_yard"](around:400,-33.9,18.5)');
+    expect(q).toContain('relation["landuse"="cemetery"](around:400,-33.9,18.5)');
+    expect(q).toContain('out geom;');
+    expect(wayQuery('way/227933663')).toContain('way(227933663);');
+  });
+
+  it('turns a way into a closed [lng, lat] ring', () => {
+    const ring = elementToRing({
+      type: 'way',
+      id: 1,
+      geometry: [
+        { lat: 0, lon: 0 },
+        { lat: 0, lon: 1 },
+        { lat: 1, lon: 1 },
+        { lat: 1, lon: 0 },
+      ],
+    });
+    expect(ring).toEqual([[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]);
+  });
+
+  it('takes the largest outer ring of a multipolygon relation', () => {
+    const small = [{ lat: 0, lon: 0 }, { lat: 0, lon: 0.1 }, { lat: 0.1, lon: 0.1 }, { lat: 0, lon: 0 }];
+    const big = [{ lat: 0, lon: 0 }, { lat: 0, lon: 1 }, { lat: 1, lon: 1 }, { lat: 0, lon: 0 }];
+    const ring = elementToRing({
+      type: 'relation',
+      id: 2,
+      members: [
+        { type: 'way', role: 'outer', geometry: small },
+        { type: 'way', role: 'inner', geometry: big },
+        { type: 'way', role: 'outer', geometry: big },
+      ],
+    });
+    expect(ring).toEqual([[0, 0], [1, 0], [1, 1], [0, 0]]);
+  });
+
+  it('returns null for an element without usable geometry', () => {
+    expect(elementToRing({ type: 'way', id: 3, geometry: [{ lat: 0, lon: 0 }] })).toBeNull();
+    expect(elementToRing({ type: 'node', id: 4 })).toBeNull();
+  });
+
+  it('measures ring area roughly in square metres', () => {
+    // A 100 m by 100 m square near Cape Town
+    const dLat = 100 / 111_320;
+    const dLng = 100 / (111_320 * Math.cos((-33.9 * Math.PI) / 180));
+    const ring: [number, number][] = [[18.5, -33.9], [18.5 + dLng, -33.9], [18.5 + dLng, -33.9 + dLat], [18.5, -33.9 + dLat], [18.5, -33.9]];
+    expect(ringAreaSquareMeters(ring)).toBeGreaterThan(9_500);
+    expect(ringAreaSquareMeters(ring)).toBeLessThan(10_500);
+  });
+
+  it('prefers the named way, then the ring that contains the point, then the nearest', () => {
+    const near = { type: 'way', id: 10, geometry: [{ lat: 0, lon: 0 }, { lat: 0, lon: 1 }, { lat: 1, lon: 1 }, { lat: 1, lon: 0 }] };
+    const containing = { type: 'way', id: 11, geometry: [{ lat: 2, lon: 2 }, { lat: 2, lon: 4 }, { lat: 4, lon: 4 }, { lat: 4, lon: 2 }] };
+    const point = { lat: 3, lng: 3 };
+    expect(chooseOutline([near, containing], point)?.osmId).toBe('way/11');
+    expect(chooseOutline([near, containing], point)?.containsPoint).toBe(true);
+    expect(chooseOutline([near, containing], point, 'way/10')?.osmId).toBe('way/10');
+    expect(chooseOutline([near], { lat: 10, lng: 10 })?.osmId).toBe('way/10');
+    expect(chooseOutline([near], { lat: 10, lng: 10 })?.containsPoint).toBe(false);
+    expect(chooseOutline([], point)).toBeNull();
+  });
+});
+
+describe('matchExisting', () => {
+  const existing = [
+    { id: 'cem_athlone', google_place_id: null, origin_lat: -33.96813, origin_lng: 18.52682 },
+    { id: 'cem_mowbray', google_place_id: 'ChIJmow', origin_lat: -33.93908, origin_lng: 18.46112 },
+  ];
+
+  it('matches by place id first, then by a point within 300 m', () => {
+    expect(MATCH_RADIUS_METERS).toBe(300);
+    expect(matchExisting(existing, { placeId: 'ChIJmow', lat: 0, lng: 0 })?.id).toBe('cem_mowbray');
+    expect(matchExisting(existing, { lat: -33.9685, lng: 18.5270 })?.id).toBe('cem_athlone');
+    expect(matchExisting(existing, { lat: -33.99, lng: 18.5270 })).toBeUndefined();
+    expect(matchExisting(existing, {})).toBeUndefined();
   });
 });
