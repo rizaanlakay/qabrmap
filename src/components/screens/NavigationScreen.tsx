@@ -28,6 +28,7 @@ import {
   snapToRoute,
 } from '@/lib/geospatial';
 import { useWakeLock } from '@/lib/device/useWakeLock';
+import { useCompassHeading } from '@/lib/device/useCompassHeading';
 import { graveNumberLabel } from '@/lib/ui/graveLabels';
 import { escapeHtml } from '@/lib/ui/escapeHtml';
 import {
@@ -328,25 +329,11 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
   // Estimated walk time (assume walking speed ~1.2 m/s -> ~70m per minute)
   const walkTimeMinutes = Math.max(1, Math.round(distToGrave / 70));
 
-  // Device orientation listener when available on phone
+  // Heading from the shared true-north compass, so it matches the direction saved when a grave was captured
+  const { heading: compassHeading } = useCompassHeading();
   useEffect(() => {
-    const handleOrientation = (e: DeviceOrientationEvent) => {
-      // @ts-expect-error - webkitCompassHeading for iOS Safari
-      const compassHeading = e.webkitCompassHeading || (e.alpha ? 360 - e.alpha : null);
-      if (compassHeading !== null) {
-        setHeadingDeg(Math.round(compassHeading));
-      }
-    };
-
-    if (typeof window !== 'undefined' && window.DeviceOrientationEvent) {
-      window.addEventListener('deviceorientation', handleOrientation);
-    }
-    return () => {
-      if (typeof window !== 'undefined') {
-        window.removeEventListener('deviceorientation', handleOrientation);
-      }
-    };
-  }, []);
+    if (compassHeading !== null) setHeadingDeg(compassHeading);
+  }, [compassHeading]);
 
   // Latest location callback, read through a ref so a new function from the parent can't restart the GPS watch
   const onUpdateUserLocationRef = useRef(onUpdateUserLocation);
