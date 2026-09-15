@@ -45,6 +45,7 @@ import { AdminDashboard } from '@/components/admin/AdminDashboard';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { useWakeLock } from '@/lib/device/useWakeLock';
+import { useUserLocation } from '@/lib/device/useUserLocation';
 import { useInstallOffer } from '@/lib/pwa/useInstallOffer';
 import { InstallAppCard } from '@/components/common/InstallAppCard';
 
@@ -96,6 +97,9 @@ function QabrMapAppContent() {
 
   // Weekly "Install QabrMap" offer, only on the home screen so it never covers navigation or capture
   const installOffer = useInstallOffer({ enabled: mounted && currentScreen === 'home' });
+
+  // Ask for the phone's position only while the Explore screen is open; it drives the Nearby chip and distances
+  const exploreLocation = useUserLocation(mounted && currentScreen === 'cemetery-select');
 
   // Data State
   const [cemeteries, setCemeteries] = useState<Cemetery[]>([]);
@@ -450,6 +454,10 @@ function QabrMapAppContent() {
             cemeteries={cemeteries}
             selectedCemetery={selectedCemetery}
             initialFilter={cemeteryFilter}
+            locationStatus={exploreLocation.status}
+            userPosition={exploreLocation.position}
+            locationMessage={exploreLocation.message}
+            onRetryLocation={exploreLocation.retry}
             isMyCemetery={(id) => dataStore.isMyCemetery(id)}
             onToggleMyCemetery={(id) => {
               dataStore.toggleMyCemetery(id);

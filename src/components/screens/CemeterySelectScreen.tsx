@@ -2,14 +2,21 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { ArrowLeft, Search, ChevronRight, Heart } from 'lucide-react';
+import { ArrowLeft, Search, ChevronRight, Heart, LocateFixed } from 'lucide-react';
 import { Cemetery } from '@/types';
 import { formatGravesMapped } from '@/lib/data/cemeteryStats';
+import { formatDistance, matchesCemeterySearch, nearestCemeteries, sortCemeteries } from '@/lib/cemeteries/nearby';
+import { cemeteryTags } from '@/lib/cemeteries/tags';
+import type { UserLocationStatus, UserPosition } from '@/lib/device/userLocation';
 
 interface CemeterySelectScreenProps {
   cemeteries: Cemetery[];
   selectedCemetery: Cemetery | null;
   initialFilter?: 'nearby' | 'my-cemeteries' | 'recent' | 'all';
+  locationStatus: UserLocationStatus;
+  userPosition?: UserPosition;
+  locationMessage?: string;
+  onRetryLocation: () => void;
   isMyCemetery?: (id: string) => boolean;
   onToggleMyCemetery?: (id: string) => void;
   onSelectCemetery: (cemetery: Cemetery) => void;
@@ -20,6 +27,10 @@ export const CemeterySelectScreen: React.FC<CemeterySelectScreenProps> = ({
   cemeteries,
   selectedCemetery,
   initialFilter = 'nearby',
+  locationStatus,
+  userPosition,
+  locationMessage,
+  onRetryLocation,
   isMyCemetery = () => false,
   onToggleMyCemetery = () => {},
   onSelectCemetery,
@@ -32,21 +43,19 @@ export const CemeterySelectScreen: React.FC<CemeterySelectScreenProps> = ({
     setActiveFilter(initialFilter);
   }, [initialFilter]);
 
-  const filteredCemeteries = cemeteries.filter((c) => {
-    const q = searchQuery.toLowerCase().trim();
-    const matchesSearch = !q || (
-      c.name.toLowerCase().includes(q) ||
-      c.city.toLowerCase().includes(q) ||
-      c.province.toLowerCase().includes(q)
-    );
+  const searched = cemeteries.filter((c) => matchesCemeterySearch(c, searchQuery));
 
-    if (!matchesSearch) return false;
-
-    if (activeFilter === 'my-cemeteries') {
-      return isMyCemetery(c.id);
+  // Nearby is the five closest and needs a position; the other chips list everything they cover,
+  // closest first when the position is known and by name when it is not
+  const filteredCemeteries: Cemetery[] = (() => {
+    if (activeFilter === 'nearby') {
+      return userPosition ? nearestCemeteries(searched, userPosition) : [];
     }
-    return true;
-  });
+    const scoped = activeFilter === 'my-cemeteries' ? searched.filter((c) => isMyCemetery(c.id)) : searched;
+    return sortCemeteries(scoped, userPosition);
+  })();
+
+  const nearbyNeedsLocation = activeFilter === 'nearby' && !userPosition;
 
   return (
     <div className="flex-1 flex flex-col bg-slate-50 overflow-hidden">
@@ -103,7 +112,35 @@ export const CemeterySelectScreen: React.FC<CemeterySelectScreenProps> = ({
 
       {/* Cemetery List */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
-        {filteredCemeteries.length === 0 ? (
+        {nearbyNeedsLocation ? (
+          <div className="text-center py-12 px-6">
+            <div className="w-12 h-12 rounded-full bg-emerald-50 text-brand-forest flex items-center justify-center mx-auto mb-3">
+              <LocateFixed className={`w-6 h-6 ${locationStatus === 'locating' ? 'animate-pulse' : ''}`} />
+            </div>
+            {locationStatus === 'locating' || locationStatus === 'idle' ? (
+              <h3 className="text-sm font-bold text-slate-800">Finding your location...</h3>
+            ) : (
+              <>
+                <h3 className="text-sm font-bold text-slate-800">Location needed for nearby cemeteries</h3>
+                <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto leading-relaxed">{locationMessage}</p>
+                <div className="flex items-center justify-center gap-2 mt-4">
+                  <button
+                    onClick={onRetryLocation}
+                    className="px-4 py-2 rounded-full bg-brand-forest text-white text-xs font-semibold"
+                  >
+                    Try again
+                  </button>
+                  <button
+                    onClick={() => setActiveFilter('all')}
+                    className="px-4 py-2 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold"
+                  >
+                    Show all
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        ) : filteredCemeteries.length === 0 ? (
           <div className="text-center py-12 px-6">
             <div className="w-12 h-12 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center mx-auto mb-3">
               <Heart className="w-6 h-6 fill-rose-400" />
@@ -148,13 +185,27 @@ export const CemeterySelectScreen: React.FC<CemeterySelectScreenProps> = ({
                     <h2 className="text-sm font-bold text-slate-900 truncate">{cem.name}</h2>
                     {cem.distanceMeters !== undefined && (
                       <span className="text-xs font-semibold text-slate-500 shrink-0 ml-2">
-                        {Math.round(cem.distanceMeters / 100) / 10} km
+                        {formatDistance(cem.distanceMeters)}
                       </span>
                     )}
                   </div>
                   <p className="text-xs text-slate-500 truncate mt-0.5">
                     {cem.city}, {cem.province}
                   </p>
+                  {cemeteryTags(cem).length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {cemeteryTags(cem).map((tag) => (
+                        <span
+                          key={tag}
+                          className={`px-1.5 py-px rounded text-[10px] font-semibold ${
+                            tag === 'Closed' ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-600'
+                          }`}
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   <div className="flex items-center text-[11px] text-slate-600 mt-1">
                     <span>{formatGravesMapped(cem.mappedGravesCount)}</span>
                     {/* Coverage needs a real total for the cemetery, so it stays hidden until one is recorded */}
