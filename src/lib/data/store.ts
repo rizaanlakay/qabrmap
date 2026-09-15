@@ -15,8 +15,14 @@ import { offlineDb } from '../offline/db';
 import { supabase, isSupabaseConfigured } from '../supabase/client';
 import { mapDbCemetery, mapDbGrave, mapDbGravePhoto } from '../supabase/mappers';
 import { buildSavedGrave, saveMappedGrave, SaveMappedGraveInput } from '../capture/saveMappedGrave';
+import {
+  DELETE_NOT_SET_UP_MESSAGE,
+  DeleteGraveError,
+  deleteMappedGrave,
+  staleGraveIds,
+} from '../graves/deleteMappedGrave';
 import { SaveGraveError, NOT_SET_UP_MESSAGE } from '../supabase/saveGraveErrors';
-import { deleteGravePhoto, uploadGravePhoto } from '../supabase/storage';
+import { GRAVE_PHOTOS_BUCKET, deleteGravePhoto, uploadGravePhoto } from '../supabase/storage';
 import { isMissingTableError } from '../supabase/errors';
 import { cemeteryCoveragePercent } from './cemeteryStats';
 
@@ -410,9 +416,17 @@ class DataStore {
         if (!error && data) {
           loadedFromCloud = true;
           resultList = data.map(mapDbGrave);
-          // Sync to Dexie IndexedDB in background
-          if (typeof window !== 'undefined' && resultList.length > 0) {
-            offlineDb.graves.bulkPut(resultList).catch(() => {});
+          if (typeof indexedDB !== 'undefined') {
+            // Keep the offline copy in step with the cloud, including graves deleted on another device
+            const freshIds = resultList.map((grave) => grave.id);
+            const fresh = resultList;
+            const cachedIds = cemeteryId
+              ? offlineDb.graves.where('cemeteryId').equals(cemeteryId).primaryKeys()
+              : offlineDb.graves.toCollection().primaryKeys();
+            cachedIds
+              .then((ids) => offlineDb.graves.bulkDelete(staleGraveIds(ids as string[], freshIds)))
+              .then(() => (fresh.length > 0 ? offlineDb.graves.bulkPut(fresh) : undefined))
+              .catch(() => {});
           }
         }
       } catch (err) {
@@ -437,6 +451,27 @@ class DataStore {
       cemeteryName: g.cemeteryName || this.cemeteryNameFor(g.cemeteryId),
       relationship: this.relationships.get(g.id),
     }));
+  }
+
+  // Deletes a grave the signed-in user mapped, with its photos, and forgets it on this device.
+  // Throws DeleteGraveError, for example when other people have added to the grave.
+  async deleteGrave(graveId: string): Promise<void> {
+    if (!isSupabaseConfigured || !supabase) throw new DeleteGraveError('not-set-up', DELETE_NOT_SET_UP_MESSAGE);
+    const client = supabase;
+
+    await deleteMappedGrave(graveId, {
+      client,
+      isOnline: () => typeof navigator === 'undefined' || navigator.onLine,
+      deletePhotos: async (paths) => {
+        await client.storage.from(GRAVE_PHOTOS_BUCKET).remove(paths);
+      },
+    });
+
+    if (typeof indexedDB !== 'undefined') await offlineDb.graves.delete(graveId).catch(() => {});
+    this.savedGraveIds.delete(graveId);
+    this.relationships.delete(graveId);
+    this.persistSavedGraves();
+    this.persistRelationships();
   }
 
   async getGraveById(id: string): Promise<Grave | undefined> {

@@ -67,6 +67,7 @@ export function mapDbGrave(row: any): Grave {
     primaryPhotoUrl: row.primary_photo_url || '/sample-gravestone.svg',
     photoCount: row.photo_count || 0,
     lastVerifiedAt: row.last_verified_at || undefined,
+    createdBy: row.created_by || undefined,
     createdAt: row.created_at || new Date().toISOString(),
     updatedAt: row.updated_at || new Date().toISOString(),
   };

@@ -91,6 +91,8 @@ export interface Grave {
   primaryPhotoUrl?: string;
   photoCount: number;
   lastVerifiedAt?: string;
+  // The account that mapped this grave; only they can delete it
+  createdBy?: string;
   relationship?: GraveRelationship;
   createdAt: string;
   updatedAt: string;

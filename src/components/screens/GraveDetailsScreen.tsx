@@ -13,6 +13,8 @@ import {
   ShieldCheck,
   Heart,
   Users,
+  Trash2,
+  Loader2,
 } from 'lucide-react';
 import { Grave, GravePhoto, GraveRelationship, RelationshipCategory } from '@/types';
 import { GravePhotoCarousel } from '@/components/common/GravePhotoCarousel';
@@ -20,12 +22,16 @@ import { GraveImage } from '@/components/common/GraveImage';
 import { dataStore } from '@/lib/data/store';
 import { buildGraveShareUrl } from '@/lib/share/graveLink';
 import { graveNumberLabel } from '@/lib/ui/graveLabels';
+import { DeleteGraveError } from '@/lib/graves/deleteMappedGrave';
 
 interface GraveDetailsScreenProps {
   grave: Grave;
   onNavigateToGrave: (grave: Grave) => void;
   onAddPhoto: (grave: Grave) => void;
   onBack: () => void;
+  // True when the signed-in user mapped this grave, which is the only case it can be deleted
+  canDelete?: boolean;
+  onDeleted?: () => void;
   // Changes after a photo is added, to reload this grave's photos
   photosVersion?: number;
 }
@@ -36,11 +42,16 @@ export const GraveDetailsScreen: React.FC<GraveDetailsScreenProps> = ({
   onAddPhoto,
   onBack,
   photosVersion = 0,
+  canDelete = false,
+  onDeleted,
 }) => {
   const [showProvenance, setShowProvenance] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportText, setReportText] = useState('');
   const [reportSubmitted, setReportSubmitted] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Relationship state
   const [currentRel, setCurrentRel] = useState<GraveRelationship | undefined>(
@@ -110,6 +121,19 @@ export const GraveDetailsScreen: React.FC<GraveDetailsScreenProps> = ({
       setTimeout(() => setShareNotice(null), 2000);
     } catch {
       window.prompt('Copy this link to share the grave:', url);
+    }
+  };
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      await dataStore.deleteGrave(grave.id);
+      setShowDeleteModal(false);
+      onDeleted?.();
+    } catch (err) {
+      setIsDeleting(false);
+      setDeleteError(err instanceof DeleteGraveError ? err.message : "The grave couldn't be deleted. Please try again.");
     }
   };
 
@@ -325,6 +349,21 @@ export const GraveDetailsScreen: React.FC<GraveDetailsScreenProps> = ({
               <span>Provenance audit log</span>
             </button>
           </div>
+
+          {canDelete && (
+            <div className="flex justify-center">
+              <button
+                onClick={() => {
+                  setDeleteError(null);
+                  setShowDeleteModal(true);
+                }}
+                className="flex items-center space-x-1 text-xs text-rose-600 hover:text-rose-700 underline underline-offset-4"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Delete this grave</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -360,6 +399,47 @@ export const GraveDetailsScreen: React.FC<GraveDetailsScreenProps> = ({
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-grave-title"
+            className="bg-white rounded-2xl w-full max-w-sm p-5 space-y-3"
+          >
+            <h3 id="delete-grave-title" className="font-bold text-sm text-slate-900">
+              Delete {grave.person?.fullName ? `${grave.person.fullName}'s grave` : 'this grave'}?
+            </h3>
+            <p className="text-xs text-slate-500">
+              This removes the grave and its photos for everyone. It can&apos;t be undone.
+            </p>
+            {deleteError && (
+              <div role="alert" className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-xs font-semibold text-rose-700">
+                {deleteError}
+              </div>
+            )}
+            <div className="flex space-x-2 pt-2">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                disabled={isDeleting}
+                className="flex-1 py-2 text-xs font-semibold text-slate-600 bg-slate-100 rounded-xl disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="flex-1 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-xl flex items-center justify-center space-x-1.5 disabled:opacity-70"
+              >
+                {isDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                <span>{isDeleting ? 'Deleting…' : 'Delete'}</span>
+              </button>
             </div>
           </div>
         </div>

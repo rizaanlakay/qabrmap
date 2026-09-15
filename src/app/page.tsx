@@ -233,6 +233,14 @@ function QabrMapAppContent() {
     setCurrentScreen('cemetery-map');
   };
 
+  // Back from grave details to wherever it was opened from
+  const leaveGraveDetails = () => {
+    if (previousScreen === 'my-cemeteries') setCurrentScreen('my-cemeteries');
+    else if (previousScreen === 'cemetery-map') setCurrentScreen('cemetery-map');
+    else if (previousScreen === 'home') setCurrentScreen('home');
+    else setCurrentScreen('search');
+  };
+
   // Open Grave Details
   const handleOpenGrave = (grave: Grave) => {
     setPreviousScreen(currentScreen);
@@ -402,12 +410,14 @@ function QabrMapAppContent() {
               setCurrentScreen('capture');
             }}
             photosVersion={gravePhotosVersion}
-            onBack={() => {
-              if (previousScreen === 'my-cemeteries') setCurrentScreen('my-cemeteries');
-              else if (previousScreen === 'cemetery-map') setCurrentScreen('cemetery-map');
-              else if (previousScreen === 'home') setCurrentScreen('home');
-              else setCurrentScreen('search');
+            canDelete={Boolean(user && selectedGrave.createdBy === user.id)}
+            onDeleted={() => {
+              const deletedId = selectedGrave.id;
+              setGraves((list) => list.filter((grave) => grave.id !== deletedId));
+              leaveGraveDetails();
+              setSelectedGrave(null);
             }}
+            onBack={leaveGraveDetails}
           />
         )}
 
