@@ -86,11 +86,9 @@ create index if not exists grave_position_observations_observed_by_idx
 
 alter table public.grave_position_observations enable row level security;
 
+-- No policies: row level security stays on, so app roles cannot read the visit trail. The security-definer
+-- functions below are unaffected, because the owner bypasses row level security.
 drop policy if exists "Grave observations are publicly readable" on public.grave_position_observations;
-create policy "Grave observations are publicly readable"
-  on public.grave_position_observations for select
-  to anon, authenticated
-  using (true);
 
 -- Haversine distance in metres; shared by the photo trigger and record_grave_visit
 create or replace function public.distance_meters(
@@ -127,7 +125,8 @@ begin
     greatest(1.5, sqrt(1 / nullif(sum(w), 0)))
   into v_count, v_lat, v_lng, v_accuracy
   from (
-    select latitude, longitude, 1 / greatest(0.25, accuracy_meters * accuracy_meters) as w
+    -- Accuracy is floored at 3 m for weighting, so a fix claiming better than a phone can do cannot outvote the rest
+    select latitude, longitude, 1 / greatest(9, accuracy_meters * accuracy_meters) as w
     from public.grave_position_observations
     where grave_id = p_grave_id
   ) o;
@@ -253,7 +252,7 @@ begin
   end if;
   perform public.add_grave_position_observation(
     new.grave_id, new.uploaded_by, new.capture_latitude, new.capture_longitude, new.gps_accuracy_meters,
-    'photo', coalesce(new.captured_at, now())
+    'photo', coalesce(new.captured_at, new.created_at)
   );
   return null;
 end;
@@ -538,6 +537,7 @@ grant execute on function public.save_or_add_grave(text, text, text, text, text,
 -- 4. Backfill observations from the photos already taken
 -- ------------------------------------------------------------
 
+-- Each grave takes one advisory lock for the whole run; past a few thousand graves with photos, run this loop in batches
 do $$
 declare
   p record;

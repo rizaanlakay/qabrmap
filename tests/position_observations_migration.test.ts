@@ -22,13 +22,13 @@ describe('Position Observations Migration Tests', () => {
     expect(MIGRATION).toMatch(/accuracy_meters double precision not null check \(accuracy_meters > 0 and accuracy_meters <= 25\)/);
     expect(MIGRATION).toMatch(/source text not null check \(source in \('photo', 'visit'\)\)/);
     expect(MIGRATION).toMatch(/alter table public\.grave_position_observations enable row level security;/);
-    expect(MIGRATION).toMatch(/on public\.grave_position_observations for select/);
+    expect(MIGRATION).not.toMatch(/on public\.grave_position_observations for select/);
     expect(MIGRATION).not.toMatch(/on public\.grave_position_observations for (insert|update|delete)/);
   });
 
-  it('recomputes the position with an inverse-variance mean, a 1.5 m floor and the save thresholds', () => {
+  it('recomputes the position with an inverse-variance mean, accuracy floors and the save thresholds', () => {
     expect(MIGRATION).toMatch(/create or replace function public\.recompute_grave_position\(p_grave_id text\)/);
-    expect(MIGRATION).toMatch(/1 \/ greatest\(0\.25, accuracy_meters \* accuracy_meters\)/);
+    expect(MIGRATION).toMatch(/greatest\(9, accuracy_meters \* accuracy_meters\)/);
     expect(MIGRATION).toMatch(/greatest\(1\.5, sqrt\(1 \/ nullif\(sum\(w\), 0\)\)\)/);
     expect(MIGRATION).toMatch(/when v_accuracy <= 3\.5 then 'HIGH'/);
     expect(MIGRATION).toMatch(/when v_accuracy <= 6 then 'MEDIUM'/);
@@ -46,7 +46,7 @@ describe('Position Observations Migration Tests', () => {
   it('turns every photo with a position into an observation', () => {
     expect(MIGRATION).toMatch(/create or replace function public\.record_photo_observation\(\)/);
     expect(MIGRATION).toMatch(/create trigger grave_photos_record_observation\s+after insert on public\.grave_photos/);
-    expect(MIGRATION).toMatch(/coalesce\(new\.captured_at, now\(\)\)/);
+    expect(MIGRATION).toMatch(/coalesce\(new\.captured_at, new\.created_at\)/);
     expect(MIGRATION).toMatch(/> 30 \+ new\.gps_accuracy_meters then/);
   });
 

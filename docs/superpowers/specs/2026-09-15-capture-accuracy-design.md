@@ -25,7 +25,7 @@ Navigation ends with an "arrived" radar circle. It does not show where the grave
 | Who can confirm a visit | Signed-in users only |
 | Visit sanity check | Accuracy 25 m or better and within 30 m of the grave's current position |
 | Same-visit dedupe | One observation per user per grave per 6 hours, keeping the more accurate one |
-| Position recompute | Inverse-variance mean, floor 1.5 m, in the database, on every new observation |
+| Position recompute | Inverse-variance mean with each accuracy floored at 3 m for weighting, combined accuracy floored at 1.5 m, in the database, on every new observation |
 | VERIFIED graves | Collect observations and the count, but position, accuracy, confidence and status do not change |
 | AR placement | Compass heading, phone pitch, GPS distance and an assumed camera field of view. No WebXR |
 | Field of view | 65 degrees horizontal, a constant to tune on a real phone |
@@ -121,7 +121,7 @@ New file `supabase/migrations/20260915200000_position_observations.sql`, safe to
 | `observed_at` | timestamptz not null default `now()` |
 | `created_at` | timestamptz not null default `now()` |
 
-Indexes on `(grave_id, observed_at)` and `(observed_by)`. Row level security on, public SELECT, no INSERT, UPDATE or DELETE policies: writes go through the functions below.
+Indexes on `(grave_id, observed_at)` and `(observed_by)`. Row level security on with no policies at all: the table is written and read only by the functions below, so who visited which grave is never exposed through the API.
 
 `graves.observation_count int not null default 0`, maintained by the recompute.
 
@@ -138,7 +138,7 @@ Internal. `security definer`, `set search_path = ''`, execute revoked from publi
 
 Internal, same locking as above.
 
-- Weighted mean over the grave's observations with weight `1 / greatest(0.25, accuracy²)`. Combined accuracy `greatest(1.5, sqrt(1 / sum of weights))`, rounded to 2 decimals.
+- Weighted mean over the grave's observations with weight `1 / greatest(9, accuracy²)`, so each accuracy is floored at 3 m for weighting. Combined accuracy `greatest(1.5, sqrt(1 / sum of weights))`, rounded to 2 decimals.
 - Confidence `HIGH` at 3.5 m or better, `MEDIUM` at 6 m, otherwise `LOW`. Status `MAPPED` at 5 m or better, otherwise `LOW_CONFIDENCE`. Same thresholds as `save_or_add_grave`.
 - Updates `observation_count` always. Updates latitude, longitude, accuracy, confidence and `updated_at` unless status is `VERIFIED`. Updates status only when the current status is `MAPPED` or `LOW_CONFIDENCE`.
 - No observations: sets `observation_count = 0` and leaves everything else.
@@ -208,7 +208,7 @@ New pure `smoothAngle(prev, next, alpha)` and `smoothValue(prev, next, alpha)` i
 - The marker: a map pin (`MapPin`, lucide) with a gentle CSS bounce, positioned at the projected point, scaled by `scale`. Under it a translucent ellipse `2 * accuracy * pxPerMeter` wide and 35% as tall, clamped to the viewport.
 - Caption under the marker: "± 4 m. Not the right name? Look around this spot." when the distance is 12 m or less, otherwise "Head toward the marker".
 - When `onScreen` is false, an arrow at the screen edge points along `edgeAngleDeg`, and the guidance text keeps the existing Turn Left / Turn Right wording.
-- When `gravePhotoUrl` is set, the bottom card shows that photo instead of the stone thumbnail, labelled "Look for this grave". The stone photo moves to a smaller inset.
+- When `gravePhotoUrl` is set, the bottom card keeps the stone thumbnail and shows the whole-grave photo under it, labelled "Look for this grave".
 - The arrived radar circle goes. AR counts as arrived at 5 m or less (it was 3 m), and the chevron ground path stays until then.
 - "I found it" button and messages as in section 3, shown when the distance is 5 m or less and `onConfirmVisit` is provided.
 
