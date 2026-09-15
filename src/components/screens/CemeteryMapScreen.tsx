@@ -527,9 +527,14 @@ export const CemeteryMapScreen: React.FC<CemeteryMapScreenProps> = ({
           </div>
         </div>
 
-        {/* Google Maps logo and imagery copyright, required by the Map Tiles API terms */}
-        <div className="absolute bottom-14 left-3.5 z-10 pointer-events-none">
+        {/* Google Maps logo and imagery copyright, required by the Map Tiles API terms; OSM credit when the outline is theirs */}
+        <div className="absolute bottom-14 left-3.5 z-10 pointer-events-none flex flex-col items-start gap-1">
           <GoogleMapsAttribution map={mapInstanceRef.current} mapType={mapType} isMapReady={isMapReady} />
+          {cemetery.boundary && cemetery.boundarySource === 'osm' && (
+            <span className="px-1.5 py-px rounded bg-black/45 text-[9px] leading-tight text-white/90 font-medium">
+              Boundary © OpenStreetMap contributors
+            </span>
+          )}
         </div>
 
         {/* Map Legend at Bottom */}
