@@ -33,8 +33,9 @@ interface ARTrackedGuidanceScreenProps {
 // Sensor smoothing for the badge and turn text, as on the sensor screen
 const ALPHA_POSITION = 0.3;
 const ALPHA_ORIENTATION = 0.25;
-// One deadline for the whole start-up (engine download, camera prompt, first world lock and compass). Once the
-// scene has aligned it never fires again: limited tracking mid-walk is handled on screen, not by leaving.
+// One deadline for the whole start-up (engine download, camera prompt and first world lock). Once tracking has
+// reached NORMAL it never fires again: north can still arrive later from walking, and limited tracking mid-walk
+// is handled on screen, not by leaving.
 const STARTUP_FALLBACK_MS = 30_000;
 
 function describeMissingHeading(status: CompassStatus): string {
@@ -44,11 +45,15 @@ function describeMissingHeading(status: CompassStatus): string {
   return 'Waiting for compass…';
 }
 
-// What the status pill says for each stage of tracking
-function describeTracking(state: DriverState, arrived: boolean, accuracy: number): string {
+// What the status pill says for each stage of tracking. Without a compass, north comes from walking a few metres.
+function describeTracking(state: DriverState, arrived: boolean, accuracy: number, compassStatus: CompassStatus): string {
   if (state.tracking === 'initialising') return 'Move the phone slowly sideways so it can find the floor';
   if (state.tracking === 'limited') return 'Tracking is limited. Point at textured ground and move slowly';
-  if (!state.aligned) return 'Waiting for the compass…';
+  if (!state.aligned) {
+    return compassStatus === 'denied' || compassStatus === 'unsupported'
+      ? 'Walk a few steps so the line can find north'
+      : 'Waiting for the compass…';
+  }
   return arrived ? `± ${accuracy} m. Not the right name? Look around this spot.` : 'Follow the line';
 }
 
@@ -114,9 +119,11 @@ export const ARTrackedGuidanceScreen: React.FC<ARTrackedGuidanceScreenProps> = (
   const fixBearing = fix ? calculateBearing(fix.lat, fix.lng, targetGrave.latitude, targetGrave.longitude) : null;
 
   // Read by the engine effect when the driver is created, so the first fix and heading reach it at once
-  const targetRef = useRef<{ bearingDeg: number; distanceM: number; at: number } | null>(null);
+  const targetRef = useRef<{ bearingDeg: number; distanceM: number; at: number; lat: number; lng: number } | null>(null);
   targetRef.current =
-    fix && fixBearing !== null && fixDistance !== null ? { bearingDeg: fixBearing, distanceM: fixDistance, at: fix.at } : null;
+    fix && fixBearing !== null && fixDistance !== null
+      ? { bearingDeg: fixBearing, distanceM: fixDistance, at: fix.at, lat: fix.lat, lng: fix.lng }
+      : null;
   const headingRef = useRef<number | null>(null);
   headingRef.current = phoneHeading;
   const [driverReady, setDriverReady] = useState(false);
@@ -233,19 +240,15 @@ export const ARTrackedGuidanceScreen: React.FC<ARTrackedGuidanceScreenProps> = (
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // The sensor screen copes without a compass; this one cannot place anything without one
+  // Once the world has locked the engine is doing its job; a missing compass is covered by walking, not by leaving
+  const hasTrackedRef = useRef(false);
   useEffect(() => {
-    if (compassStatus === 'denied' || compassStatus === 'unsupported') onFallbackRef.current(`compass-${compassStatus}`);
-  }, [compassStatus]);
-
-  const hasAlignedRef = useRef(false);
-  useEffect(() => {
-    if (driverState.aligned && driverState.tracking === 'normal') hasAlignedRef.current = true;
-  }, [driverState.aligned, driverState.tracking]);
+    if (driverState.tracking === 'normal') hasTrackedRef.current = true;
+  }, [driverState.tracking]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      if (!hasAlignedRef.current) onFallbackRef.current('startup-timeout');
+      if (!hasTrackedRef.current) onFallbackRef.current('startup-timeout');
     }, STARTUP_FALLBACK_MS);
     return () => window.clearTimeout(timer);
   }, []);
@@ -267,7 +270,7 @@ export const ARTrackedGuidanceScreen: React.FC<ARTrackedGuidanceScreenProps> = (
         ? 'Starting the camera…'
         : fix === null
           ? 'Getting your position…'
-          : describeTracking(driverState, arrived, accuracy);
+          : describeTracking(driverState, arrived, accuracy, compassStatus);
 
   return (
     <div className="flex-1 flex flex-col relative bg-black overflow-hidden select-none">

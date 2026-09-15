@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { createFloorEstimator } from './floorEstimate';
 import { createFloorLine, FLOOR_LINE_LENGTH_M } from './floorLine';
 import { createGravePin, createPinLights } from './gravePin';
+import { calculateBearing, calculateDistanceMeters } from '../geospatial';
 import { smoothValue } from './smoothing';
 import { createNorthAlignment, engineYawDeg, graveWorldPosition, yawRadToward } from './worldAlignment';
 import type { XR8Api, XR8PipelineModule, XR8Reality } from './xr8';
@@ -27,6 +28,11 @@ const FLOOR_PROBE_EVERY = 6;
 const FLOOR_ALPHA = 0.08;
 const GRAVE_ALPHA = 0.1;
 const NORTH_ALPHA = 0.02;
+// North can also be learned from walking: the GPS direction of travel against the engine's own motion. A fix
+// must be this far from the last one used, and the engine must have moved this far too, before it counts.
+const TRAVEL_MIN_GPS_M = 4;
+const TRAVEL_MIN_ENGINE_M = 2;
+const TRAVEL_ALPHA = 0.5;
 // The eased grave point is treated as converged on the fix once it is within this of the goal, since floating
 // point easing can approach a target forever without ever landing on it exactly
 const GRAVE_SETTLE_M = 1e-4;
@@ -43,8 +49,9 @@ export interface DriverState {
 
 export interface SceneDriver {
   pipelineModule: XR8PipelineModule;
-  // From each smoothed GPS fix: where the grave is from the phone, and when the fix was taken
-  setTarget(target: { bearingDeg: number; distanceM: number; at?: number }): void;
+  // From each smoothed GPS fix: where the grave is from the phone, when the fix was taken, and where it was,
+  // so north can be learned from walking on a phone with no compass
+  setTarget(target: { bearingDeg: number; distanceM: number; at?: number; lat?: number; lng?: number }): void;
   setHeading(headingDeg: number | null): void;
   onState(listener: (state: DriverState) => void): () => void;
   state(): DriverState;
@@ -79,7 +86,9 @@ export function createSceneDriver(
   let camera: THREE.PerspectiveCamera | null = null;
   let scene: THREE.Scene | null = null;
   let heading: number | null = null;
-  let target: { bearingDeg: number; distanceM: number; at?: number } | null = null;
+  let target: { bearingDeg: number; distanceM: number; at?: number; lat?: number; lng?: number } | null = null;
+  // The last fix used for travel alignment, with the engine feet at that moment
+  let lastTravelFix: { lat: number; lng: number; feet: { x: number; z: number } } | null = null;
   // The grave's world point is derived once per fix, from where the phone was at that moment
   let targetPending = false;
   // Feet captured at the moment of the fix, so the grave stays planted in the world while the person walks
@@ -119,6 +128,23 @@ export function createSceneDriver(
       if (Math.abs(pose.t - at) < Math.abs(best.t - at)) best = pose;
     }
     return { x: best.x, z: best.z };
+  };
+
+  // A walk of a few metres gives a GPS course and an engine direction for the same movement; their difference
+  // is north. This is the only alignment a phone without a compass gets, and it corrects a compass too.
+  const learnFromTravel = (lat: number, lng: number, feet: { x: number; z: number }) => {
+    if (!lastTravelFix) {
+      lastTravelFix = { lat, lng, feet };
+      return;
+    }
+    if (calculateDistanceMeters(lastTravelFix.lat, lastTravelFix.lng, lat, lng) < TRAVEL_MIN_GPS_M) return;
+    const dx = feet.x - lastTravelFix.feet.x;
+    const dz = feet.z - lastTravelFix.feet.z;
+    if (Math.hypot(dx, dz) >= TRAVEL_MIN_ENGINE_M) {
+      const course = calculateBearing(lastTravelFix.lat, lastTravelFix.lng, lat, lng);
+      north.update(course, engineYawDeg({ x: dx, z: dz }), north.offsetDeg() === null ? 1 : TRAVEL_ALPHA);
+    }
+    lastTravelFix = { lat, lng, feet };
   };
 
   const probeFloor = () => {
@@ -172,6 +198,7 @@ export function createSceneDriver(
       // A restarted engine should not carry a stale world over: forget the old grave, floor and frame count
       grave = null;
       fixFeet = null;
+      lastTravelFix = null;
       poses = [];
       previousYaw = null;
       targetPending = target !== null;
@@ -238,6 +265,9 @@ export function createSceneDriver(
       // Plant from where the phone stood when the fix was taken, not from where it has walked to since
       const recorded = next.at === undefined ? null : poseAt(next.at);
       fixFeet = recorded ?? (camera ? { x: camera.position.x, z: camera.position.z } : null);
+      if (fixFeet && Number.isFinite(next.lat) && Number.isFinite(next.lng)) {
+        learnFromTravel(next.lat as number, next.lng as number, fixFeet);
+      }
     },
     setHeading(next) {
       heading = next;

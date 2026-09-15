@@ -200,4 +200,71 @@ describe('Scene Driver Tests', () => {
     expect(pin.position.z).toBeCloseTo(-10, 3);
     driver.dispose();
   });
+  // About 1 m of latitude near Cape Town
+  const METER_LAT = 0.000009;
+  const ORIGIN = { lat: -33.9675, lng: 18.5033 };
+
+  it('learns north from walking when there is no compass: engine forward is north', () => {
+    const engine = fakeEngine();
+    let clock = 0;
+    const driver = createSceneDriver(engine.XR8, () => 0, () => clock);
+    driver.pipelineModule.onStart?.({ canvasWidth: 390, canvasHeight: 780 });
+    driver.setHeading(null);
+    clock = 1000;
+    driver.pipelineModule.onUpdate?.(normal);
+    driver.setTarget({ bearingDeg: 90, distanceM: 10, at: 1000, lat: ORIGIN.lat, lng: ORIGIN.lng });
+    driver.pipelineModule.onUpdate?.(normal);
+    expect(driver.state().aligned).toBe(false);
+    // Walk 10 m along the engine's -z while GPS says the person moved 10 m north
+    engine.camera.position.z = -10;
+    clock = 5000;
+    driver.pipelineModule.onUpdate?.(normal);
+    driver.setTarget({ bearingDeg: 90, distanceM: 10, at: 5000, lat: ORIGIN.lat + 10 * METER_LAT, lng: ORIGIN.lng });
+    driver.pipelineModule.onUpdate?.(normal);
+    expect(driver.state().aligned).toBe(true);
+    const pin = engine.scene.getObjectByName('grave-pin') as THREE.Group;
+    // East of the feet at the fix (0, -10) is +x
+    expect(pin.position.x).toBeCloseTo(10, 4);
+    expect(pin.position.z).toBeCloseTo(-10, 4);
+    driver.dispose();
+  });
+
+  it('learns north from walking when the engine started facing east', () => {
+    const engine = fakeEngine();
+    let clock = 0;
+    const driver = createSceneDriver(engine.XR8, () => 0, () => clock);
+    driver.pipelineModule.onStart?.({ canvasWidth: 390, canvasHeight: 780 });
+    clock = 1000;
+    driver.pipelineModule.onUpdate?.(normal);
+    driver.setTarget({ bearingDeg: 0, distanceM: 10, at: 1000, lat: ORIGIN.lat, lng: ORIGIN.lng });
+    driver.pipelineModule.onUpdate?.(normal);
+    // The person walks north by GPS, which in the engine's frame was a move along +x
+    engine.camera.position.x = 10;
+    clock = 5000;
+    driver.pipelineModule.onUpdate?.(normal);
+    driver.setTarget({ bearingDeg: 0, distanceM: 10, at: 5000, lat: ORIGIN.lat + 10 * METER_LAT, lng: ORIGIN.lng });
+    driver.pipelineModule.onUpdate?.(normal);
+    const pin = engine.scene.getObjectByName('grave-pin') as THREE.Group;
+    // North is +x here, so a grave 10 m north of the feet (10, 0) sits at (20, 0)
+    expect(pin.position.x).toBeCloseTo(20, 3);
+    expect(pin.position.z).toBeCloseTo(0, 3);
+    driver.dispose();
+  });
+
+  it('ignores a GPS hop when the phone did not actually move', () => {
+    const engine = fakeEngine();
+    let clock = 0;
+    const driver = createSceneDriver(engine.XR8, () => 0, () => clock);
+    driver.pipelineModule.onStart?.({ canvasWidth: 390, canvasHeight: 780 });
+    clock = 1000;
+    driver.pipelineModule.onUpdate?.(normal);
+    driver.setTarget({ bearingDeg: 0, distanceM: 10, at: 1000, lat: ORIGIN.lat, lng: ORIGIN.lng });
+    clock = 5000;
+    driver.pipelineModule.onUpdate?.(normal);
+    // GPS jumps 8 m but the camera stayed put: no basis for a heading
+    driver.setTarget({ bearingDeg: 0, distanceM: 10, at: 5000, lat: ORIGIN.lat + 8 * METER_LAT, lng: ORIGIN.lng });
+    driver.pipelineModule.onUpdate?.(normal);
+    expect(driver.state().aligned).toBe(false);
+    driver.dispose();
+  });
 });

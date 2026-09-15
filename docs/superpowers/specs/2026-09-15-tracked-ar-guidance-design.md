@@ -15,10 +15,10 @@ The spike at `/ar-spike` proved the free 8th Wall engine binary tracks the world
 |---|---|
 | Engine | 8th Wall distributed engine binary 1.0.0 from jsDelivr, loaded on demand, world tracking in absolute scale |
 | Renderer | three.js 0.170 through the engine's three.js pipeline module |
-| Fallback | The unchanged sensor-driven screen replaces this one on engine load failure, engine start failure, camera failure, compass denied or unsupported, and 30 s from opening without a first alignment. Limited tracking mid-walk never leaves the screen. |
+| Fallback | The unchanged sensor-driven screen replaces this one on engine load failure, engine start failure, camera failure, and 30 s from opening without the first world lock (NORMAL tracking). A missing compass is not a fallback: north comes from walking. Limited tracking mid-walk never leaves the screen. |
 | Line | Chevron line on the measured floor from the phone's feet to the grave, up to 12 m long |
 | Marker | A 3D pin, 20 cm thick, standing at the grave's spot on the floor, bouncing and slowly spinning |
-| North | The compass heading at the moment tracking becomes NORMAL fixes the tracked world's north; drift is corrected slowly from the compass afterwards, and only on steady frames (the engine yaw moved 1.5 degrees or less since the last one) because the compass lags the engine through a turn |
+| North | Learned two ways: from the compass on steady frames (the engine yaw moved 1.5 degrees or less since the last one, because the compass lags the engine through a turn), and from walking, by comparing the GPS direction of travel between fixes at least 4 m apart with the engine's own motion over the same stretch. A phone with no compass aligns after a few steps of walking; a compass never causes a fallback |
 | Grave position in the world | Re-derived from each smoothed GPS fix as the phone's tracked position plus distance along the bearing, then eased. Each fix carries its own timestamp and is paired with the camera pose recorded at that moment, so a fix seconds old is not planted from where the phone has walked to since. |
 | Arrival | 5 m or less: the line is hidden and only the pin marks the spot, with the "look around" pill. It clears again only beyond 6.5 m, and the scene driver decides it for the whole screen. |
 | Floor | Median of tracked feature points well below the camera; 1.5 m below the starting camera until measured. Once a floor is known, points more than 0.3 m above it are refused so headstone tops cannot drag it up. |
