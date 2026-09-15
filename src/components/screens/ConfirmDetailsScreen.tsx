@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import { AlertTriangle, ArrowLeft, Calendar, CheckCircle2, Loader2 } from 'lucide-react';
 import { AIStructuredExtraction, Cemetery, DeviceTelemetry, Grave } from '@/types';
@@ -8,15 +8,16 @@ import { dataStore } from '@/lib/data/store';
 import { findCemeteryForLocation } from '@/lib/capture/cemeteryForLocation';
 import { NewGraveForm, validateNewGraveForm } from '@/lib/capture/newGrave';
 import { SaveGraveError, UNKNOWN_SAVE_MESSAGE } from '@/lib/supabase/saveGraveErrors';
-import { createSaveAttempt } from '@/lib/capture/saveMappedGrave';
-import { describeMatchCandidate, matchHeading } from '@/lib/graves/matchCandidate';
+import { createSaveAttempt, MatchMode } from '@/lib/capture/saveMappedGrave';
+import { MatchCandidate, MatchCheckParams, matchCheckParams } from '@/lib/graves/matchCandidate';
+import { DuplicateMatchCard } from '@/components/common/DuplicateMatchCard';
 
 interface ConfirmDetailsScreenProps {
   initialData: AIStructuredExtraction;
   capturedImage: string;
   telemetry: DeviceTelemetry;
   cemeteries: Cemetery[];
-  onSaved: (grave: Grave) => void;
+  onSaved: (grave: Grave, outcome: 'created' | 'added-photo') => void;
   onRequireSignIn: () => void;
   onBack: () => void;
 }
@@ -24,6 +25,9 @@ interface ConfirmDetailsScreenProps {
 const labelClass = 'block text-[11px] font-semibold text-slate-500 mb-0.5';
 const inputClass =
   'w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-1 focus:ring-brand-forest';
+
+// Typing must pause this long before the duplicate check runs
+const MATCH_CHECK_DELAY_MS = 500;
 
 export const ConfirmDetailsScreen: React.FC<ConfirmDetailsScreenProps> = ({
   initialData,
@@ -54,6 +58,9 @@ export const ConfirmDetailsScreen: React.FC<ConfirmDetailsScreenProps> = ({
   const [attempt] = useState(createSaveAttempt);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // A grave already mapped that may be this person
+  const [candidate, setCandidate] = useState<MatchCandidate | null>(null);
+  const cardRef = useRef<HTMLDivElement | null>(null);
 
   // Cemeteries can finish loading after the screen opens
   useEffect(() => {
@@ -61,6 +68,26 @@ export const ConfirmDetailsScreen: React.FC<ConfirmDetailsScreenProps> = ({
       setForm((prev) => (prev.cemeteryId ? prev : { ...prev, cemeteryId: detectedCemetery.id }));
     }
   }, [detectedCemetery]);
+
+  // Checks for the same person nearby when the screen opens and whenever the identifying details change
+  const checkParams = matchCheckParams(form, telemetry);
+  const checkKey = checkParams ? JSON.stringify(checkParams) : '';
+  useEffect(() => {
+    if (!checkKey) {
+      setCandidate(null);
+      return;
+    }
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      dataStore.findMatchingGraves(JSON.parse(checkKey) as MatchCheckParams).then((matches) => {
+        if (!cancelled) setCandidate(matches[0] ?? null);
+      });
+    }, MATCH_CHECK_DELAY_MS);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [checkKey]);
 
   const { valid, errors } = validateNewGraveForm(form);
   const selectedCemetery = cemeteries.find((cemetery) => cemetery.id === form.cemeteryId);
@@ -71,7 +98,7 @@ export const ConfirmDetailsScreen: React.FC<ConfirmDetailsScreenProps> = ({
     (field: keyof NewGraveForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
       setForm((prev) => ({ ...prev, [field]: e.target.value }));
 
-  const handleSave = async () => {
+  const save = async (matchMode: MatchMode, addToGraveId?: string) => {
     if (!valid || isSaving) return;
     setIsSaving(true);
     setError(null);
@@ -82,18 +109,21 @@ export const ConfirmDetailsScreen: React.FC<ConfirmDetailsScreenProps> = ({
         photoDataUrl: capturedImage,
         telemetry,
         attempt,
-        matchMode: 'ask',
+        matchMode,
+        addToGraveId,
       });
       if (result.outcome === 'match-found') {
-        // Replaced by the duplicate card in the next task
+        // For example someone saved this person moments ago. Nothing was created, so the user chooses.
+        setCandidate(result.candidate);
         setIsSaving(false);
-        setError(`${matchHeading(result.candidate)}: ${describeMatchCandidate(result.candidate)}`);
+        window.setTimeout(() => cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
         return;
       }
-      onSaved(result.grave);
+      onSaved(result.grave, result.outcome);
     } catch (err) {
       setIsSaving(false);
       setError(err instanceof SaveGraveError ? err.message : UNKNOWN_SAVE_MESSAGE);
+      if (err instanceof SaveGraveError && err.code === 'grave-missing') setCandidate(null);
       if (err instanceof SaveGraveError && err.code === 'signed-out') onRequireSignIn();
     }
   };
@@ -114,6 +144,17 @@ export const ConfirmDetailsScreen: React.FC<ConfirmDetailsScreenProps> = ({
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* Same person already mapped nearby */}
+        {candidate && (
+          <DuplicateMatchCard
+            ref={cardRef}
+            candidate={candidate}
+            busy={isSaving || !valid}
+            onAddPhoto={() => save('ask', candidate.graveId)}
+            onDifferentPerson={() => save('new')}
+          />
+        )}
+
         {/* Photo and what it is for */}
         <div className="flex space-x-3 items-start">
           <div className="w-20 h-28 rounded-xl overflow-hidden relative shrink-0 bg-slate-800 border border-slate-300 shadow-sm">
@@ -241,7 +282,7 @@ export const ConfirmDetailsScreen: React.FC<ConfirmDetailsScreenProps> = ({
           </div>
         )}
         <button
-          onClick={handleSave}
+          onClick={() => save('ask')}
           disabled={!valid || isSaving}
           className="w-full py-3 px-4 rounded-xl bg-brand-forest hover:bg-brand-dark text-white text-xs font-semibold shadow-md transition-all active:scale-[0.99] flex items-center justify-center space-x-2 disabled:opacity-50 disabled:active:scale-100"
         >

@@ -274,8 +274,10 @@ function QabrMapAppContent() {
   };
 
   // A saved grave opens on its own details page
-  const handleGraveSaved = (saved: Grave) => {
+  const handleGraveSaved = (saved: Grave, outcome: 'created' | 'added-photo') => {
     setSelectedGrave(saved);
+    // The photo went onto a grave that was already mapped, so its photo carousel must reload
+    if (outcome === 'added-photo') setGravePhotosVersion((v) => v + 1);
     const cemetery = cemeteries.find((c) => c.id === saved.cemeteryId);
     if (cemetery) setSelectedCemetery(cemetery);
     dataStore.getGraves(saved.cemeteryId).then(setGraves);
