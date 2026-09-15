@@ -212,7 +212,8 @@ begin
       from public.find_matching_graves(
         p_cemetery_id, p_latitude, p_longitude, p_accuracy_meters,
         v_first_name, v_surname, p_birth_date, p_death_date, v_grave_number
-      )
+      ) m
+      order by m.match = 'strong' desc, m.distance_meters
       limit 1;
     if found then
       v_candidate := jsonb_build_object(

@@ -303,9 +303,10 @@ function QabrMapAppContent() {
 
   // Capture Trigger
   const handleCaptureComplete = async (dataUrl: string, telemetry: DeviceTelemetry) => {
-    // Survey photos are stored and processed in the background; a failure here tells the camera to say so
-    if (captureMode === 'survey' && surveyForCamera) {
-      await queueSurveyCapture(surveyForCamera, dataUrl, telemetry, cemeteries);
+    // Survey photos are stored and processed in the background; a failure here tells the camera to say so.
+    // A survey-mode shot must never fall through to the paid ai-processing path below.
+    if (captureMode === 'survey') {
+      if (surveyForCamera) await queueSurveyCapture(surveyForCamera, dataUrl, telemetry, cemeteries);
       return;
     }
     setCapturedImage(dataUrl);
@@ -484,6 +485,7 @@ function QabrMapAppContent() {
               }
               // Same as opening Capture: iOS only shows the compass prompt during a tap
               void compassPermission.request();
+              setCaptureMode('single');
               setPhotoTargetGrave(grave);
               setCurrentScreen('capture');
             }}

@@ -327,13 +327,27 @@ describe('Survey Queue Worker Tests', () => {
 
   it('holds the whole queue for a minute on a rate limit without counting the read', async () => {
     const q = setup([capture(1), capture(2)]);
-    q.readPhoto.mockResolvedValueOnce({ kind: 'rate-limited' });
+    q.readPhoto.mockResolvedValueOnce({ kind: 'rate-limited', waitMs: 60_000 });
     await q.worker.wake();
     expect(q.readPhoto).toHaveBeenCalledTimes(1);
     expect(q.row('capture_1')).toMatchObject({ status: 'queued', readAttempts: 0 });
     expect(q.worker.activity()).toBe('waiting');
     expect(q.timers.map((t) => t.ms)).toEqual([60_000]);
     await q.fireTimer();
+    expect(q.row('capture_1').status).toBe('saved');
+    expect(q.row('capture_2').status).toBe('saved');
+  });
+
+  it('holds the whole queue for 10 minutes when the daily read limit is hit, with no second read before it fires', async () => {
+    const q = setup([capture(1), capture(2)]);
+    q.readPhoto.mockResolvedValueOnce({ kind: 'rate-limited', waitMs: 600_000 });
+    await q.worker.wake();
+    expect(q.readPhoto).toHaveBeenCalledTimes(1);
+    expect(q.row('capture_1')).toMatchObject({ status: 'queued', readAttempts: 0 });
+    expect(q.worker.activity()).toBe('waiting');
+    expect(q.timers.map((t) => t.ms)).toEqual([600_000]);
+    await q.fireTimer();
+    expect(q.readPhoto).toHaveBeenCalledTimes(3);
     expect(q.row('capture_1').status).toBe('saved');
     expect(q.row('capture_2').status).toBe('saved');
   });

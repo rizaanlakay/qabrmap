@@ -4,7 +4,6 @@ import {
   MIN_WAKE_DELAY_MS,
   OFFLINE_RETRY_MS,
   QueueActivity,
-  RATE_LIMIT_WAIT_MS,
   StepResult,
   backoffMs,
   decideAfterReading,
@@ -136,7 +135,8 @@ export function createQueueWorker(deps: QueueWorkerDeps): QueueWorker {
         return 'failure';
       }
       case 'rate-limited':
-        await update(capture, { status: 'queued', readAttempts: capture.readAttempts, nextAttemptAt: now + RATE_LIMIT_WAIT_MS });
+        await update(capture, { status: 'queued', readAttempts: capture.readAttempts, nextAttemptAt: now + result.waitMs });
+        rateLimitedUntil = now + result.waitMs;
         return 'rate-limited';
       case 'signed-out':
         await update(capture, { status: 'queued', readAttempts: capture.readAttempts });
@@ -263,7 +263,6 @@ export function createQueueWorker(deps: QueueWorkerDeps): QueueWorker {
         setActivity('signed-out');
         return;
       }
-      if (step === 'rate-limited') rateLimitedUntil = now + RATE_LIMIT_WAIT_MS;
       if (step === 'offline') {
         // Requests can fail while the phone still reports a connection, so try again shortly in that case
         setActivity('offline');

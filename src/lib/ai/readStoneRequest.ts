@@ -30,10 +30,13 @@ export interface ReadStoneDeps {
 
 export interface ReadStoneResult {
   status: number;
-  body: { reading: StoneReading } | { error: string };
+  body: { reading: StoneReading } | { error: string; code?: string };
 }
 
-const failure = (status: number, error: string): ReadStoneResult => ({ status, body: { error } });
+const failure = (status: number, error: string, code?: string): ReadStoneResult => ({
+  status,
+  body: code ? { error, code } : { error },
+});
 
 const answer = (reading: StoneReading): ReadStoneResult =>
   reading.hasGraveDetails ? { status: 200, body: { reading } } : failure(422, NO_GRAVE_DETAILS_MESSAGE);
@@ -56,7 +59,7 @@ export async function handleReadStone(authorization: string | null, deps: ReadSt
     return failure(502, READ_FAILED_MESSAGE);
   }
   if (begun.error) {
-    if (begun.error.code === '53400') return failure(429, TOO_MANY_READS_MESSAGE);
+    if (begun.error.code === '53400') return failure(429, TOO_MANY_READS_MESSAGE, 'read-limit');
     if (begun.error.code === '42501') return failure(401, SIGN_IN_TO_READ_MESSAGE);
     if (begun.error.code === 'PGRST202') return failure(503, READING_NOT_SET_UP_MESSAGE);
     deps.logError('Starting a photo read failed:', begun.error);

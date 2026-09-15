@@ -85,6 +85,10 @@ export const ConfirmDetailsScreen: React.FC<ConfirmDetailsScreenProps> = ({
   // Checks for the same person nearby when the screen opens and whenever the identifying details change
   const checkParams = matchCheckParams(form, telemetry);
   const checkKey = checkParams ? JSON.stringify(checkParams) : '';
+  // The key the screen opened with, so a lookup that comes back empty for it doesn't drop a card the review
+  // was opened with (offline, a failed check, or a looser check); once the surveyor edits a field the key
+  // changes and an empty result clears the card as before.
+  const initialCheckKeyRef = useRef(checkKey);
   useEffect(() => {
     if (!checkKey) {
       setCandidate(null);
@@ -93,7 +97,9 @@ export const ConfirmDetailsScreen: React.FC<ConfirmDetailsScreenProps> = ({
     let cancelled = false;
     const timer = window.setTimeout(() => {
       dataStore.findMatchingGraves(JSON.parse(checkKey) as MatchCheckParams).then((matches) => {
-        if (!cancelled) setCandidate(matches[0] ?? null);
+        if (cancelled) return;
+        if (matches[0]) setCandidate(matches[0]);
+        else if (checkKey !== initialCheckKeyRef.current) setCandidate(null);
       });
     }, MATCH_CHECK_DELAY_MS);
     return () => {

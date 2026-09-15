@@ -49,7 +49,14 @@ describe('Read Result Tests', () => {
   it('maps each failure to what the queue does next', () => {
     expect(readResultFromResponse(0, null)).toEqual({ kind: 'offline' });
     expect(readResultFromResponse(401, { error: 'Sign in to read a photo.' })).toEqual({ kind: 'signed-out' });
-    expect(readResultFromResponse(429, { error: 'Too many photos read. Try again later.' })).toEqual({ kind: 'rate-limited' });
+    expect(readResultFromResponse(429, { error: 'Too many photos are being read right now.' })).toEqual({
+      kind: 'rate-limited',
+      waitMs: 60_000,
+    });
+    expect(readResultFromResponse(429, { error: 'Too many photos read. Try again later.', code: 'read-limit' })).toEqual({
+      kind: 'rate-limited',
+      waitMs: 600_000,
+    });
     expect(readResultFromResponse(422, { error: 'No grave details were found in this photo.' })).toEqual({
       kind: 'unreadable',
       message: 'No grave details were found in this photo.',

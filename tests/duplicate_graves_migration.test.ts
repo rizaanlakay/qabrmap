@@ -51,6 +51,12 @@ describe('Duplicate Graves Migration Tests', () => {
     expect(MIGRATION).toMatch(/where public_url = p_photo_public_url and uploaded_by = v_caller/);
   });
 
+  it('picks the candidate grave explicitly, strong matches before possible, then nearest', () => {
+    expect(MIGRATION).toMatch(
+      /select \* into v_match\s+from public\.find_matching_graves\([^)]*\) m\s+order by m\.match = 'strong' desc, m\.distance_meters\s+limit 1;/
+    );
+  });
+
   it('asks about any match, auto-adds only strong matches, and never makes an added photo primary', () => {
     expect(MIGRATION).toMatch(/p_match_mode not in \('ask', 'auto', 'new'\)/);
     expect(MIGRATION).toMatch(/if p_match_mode = 'auto' and v_match\.match = 'strong' then/);

@@ -36,7 +36,8 @@ export async function POST(request: NextRequest) {
       const { error } = await clientFor(token).rpc('finish_photo_read', { p_read_id: readId, p_reading: reading });
       if (error) throw error;
     },
-    readPhoto: (dataUrl) => readStonePhoto(new OpenAI(), dataUrl),
+    // Each counted read must be at most one model call; the queue and the user retry instead
+    readPhoto: (dataUrl) => readStonePhoto(new OpenAI({ maxRetries: 0 }), dataUrl),
     isRateLimitError: (err) => err instanceof OpenAI.RateLimitError,
     logError: (message, err) => console.error(message, err),
   });

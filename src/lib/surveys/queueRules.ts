@@ -16,6 +16,8 @@ export const MAX_SAVE_FAILURES = 3;
 export const MAX_MANUAL_RETRIES = 2;
 export const CIRCUIT_BREAKER_LIMIT = 5;
 export const RATE_LIMIT_WAIT_MS = 60_000;
+// The account hit its daily read limit, so waiting a minute would only send refused requests
+export const READ_LIMIT_WAIT_MS = 600_000;
 export const MIN_WAKE_DELAY_MS = 30_000;
 export const OFFLINE_RETRY_MS = 30_000;
 

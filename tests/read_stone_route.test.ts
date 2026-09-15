@@ -112,7 +112,10 @@ describe('Read Stone Route Tests', () => {
   it('turns the database limit into 429 without calling the model', async () => {
     const deps = makeDeps();
     deps.beginRead.mockResolvedValueOnce({ data: null, error: { code: '53400', message: 'Too many photos read. Try again later.' } });
-    await expect(handleReadStone(AUTH, deps)).resolves.toEqual({ status: 429, body: { error: TOO_MANY_READS_MESSAGE } });
+    await expect(handleReadStone(AUTH, deps)).resolves.toEqual({
+      status: 429,
+      body: { error: TOO_MANY_READS_MESSAGE, code: 'read-limit' },
+    });
     expect(deps.readPhoto).not.toHaveBeenCalled();
   });
 

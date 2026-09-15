@@ -3,13 +3,14 @@ import type { SaveMappedGraveResult } from '../capture/saveMappedGrave';
 import type { MatchCandidate } from '../graves/matchCandidate';
 import { isStoneReading, stoneReadingToExtraction } from '../ai/stoneReading';
 import { mapSaveGraveError } from '../supabase/saveGraveErrors';
+import { RATE_LIMIT_WAIT_MS, READ_LIMIT_WAIT_MS } from './queueRules';
 
 // Turns network answers into the few results the survey queue acts on
 
 export type ReadResult =
   | { kind: 'reading'; reading: AIStructuredExtraction }
   | { kind: 'offline' }
-  | { kind: 'rate-limited' }
+  | { kind: 'rate-limited'; waitMs: number }
   | { kind: 'signed-out' }
   | { kind: 'unreadable'; message: string }
   | { kind: 'error'; message: string };
@@ -21,6 +22,11 @@ function errorText(body: unknown): string | undefined {
   return typeof error === 'string' ? error : undefined;
 }
 
+function errorCode(body: unknown): string | undefined {
+  const code = body && typeof body === 'object' ? (body as { code?: unknown }).code : undefined;
+  return typeof code === 'string' ? code : undefined;
+}
+
 // Status 0 means no answer arrived, so the read may never have reached the server
 export function readResultFromResponse(status: number, body: unknown): ReadResult {
   if (status === 0) return { kind: 'offline' };
@@ -29,7 +35,8 @@ export function readResultFromResponse(status: number, body: unknown): ReadResul
     return isStoneReading(reading) ? { kind: 'reading', reading: stoneReadingToExtraction(reading) } : { kind: 'error', message: READ_FAILED };
   }
   if (status === 401) return { kind: 'signed-out' };
-  if (status === 429) return { kind: 'rate-limited' };
+  // The daily read limit is hit, not the model, so retrying in a minute would only send more refused requests
+  if (status === 429) return { kind: 'rate-limited', waitMs: errorCode(body) === 'read-limit' ? READ_LIMIT_WAIT_MS : RATE_LIMIT_WAIT_MS };
   if (status === 422) return { kind: 'unreadable', message: errorText(body) ?? 'No grave details were found in this photo.' };
   return { kind: 'error', message: errorText(body) ?? READ_FAILED };
 }
