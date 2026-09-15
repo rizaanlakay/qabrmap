@@ -1,0 +1,113 @@
+{
+  "_comment": "Facts kept from the earlier, wider CSV (2026-09-15) that the production CSV dropped. resolve.mjs merges these: 'coordinates' fills a blank point on a source.csv row matched by cemetery_name; 'extra_sites' become review rows with status needs_review so the reviewer decides whether they enter the app.",
+  "coordinates": [
+    {
+      "cemetery_name": "Tana Baru Cemetery",
+      "latitude": -33.918325,
+      "longitude": 18.415158,
+      "source_url": "https://artefacts.co.za/main/Buildings/bldgframes_mob.php?bldgid=12043",
+      "note": "Heritage source gives coordinates"
+    }
+  ],
+  "extra_sites": [
+    {
+      "province": "Western Cape",
+      "city_or_area": "Saldanha / Vredenburg",
+      "cemetery_name": "West Coast Islamic Society Maqbara",
+      "qabrmap_category": "Dedicated Muslim cemetery",
+      "location": "Saldanha Road, between Saldanha and Vredenburg",
+      "site_status": "active_or_burial_site",
+      "verification_status": "Verified",
+      "verification_source": "MJC directory (listed on the same page the production CSV cites)",
+      "source_url_1": "https://mjc.org.za/community/cemeteries/"
+    },
+    {
+      "province": "Gauteng",
+      "city_or_area": "Roodepoort",
+      "cemetery_name": "Roodepoort Muslim and Hindu Cemetery",
+      "qabrmap_category": "Shared Muslim/Hindu cemetery",
+      "location": "Tornado Crescent, Georginia, Roodepoort",
+      "site_status": "active",
+      "verification_status": "Confirmed shared cemetery",
+      "verification_source": "JCPZ",
+      "source_url_1": "https://www.jhbcityparksandzoo.com/services-facilities/cemeteries/find-a-cemetery/roodepoort-muslim-and-hindu-cemetery"
+    },
+    {
+      "province": "KwaZulu-Natal",
+      "city_or_area": "Verulam",
+      "cemetery_name": "Verulam & District Muslim Cemetery",
+      "qabrmap_category": "Dedicated Muslim cemetery",
+      "location": "Townview Road, Canelands, Verulam, 4339",
+      "site_status": "active_or_burial_site",
+      "verification_status": "Local cemetery directory only",
+      "verification_source": "cybo.com",
+      "source_url_1": "https://www.cybo.com/ZA-postal-code/4339_verulam-kwazulu-natal/cemeteries-and-crematoriums/"
+    },
+    {
+      "province": "KwaZulu-Natal",
+      "city_or_area": "Verulam",
+      "cemetery_name": "Phoenix Muslim Cemetery",
+      "qabrmap_category": "Dedicated Muslim cemetery",
+      "location": "Ottawa South, Blackburn, Verulam, 4339",
+      "site_status": "active_or_burial_site",
+      "verification_status": "Local cemetery directory only",
+      "verification_source": "cybo.com",
+      "source_url_1": "https://www.cybo.com/ZA/verulam-kwazulu-natal/cemeteries-and-crematoriums/"
+    },
+    {
+      "province": "Northern Cape",
+      "city_or_area": "Kimberley",
+      "cemetery_name": "Kimberley Muslim Cemetery",
+      "qabrmap_category": "Dedicated Muslim cemetery",
+      "location": "Kimberley, Northern Cape",
+      "site_status": "active_or_burial_site",
+      "verification_status": "War graves project lists it; no street address",
+      "verification_source": "South Africa War Graves Project",
+      "source_url_1": "https://www.southafricawargraves.org/search/view-paginated.php?Regiment=49&ipp=All&locality=167&page=1"
+    },
+    {
+      "province": "Western Cape",
+      "city_or_area": "Simon's Town",
+      "cemetery_name": "Dido Valley Cemetery",
+      "qabrmap_category": "Mixed cemetery with Muslim section",
+      "location": "Kemps Road, Dido Valley, Simon's Town",
+      "site_status": "active",
+      "verification_status": "Confirmed Muslim section",
+      "verification_source": "City of Cape Town research report",
+      "source_url_1": "https://resource.capetown.gov.za/documentcentre/Documents/City%20research%20reports%20and%20review/Stories_of_the_South_Peninsula_full_doc_2014-06.pdf"
+    },
+    {
+      "province": "Free State",
+      "city_or_area": "Bloemfontein",
+      "cemetery_name": "Mangaung Municipal Cemetery (Muslim burial area)",
+      "qabrmap_category": "Mixed cemetery with Muslim section",
+      "location": "Bloemfontein, Mangaung",
+      "site_status": "active",
+      "verification_status": "News report only; no address",
+      "verification_source": "SABC News",
+      "source_url_1": "https://www.sabcnews.com/sabcnews/burial-space-dispute-brews-in-mangaung-as-community-clashes-over-grave-sites/"
+    },
+    {
+      "province": "Mpumalanga",
+      "city_or_area": "Kinross",
+      "cemetery_name": "Kinross / Thistle Grove Muslim Cemetery",
+      "qabrmap_category": "Dedicated Muslim cemetery",
+      "location": "Kinross / Thistle Grove, Govan Mbeki Municipality",
+      "site_status": "active_or_burial_site",
+      "verification_status": "Municipal annual report only; no address",
+      "verification_source": "Govan Mbeki Municipality annual report 2023/24",
+      "source_url_1": "https://www.govanmbeki.gov.za/wp-content/reports/annual_report_2023_2024.pdf"
+    },
+    {
+      "province": "Mpumalanga",
+      "city_or_area": "Leslie / Lebohang",
+      "cemetery_name": "Lebohang Ext. 14 Muslim Cemetery",
+      "qabrmap_category": "Dedicated Muslim cemetery",
+      "location": "Lebohang Ext. 14, Govan Mbeki Municipality",
+      "site_status": "active_or_burial_site",
+      "verification_status": "Municipal annual report only; no address",
+      "verification_source": "Govan Mbeki Municipality annual report 2023/24",
+      "source_url_1": "https://www.govanmbeki.gov.za/wp-content/reports/annual_report_2023_2024.pdf"
+    }
+  ]
+}
