@@ -19,6 +19,7 @@ describe('Grave Photos Tests', () => {
         storage_path: 'cem_athlone/grave_8660_1.jpg',
         uploaded_by: 'user-1',
         is_primary: true,
+        kind: 'grave',
         captured_at: '2026-09-14T10:00:00Z',
         created_at: '2026-09-14T10:00:01Z',
       })
@@ -29,6 +30,7 @@ describe('Grave Photos Tests', () => {
       storagePath: 'cem_athlone/grave_8660_1.jpg',
       uploadedBy: 'user-1',
       isPrimary: true,
+      kind: 'grave',
       capturedAt: '2026-09-14T10:00:00Z',
       createdAt: '2026-09-14T10:00:01Z',
     });
@@ -36,6 +38,12 @@ describe('Grave Photos Tests', () => {
       isPrimary: false,
       storagePath: undefined,
     });
+  });
+
+  it('treats an older photo row without a kind as a stone photo', () => {
+    expect(
+      mapDbGravePhoto({ id: 'p2', grave_id: 'g', public_url: 'https://x/p2.jpg', is_primary: false, created_at: '2026-09-15T00:00:00Z' }).kind
+    ).toBe('stone');
   });
 
   it('treats a table that has not been created yet as missing rather than broken', () => {

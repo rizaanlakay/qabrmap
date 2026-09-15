@@ -91,6 +91,10 @@ export interface Grave {
   status: GraveStatus;
   primaryPhotoUrl?: string;
   photoCount: number;
+  // Whole-grave photo shown as "Look for this grave" while navigating
+  gravePhotoUrl?: string;
+  // Independent GPS observations the position is averaged from; 0 or missing for seeded graves
+  observationCount?: number;
   lastVerifiedAt?: string;
   // The account that mapped this grave; only they can delete it
   createdBy?: string;
@@ -99,6 +103,9 @@ export interface Grave {
   updatedAt: string;
 }
 
+// stone: the gravestone. grave: the whole grave, a visual clue for visitors
+export type GravePhotoKind = 'stone' | 'grave';
+
 export interface GravePhoto {
   id: string;
   graveId: string;
@@ -106,6 +113,7 @@ export interface GravePhoto {
   storagePath?: string;
   uploadedBy?: string;
   isPrimary: boolean;
+  kind: GravePhotoKind;
   capturedAt?: string;
   createdAt: string;
 }

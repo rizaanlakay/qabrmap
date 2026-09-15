@@ -66,6 +66,8 @@ export function mapDbGrave(row: any): Grave {
     status: row.status || 'UNMAPPED',
     primaryPhotoUrl: row.primary_photo_url || '/sample-gravestone.svg',
     photoCount: row.photo_count || 0,
+    gravePhotoUrl: row.grave_photo_url || undefined,
+    observationCount: row.observation_count || 0,
     lastVerifiedAt: row.last_verified_at || undefined,
     createdBy: row.created_by || undefined,
     createdAt: row.created_at || new Date().toISOString(),
@@ -124,6 +126,7 @@ export function mapDbGravePhoto(row: any): GravePhoto {
     storagePath: row.storage_path || undefined,
     uploadedBy: row.uploaded_by || undefined,
     isPrimary: Boolean(row.is_primary),
+    kind: row.kind === 'grave' ? 'grave' : 'stone',
     capturedAt: row.captured_at || undefined,
     createdAt: row.created_at,
   };

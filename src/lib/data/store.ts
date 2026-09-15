@@ -4,6 +4,7 @@ import {
   Cemetery,
   Grave,
   GravePhoto,
+  GravePhotoKind,
   DeviceTelemetry,
   ProvenanceLog,
   Correction,
@@ -517,7 +518,12 @@ class DataStore {
   }
 
   // Uploads a photo and attaches it to an existing grave. Needs a signed-in user and a connection.
-  async addGravePhoto(grave: Grave, imageDataUrl: string, telemetry?: DeviceTelemetry): Promise<GravePhoto> {
+  async addGravePhoto(
+    grave: Pick<Grave, 'id' | 'cemeteryId'>,
+    imageDataUrl: string,
+    telemetry?: DeviceTelemetry,
+    kind: GravePhotoKind = 'stone'
+  ): Promise<GravePhoto> {
     if (!isSupabaseConfigured || !supabase) throw new Error('Photo uploads are not available right now.');
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
       throw new Error("You're offline. Connect to the internet to add this photo.");
@@ -542,6 +548,7 @@ class DataStore {
         storage_path: upload.path || null,
         public_url: upload.publicUrl,
         uploaded_by: auth.user.id,
+        kind,
         captured_at: telemetry?.timestamp ?? new Date().toISOString(),
         capture_latitude: telemetry?.latitude ?? null,
         capture_longitude: telemetry?.longitude ?? null,
