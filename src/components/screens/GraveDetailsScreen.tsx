@@ -24,6 +24,12 @@ import { buildGraveShareUrl } from '@/lib/share/graveLink';
 import { graveNumberLabel } from '@/lib/ui/graveLabels';
 import { DeleteGraveError } from '@/lib/graves/deleteMappedGrave';
 
+function confidenceLabel(level: Grave['positionConfidence']): string {
+  if (level === 'HIGH') return 'High confidence';
+  if (level === 'MEDIUM') return 'Medium confidence';
+  return 'Low confidence';
+}
+
 interface GraveDetailsScreenProps {
   grave: Grave;
   onNavigateToGrave: (grave: Grave) => void;
@@ -302,7 +308,8 @@ export const GraveDetailsScreen: React.FC<GraveDetailsScreenProps> = ({
               <span className="text-slate-500 font-medium">Location Accuracy</span>
               <span className="flex items-center font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full text-[11px]">
                 <CheckCircle2 className="w-3 h-3 mr-1 text-emerald-600" />
-                ± {grave.positionAccuracyMeters}m ({grave.positionConfidence === 'HIGH' ? 'High Confidence' : 'Medium'})
+                ± {grave.positionAccuracyMeters}m, {confidenceLabel(grave.positionConfidence)}
+                {(grave.observationCount ?? 0) > 1 ? `, ${grave.observationCount} visits` : ''}
               </span>
             </div>
 
