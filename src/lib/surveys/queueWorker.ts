@@ -1,6 +1,7 @@
 import type { Survey, SurveyCapture, SurveyQueueState } from '@/types';
 import type { ReadResult, SaveResult } from './queueAdapters';
 import {
+  MIN_WAKE_DELAY_MS,
   OFFLINE_RETRY_MS,
   QueueActivity,
   RATE_LIMIT_WAIT_MS,
@@ -95,7 +96,12 @@ export function createQueueWorker(deps: QueueWorkerDeps): QueueWorker {
     // Counted before the request, so a read cut off by the app closing still counts toward the cap
     const readAttempts = capture.readAttempts + 1;
     await update(capture, { status: 'reading', readAttempts });
-    const result = await deps.readPhoto({ ...capture, readAttempts });
+    let result: ReadResult;
+    try {
+      result = await deps.readPhoto({ ...capture, readAttempts });
+    } catch {
+      result = { kind: 'error', message: "The photo couldn't be read." };
+    }
 
     switch (result.kind) {
       case 'reading': {
@@ -111,10 +117,24 @@ export function createQueueWorker(deps: QueueWorkerDeps): QueueWorker {
       case 'unreadable':
         await update(capture, { status: 'review', reviewReason: 'unreadable', lastError: result.message });
         return 'progress';
-      case 'offline':
-        // No answer arrived, so the attempt isn't counted
-        await update(capture, { status: 'queued', readAttempts: capture.readAttempts });
-        return 'offline';
+      case 'offline': {
+        if (!deps.isOnline()) {
+          // No answer arrived and the phone confirms it has no signal, so the attempt isn't counted
+          await update(capture, { status: 'queued', readAttempts: capture.readAttempts });
+          return 'offline';
+        }
+        // The phone still claims a connection, so a response that never arrived is a real failure, not a free retry
+        {
+          const lastError = "The photo couldn't be sent. Check the signal and try again.";
+          await update(
+            capture,
+            readAttempts >= limit
+              ? { status: 'failed', lastError }
+              : { status: 'queued', nextAttemptAt: now + backoffMs(readAttempts), lastError }
+          );
+        }
+        return 'failure';
+      }
       case 'rate-limited':
         await update(capture, { status: 'queued', readAttempts: capture.readAttempts, nextAttemptAt: now + RATE_LIMIT_WAIT_MS });
         return 'rate-limited';
@@ -146,7 +166,12 @@ export function createQueueWorker(deps: QueueWorkerDeps): QueueWorker {
 
     // The save records its uploaded photo on this copy, which is stored whatever happens next
     const attempt = { ...capture.attempt };
-    const result = await deps.saveCapture({ ...capture, attempt }, survey);
+    let result: SaveResult;
+    try {
+      result = await deps.saveCapture({ ...capture, attempt }, survey);
+    } catch {
+      result = { kind: 'error', message: "The grave couldn't be saved." };
+    }
 
     switch (result.kind) {
       case 'created':
@@ -208,7 +233,7 @@ export function createQueueWorker(deps: QueueWorkerDeps): QueueWorker {
       const now = deps.now();
       if (rateLimitedUntil > now) {
         setActivity('waiting');
-        schedule(rateLimitedUntil - now);
+        schedule(Math.max(MIN_WAKE_DELAY_MS, rateLimitedUntil - now));
         return;
       }
 
@@ -261,9 +286,12 @@ export function createQueueWorker(deps: QueueWorkerDeps): QueueWorker {
         await deps.runExclusive(runOnce);
       } while (wakeAgain && !stopped);
     } catch (err) {
-      // A storage failure ends this run; the next trigger starts a fresh one
+      // A storage failure ends this run; forget which users were already recovered so the next run resets
+      // any capture a mid-read throw left stuck in "reading", and retry shortly instead of going silent
       deps.onError?.(err);
+      recoveredUsers.clear();
       setActivity('idle');
+      if (!stopped) schedule(MIN_WAKE_DELAY_MS);
     } finally {
       running = false;
     }

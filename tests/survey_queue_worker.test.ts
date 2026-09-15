@@ -62,6 +62,8 @@ function setup(captures: SurveyCapture[]) {
   let online = true;
   let userId: string | null = USER;
   const timers: Array<{ callback: () => void; ms: number }> = [];
+  let updateCalls = 0;
+  let failUpdateOnCall: number | null = null;
 
   const storage: QueueStorage = {
     async eligibleCaptures(user, at) {
@@ -80,6 +82,11 @@ function setup(captures: SurveyCapture[]) {
       return reading.length;
     },
     async updateCapture(id, changes) {
+      updateCalls += 1;
+      if (updateCalls === failUpdateOnCall) {
+        failUpdateOnCall = null;
+        throw new Error('storage write failed');
+      }
       const row = rows.get(id) as unknown as Record<string, unknown>;
       for (const [key, value] of Object.entries(changes)) {
         if (value === undefined) delete row[key];
@@ -143,6 +150,7 @@ function setup(captures: SurveyCapture[]) {
     setOnline: (value: boolean) => (online = value),
     setUser: (value: string | null) => (userId = value),
     advance: (ms: number) => (now += ms),
+    failUpdateOnCall: (n: number) => (failUpdateOnCall = n),
     fireTimer,
   };
 }
@@ -168,12 +176,94 @@ describe('Survey Queue Worker Tests', () => {
     expect(q.row('capture_1').status).toBe('queued');
   });
 
-  it('does not count a read that lost its connection, and tries again in 30 seconds', async () => {
+  it('does not count a read whose connection was already lost, and sets no retry timer', async () => {
     const q = setup([capture(1)]);
-    q.readPhoto.mockResolvedValueOnce({ kind: 'offline' });
+    q.readPhoto.mockImplementationOnce(async () => {
+      // The signal drops while the request is in flight, so the phone reports offline by the time the answer is lost
+      q.setOnline(false);
+      return { kind: 'offline' };
+    });
     await q.worker.wake();
     expect(q.row('capture_1')).toMatchObject({ status: 'queued', readAttempts: 0 });
     expect(q.worker.activity()).toBe('offline');
+    expect(q.timers).toHaveLength(0);
+    q.setOnline(true);
+    await q.worker.wake();
+    expect(q.row('capture_1').status).toBe('saved');
+  });
+
+  it('saves the incremented read attempt before calling readPhoto, even one that never resolves', async () => {
+    const q = setup([capture(1)]);
+    q.readPhoto.mockImplementationOnce(async () => {
+      expect(q.row('capture_1')).toMatchObject({ status: 'reading', readAttempts: 1 });
+      return { kind: 'reading', reading: clearReading };
+    });
+    await q.worker.wake();
+    expect(q.readPhoto).toHaveBeenCalledTimes(1);
+    expect(q.row('capture_1').status).toBe('saved');
+  });
+
+  it('counts an offline read result as a failed attempt when the phone still reports a connection', async () => {
+    const q = setup([capture(1)]);
+    q.readPhoto.mockResolvedValue({ kind: 'offline' });
+    await q.worker.wake();
+    expect(q.row('capture_1')).toMatchObject({
+      status: 'queued',
+      readAttempts: 1,
+      nextAttemptAt: 1_030_000,
+      lastError: "The photo couldn't be sent. Check the signal and try again.",
+    });
+    expect(q.timers.map((t) => t.ms)).toEqual([30_000]);
+    await q.fireTimer();
+    expect(q.row('capture_1').readAttempts).toBe(2);
+    expect(q.timers.map((t) => t.ms)).toEqual([120_000]);
+    await q.fireTimer();
+    expect(q.row('capture_1')).toMatchObject({
+      status: 'failed',
+      readAttempts: 3,
+      lastError: "The photo couldn't be sent. Check the signal and try again.",
+    });
+    expect(q.readPhoto).toHaveBeenCalledTimes(3);
+    expect(q.timers).toHaveLength(0);
+  });
+
+  it('counts a thrown readPhoto error like any other failed read', async () => {
+    const q = setup([capture(1)]);
+    q.readPhoto.mockRejectedValueOnce(new Error('network trouble'));
+    await q.worker.wake();
+    expect(q.row('capture_1')).toMatchObject({ status: 'queued', readAttempts: 1, lastError: "The photo couldn't be read." });
+    expect(q.timers.map((t) => t.ms)).toEqual([30_000]);
+  });
+
+  it('counts a thrown saveCapture error like any other failed save', async () => {
+    const q = setup([capture(1)]);
+    q.saveCapture.mockRejectedValueOnce(new Error('network trouble'));
+    await q.worker.wake();
+    expect(q.row('capture_1')).toMatchObject({ status: 'saving', saveFailures: 1, lastError: "The grave couldn't be saved." });
+    expect(q.timers.map((t) => t.ms)).toEqual([30_000]);
+  });
+
+  it('backs off after save errors and fails after 3 save failures without reading the photo again', async () => {
+    const q = setup([capture(1)]);
+    q.saveCapture.mockResolvedValue({ kind: 'error', message: 'boom' });
+    await q.worker.wake();
+    expect(q.row('capture_1')).toMatchObject({ status: 'saving', saveFailures: 1 });
+    expect(q.timers.map((t) => t.ms)).toEqual([30_000]);
+    await q.fireTimer();
+    expect(q.row('capture_1').saveFailures).toBe(2);
+    expect(q.timers.map((t) => t.ms)).toEqual([120_000]);
+    await q.fireTimer();
+    expect(q.row('capture_1')).toMatchObject({ status: 'failed', saveFailures: 3, lastError: 'boom' });
+    expect(q.readPhoto).toHaveBeenCalledTimes(1);
+    expect(q.timers).toHaveLength(0);
+  });
+
+  it('recovers from a storage failure that leaves a capture stuck reading, instead of going silent', async () => {
+    const q = setup([capture(1)]);
+    // The 2nd updateCapture call is the one that would move the capture off "reading" once the read comes back
+    q.failUpdateOnCall(2);
+    await q.worker.wake();
+    expect(q.row('capture_1')).toMatchObject({ status: 'reading', readAttempts: 1 });
     expect(q.timers.map((t) => t.ms)).toEqual([30_000]);
     await q.fireTimer();
     expect(q.row('capture_1').status).toBe('saved');
