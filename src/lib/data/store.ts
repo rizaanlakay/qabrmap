@@ -652,7 +652,12 @@ class DataStore {
       p_longitude: fix.lng,
       p_accuracy_meters: Number(fix.accuracy.toFixed(1)),
     });
-    if (error) throw mapSaveGraveError(error);
+    if (error) {
+      const mapped = mapSaveGraveError(error);
+      // The capture wording offers to save a new grave, which navigation cannot do
+      if (mapped.code === 'grave-missing') throw new SaveGraveError('grave-missing', 'That grave no longer exists.');
+      throw mapped;
+    }
     const result = parseVisitResult(data);
     if (!result) throw new SaveGraveError('unknown', VISIT_FAILED_MESSAGE);
 

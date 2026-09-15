@@ -136,7 +136,13 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({
   // The whole-grave shot only needs the camera: its position and heading come from the stone shot
   const readiness =
     step === 'grave'
-      ? { ready: cameraLive, blocker: cameraLive ? null : ('camera' as const), message: GRAVE_STEP_MESSAGE, canCaptureAnyway: false, lowAccuracy: false }
+      ? {
+          ready: cameraLive,
+          blocker: cameraLive ? null : ('camera' as const),
+          message: cameraLive ? GRAVE_STEP_MESSAGE : 'Camera is not available',
+          canCaptureAnyway: false,
+          lowAccuracy: false,
+        }
       : stoneReadiness;
 
   // "Capture anyway" appears once the accuracy blocker has held for a while; a change of blocker restarts the wait

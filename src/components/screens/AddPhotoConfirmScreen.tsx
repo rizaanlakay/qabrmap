@@ -10,6 +10,8 @@ import { graveNumberLabel } from '@/lib/ui/graveLabels';
 interface AddPhotoConfirmScreenProps {
   grave: Grave;
   capturedImage: string;
+  // The whole-grave shot taken after a low-accuracy capture, saved alongside the stone photo
+  gravePhoto?: string;
   telemetry: DeviceTelemetry;
   onSaved: (photo: GravePhoto) => void;
   onRetake: () => void;
@@ -20,6 +22,7 @@ interface AddPhotoConfirmScreenProps {
 export const AddPhotoConfirmScreen: React.FC<AddPhotoConfirmScreenProps> = ({
   grave,
   capturedImage,
+  gravePhoto,
   telemetry,
   onSaved,
   onRetake,
@@ -34,6 +37,14 @@ export const AddPhotoConfirmScreen: React.FC<AddPhotoConfirmScreenProps> = ({
     setError(null);
     try {
       const photo = await dataStore.addGravePhoto(grave, capturedImage, telemetry);
+      if (gravePhoto) {
+        try {
+          await dataStore.addGravePhoto(grave, gravePhoto, telemetry, 'grave');
+        } catch (err) {
+          // The stone photo is saved, so a failed whole-grave shot must not fail the save
+          console.warn('The whole-grave photo could not be saved:', err);
+        }
+      }
       onSaved(photo);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'The photo could not be saved. Please try again.');

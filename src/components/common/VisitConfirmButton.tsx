@@ -55,6 +55,9 @@ export const VisitConfirmButton: React.FC<VisitConfirmButtonProps> = ({ grave, f
         {state.kind === 'saving' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
         <span>{state.kind === 'saving' ? 'Saving…' : 'I found it'}</span>
       </button>
+      {!usable && (
+        <p className={`mt-1.5 text-[11px] font-semibold ${dark ? 'text-white/70' : 'text-slate-500'}`}>Waiting for a GPS fix within 25 m</p>
+      )}
       {state.kind === 'error' && (
         <p className={`mt-1.5 text-[11px] font-semibold ${dark ? 'text-rose-200' : 'text-rose-700'}`} role="alert">
           {state.message}
