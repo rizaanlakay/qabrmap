@@ -110,4 +110,28 @@ describe('Scene Driver Tests', () => {
     expect(line.position.y).toBeCloseTo(EYE_HEIGHT_M - 1.4, 1);
     driver.dispose();
   });
+
+  it('keeps the grave planted while the person walks between fixes', () => {
+    const engine = fakeEngine();
+    const driver = createSceneDriver(engine.XR8, () => 0);
+    driver.pipelineModule.onStart?.({ canvasWidth: 390, canvasHeight: 780 });
+    driver.setHeading(0);
+    driver.setTarget({ bearingDeg: 0, distanceM: 10 });
+    driver.pipelineModule.onUpdate?.(normal);
+    const pin = engine.scene.getObjectByName('grave-pin') as THREE.Group;
+    const line = engine.scene.getObjectByName('floor-line') as THREE.Group;
+    expect(pin.position.z).toBeCloseTo(-10, 6);
+    // Walk 3 m toward the grave with no new fix: the pin must not move, the line must shorten
+    engine.camera.position.z = -3;
+    for (let i = 0; i < 5; i++) driver.pipelineModule.onUpdate?.(normal);
+    expect(pin.position.z).toBeCloseTo(-10, 6);
+    expect(line.position.z).toBeCloseTo(-3, 6);
+    // The line group only exposes its mesh children in the scene; read the length back from the strip's scale
+    expect((line.getObjectByName('strip') as THREE.Mesh).scale.y).toBeCloseTo(7 / FLOOR_LINE_LENGTH_M, 6);
+    // The next fix measures from where the person now stands
+    driver.setTarget({ bearingDeg: 0, distanceM: 7 });
+    for (let i = 0; i < 200; i++) driver.pipelineModule.onUpdate?.(normal);
+    expect(pin.position.z).toBeCloseTo(-10, 3);
+    driver.dispose();
+  });
 });

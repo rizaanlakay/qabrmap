@@ -57,7 +57,7 @@ export function createSceneDriver(
   const pin = createGravePin();
   pin.group.name = 'grave-pin';
   const lights = createPinLights();
-  const floor = createFloorEstimator();
+  let floor = createFloorEstimator();
   const north = createNorthAlignment();
   const forward = new THREE.Vector3();
 
@@ -67,10 +67,14 @@ export function createSceneDriver(
   let target: { bearingDeg: number; distanceM: number } | null = null;
   // The grave's world point is derived once per fix, from where the phone was at that moment
   let targetPending = false;
+  // Feet captured at the moment of the fix, so the grave stays planted in the world while the person walks
+  // between fixes rather than being recomputed from wherever the camera is now
+  let fixFeet: { x: number; z: number } | null = null;
   let grave: { x: number; z: number } | null = null;
   let floorY = 0;
   let frame = 0;
   let startedAt = now();
+  let disposed = false;
   let current: DriverState = { tracking: 'initialising', floorMeasured: false, aligned: false };
   const listeners = new Set<(state: DriverState) => void>();
 
@@ -103,9 +107,12 @@ export function createSceneDriver(
     line.group.rotation.y = yaw;
     line.setLength(Math.min(distance, FLOOR_LINE_LENGTH_M));
     line.group.visible = distance > ARRIVED_M;
-    // The pin marks the grave, or the end of the line while the grave is still out of the line's reach
-    const pinDistance = Math.min(distance, FLOOR_LINE_LENGTH_M);
-    pin.group.position.set(feet.x - Math.sin(yaw) * pinDistance, floorY, feet.z - Math.cos(yaw) * pinDistance);
+    // The pin marks the grave itself while it is within the line's reach; beyond that it sits at the line's end
+    if (distance <= FLOOR_LINE_LENGTH_M) {
+      pin.group.position.set(grave.x, floorY, grave.z);
+    } else {
+      pin.group.position.set(feet.x - Math.sin(yaw) * FLOOR_LINE_LENGTH_M, floorY, feet.z - Math.cos(yaw) * FLOOR_LINE_LENGTH_M);
+    }
     pin.group.visible = true;
   };
 
@@ -121,9 +128,16 @@ export function createSceneDriver(
       camera.position.set(0, EYE_HEIGHT_M, 0);
       XR8.XrController.updateCameraProjectionMatrix({ origin: camera.position, facing: camera.quaternion });
       startedAt = now();
+      // A restarted engine should not carry a stale world over: forget the old grave, floor and frame count
+      grave = null;
+      fixFeet = null;
+      targetPending = target !== null;
+      floorY = 0;
+      frame = 0;
+      floor = createFloorEstimator();
     },
     onUpdate: ({ processCpuResult }) => {
-      if (!camera) return;
+      if (!camera || disposed) return;
       frame += 1;
       const reality = processCpuResult.reality;
       if (reality) setState({ tracking: trackingFrom(reality) });
@@ -144,8 +158,9 @@ export function createSceneDriver(
       setState({ aligned: offset !== null });
 
       if (offset !== null && target && targetPending) {
+        if (!fixFeet) fixFeet = { x: camera.position.x, z: camera.position.z };
         const goal = graveWorldPosition({
-          feet: { x: camera.position.x, z: camera.position.z },
+          feet: fixFeet,
           bearingDeg: target.bearingDeg,
           distanceM: target.distanceM,
           offsetDeg: offset,
@@ -165,8 +180,10 @@ export function createSceneDriver(
   return {
     pipelineModule,
     setTarget(next) {
+      if (!Number.isFinite(next.bearingDeg) || !Number.isFinite(next.distanceM)) return;
       target = next;
       targetPending = true;
+      fixFeet = camera ? { x: camera.position.x, z: camera.position.z } : null;
     },
     setHeading(next) {
       heading = next;
@@ -177,10 +194,12 @@ export function createSceneDriver(
     },
     state: () => current,
     dispose() {
+      disposed = true;
       listeners.clear();
       scene?.remove(line.group, pin.group, ...lights);
       line.dispose();
       pin.dispose();
+      lights.forEach((light) => light.dispose());
     },
   };
 }
