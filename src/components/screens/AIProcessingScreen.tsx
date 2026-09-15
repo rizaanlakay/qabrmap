@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import {
+  AlertTriangle,
   ArrowLeft,
   CheckCircle2,
   Loader2,
@@ -15,6 +16,7 @@ interface AIProcessingScreenProps {
   capturedImage: string;
   telemetry: DeviceTelemetry;
   onProcessingFinished: (finalState: AIProcessingState) => void;
+  onEnterManually: () => void;
   onBack: () => void;
 }
 
@@ -22,6 +24,7 @@ export const AIProcessingScreen: React.FC<AIProcessingScreenProps> = ({
   capturedImage,
   telemetry,
   onProcessingFinished,
+  onEnterManually,
   onBack,
 }) => {
   const [state, setState] = useState<AIProcessingState>({
@@ -33,6 +36,7 @@ export const AIProcessingScreen: React.FC<AIProcessingScreenProps> = ({
     positioning: 'pending',
     duplicates: 'pending',
   });
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -51,8 +55,9 @@ export const AIProcessingScreen: React.FC<AIProcessingScreenProps> = ({
           }, 500);
         }
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
         console.error('AI Pipeline error:', err);
+        if (isMounted) setError(err instanceof Error ? err.message : 'The photo could not be processed.');
       });
 
     return () => {
@@ -165,12 +170,36 @@ export const AIProcessingScreen: React.FC<AIProcessingScreenProps> = ({
         })}
       </div>
 
-      {/* Subtext Banner matching Screen 9 */}
-      <div className="p-6 text-center">
-        <p className="text-xs text-slate-500 leading-relaxed max-w-xs mx-auto">
-          This may take a few moments. You can continue to use the app.
-        </p>
-      </div>
+      {error ? (
+        <div className="p-4 bg-white border-t border-slate-200/80 space-y-3">
+          <div role="alert" className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-start">
+            <AlertTriangle className="w-4 h-4 mr-2 shrink-0" />
+            <span>
+              <b className="font-semibold">The photo couldn&apos;t be read.</b> {error}
+            </span>
+          </div>
+          <div className="flex space-x-3">
+            <button
+              onClick={onBack}
+              className="flex-1 py-3 px-4 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+            >
+              Retake
+            </button>
+            <button
+              onClick={onEnterManually}
+              className="flex-1 py-3 px-4 rounded-xl bg-brand-forest hover:bg-brand-dark text-white text-xs font-semibold shadow-md transition-all"
+            >
+              Enter details manually
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="p-6 text-center">
+          <p className="text-xs text-slate-500 leading-relaxed max-w-xs mx-auto">
+            This may take a few moments. You can continue to use the app.
+          </p>
+        </div>
+      )}
     </div>
   );
 };

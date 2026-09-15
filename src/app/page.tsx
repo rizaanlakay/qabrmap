@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Cemetery, Grave, DeviceTelemetry, AIStructuredExtraction, AIProcessingState, SurveySession } from '@/types';
 import { dataStore } from '@/lib/data/store';
 import { getGraveIdFromUrl, withGraveParam } from '@/lib/share/graveLink';
@@ -53,6 +53,19 @@ export type ScreenId =
   | 'profile'
   | 'admin';
 
+// Used when the photo couldn't be read, so the user types everything in
+const EMPTY_EXTRACTION: AIStructuredExtraction = {
+  graveNumber: '',
+  firstName: '',
+  middleNames: [],
+  surname: '',
+  fullName: '',
+  confidence: 0,
+  rawOcrText: '',
+  otherText: [],
+  fieldConfidences: { graveNumber: 0, fullName: 0, dates: 0 },
+};
+
 function QabrMapAppContent() {
   // Global Application State
   const [currentScreen, setCurrentScreen] = useState<ScreenId>('home');
@@ -88,26 +101,14 @@ function QabrMapAppContent() {
     lng: 18.50302,
   });
 
-  // Capture & AI Pipeline Temporary State
-  const [capturedImage, setCapturedImage] = useState<string>('/sample-gravestone.svg');
-  const [capturedTelemetry, setCapturedTelemetry] = useState<DeviceTelemetry>({
-    latitude: -33.967521,
-    longitude: 18.503277,
-    gpsAccuracy: 4.2,
-    headingDegrees: 62.0,
-    timestamp: new Date().toISOString(),
-  });
-  const [extractedData, setExtractedData] = useState<AIStructuredExtraction>({
-    graveNumber: '',
-    firstName: '',
-    middleNames: [],
-    surname: '',
-    fullName: '',
-    confidence: 0,
-    rawOcrText: '',
-    otherText: [],
-    fieldConfidences: { graveNumber: 0, fullName: 0, dates: 0 },
-  });
+  // Capture & AI Pipeline Temporary State: empty until a photo is actually taken
+  const [capturedImage, setCapturedImage] = useState<string>('');
+  const [capturedTelemetry, setCapturedTelemetry] = useState<DeviceTelemetry | null>(null);
+  const [extractedData, setExtractedData] = useState<AIStructuredExtraction>(EMPTY_EXTRACTION);
+
+  const { user, openAuthModal, loading: authLoading } = useAuth();
+  // Set by the ?mode=capture home screen shortcut; acted on once auth has loaded
+  const pendingCaptureLaunch = useRef(false);
 
   // True while a shared ?grave= link is being resolved, so the URL sync below doesn't strip it early
   const deepLinkPending = useRef(false);
@@ -119,8 +120,12 @@ function QabrMapAppContent() {
     // Home screen shortcuts from the installed app's manifest open straight into search or capture
     const launchMode = new URLSearchParams(window.location.search).get('mode');
     if (launchMode === 'search' || launchMode === 'capture') {
-      setCurrentNavTab(launchMode);
-      setCurrentScreen(launchMode);
+      if (launchMode === 'search') {
+        setCurrentNavTab('search');
+        setCurrentScreen('search');
+      } else {
+        pendingCaptureLaunch.current = true;
+      }
       const launchUrl = new URL(window.location.href);
       launchUrl.searchParams.delete('mode');
       window.history.replaceState(
@@ -172,6 +177,23 @@ function QabrMapAppContent() {
     return () => unsub();
   }, []);
 
+  // Mapping a grave records who added it, so signed-out visitors are asked to sign in first
+  const openCapture = useCallback(() => {
+    if (!user) {
+      openAuthModal();
+      return;
+    }
+    setCurrentNavTab('capture');
+    setPhotoTargetGrave(null);
+    setCurrentScreen('capture');
+  }, [user, openAuthModal]);
+
+  useEffect(() => {
+    if (!pendingCaptureLaunch.current || authLoading) return;
+    pendingCaptureLaunch.current = false;
+    openCapture();
+  }, [authLoading, openCapture]);
+
   // Keep the address bar in sync with the open grave so it can be copied or refreshed
   useEffect(() => {
     if (deepLinkPending.current) return;
@@ -185,13 +207,13 @@ function QabrMapAppContent() {
 
   // Handle Bottom Nav clicks
   const handleSelectNavTab = (tab: NavTab) => {
+    if (tab === 'capture') {
+      openCapture();
+      return;
+    }
     setCurrentNavTab(tab);
     if (tab === 'home') setCurrentScreen('home');
     if (tab === 'search') setCurrentScreen('search');
-    if (tab === 'capture') {
-      setPhotoTargetGrave(null);
-      setCurrentScreen('capture');
-    }
     if (tab === 'surveys') setCurrentScreen('survey-session');
     if (tab === 'profile') setCurrentScreen('profile');
   };
@@ -229,22 +251,27 @@ function QabrMapAppContent() {
     setCurrentScreen(photoTargetGrave ? 'add-photo' : 'ai-processing');
   };
 
-  // AI Pipeline Finished Handover
-  const handleProcessingFinished = (state: AIProcessingState) => {
-    if (state.data?.structured) {
-      setExtractedData(state.data.structured);
-    }
+  // AI Pipeline Finished Handover. Stable so the processing screen doesn't restart the pipeline on every render.
+  const handleProcessingFinished = useCallback((state: AIProcessingState) => {
+    setExtractedData(state.data?.structured ?? EMPTY_EXTRACTION);
+    setCurrentScreen('confirm-details');
+  }, []);
+
+  const handleEnterDetailsManually = () => {
+    setExtractedData(EMPTY_EXTRACTION);
     setCurrentScreen('confirm-details');
   };
 
-  // Save Grave Confirmation
-  const handleSaveGrave = async (grave: Grave) => {
-    const saved = await dataStore.saveNewGrave(grave);
+  // A saved grave opens on its own details page
+  const handleGraveSaved = (saved: Grave) => {
     setSelectedGrave(saved);
-    const updated = await dataStore.getGraves(selectedCemetery?.id);
-    setGraves(updated);
-    setSurveySession(dataStore.getActiveSurveySession());
-    setCurrentScreen('survey-session');
+    const cemetery = cemeteries.find((c) => c.id === saved.cemeteryId);
+    if (cemetery) setSelectedCemetery(cemetery);
+    dataStore.getGraves(saved.cemeteryId).then(setGraves);
+    setSurveySession({ ...dataStore.getActiveSurveySession() });
+    setPreviousScreen('home');
+    setCurrentNavTab('home');
+    setCurrentScreen('grave-details');
   };
 
   // Trigger Sync
@@ -265,7 +292,6 @@ function QabrMapAppContent() {
   ].includes(currentScreen);
 
   const isDarkStatus = ['cemetery-map', 'navigation', 'ar-guidance', 'capture'].includes(currentScreen);
-  const { user, openAuthModal } = useAuth();
 
   return (
     <div className="w-full h-full flex flex-col relative overflow-hidden bg-slate-50">
@@ -285,9 +311,7 @@ function QabrMapAppContent() {
                 setCurrentNavTab('search');
                 setCurrentScreen('search');
               } else if (screen === 'capture') {
-                setCurrentNavTab('capture');
-                setPhotoTargetGrave(null);
-                setCurrentScreen('capture');
+                openCapture();
               } else if (screen === 'register') {
                 setCurrentScreen('register');
               }
@@ -420,27 +444,29 @@ function QabrMapAppContent() {
           />
         )}
 
-        {currentScreen === 'ai-processing' && (
+        {currentScreen === 'ai-processing' && capturedTelemetry && (
           <AIProcessingScreen
             capturedImage={capturedImage}
             telemetry={capturedTelemetry}
             onProcessingFinished={handleProcessingFinished}
+            onEnterManually={handleEnterDetailsManually}
             onBack={() => setCurrentScreen('capture')}
           />
         )}
 
-        {currentScreen === 'confirm-details' && (
+        {currentScreen === 'confirm-details' && capturedTelemetry && (
           <ConfirmDetailsScreen
             initialData={extractedData}
             capturedImage={capturedImage}
             telemetry={capturedTelemetry}
-            cemeteryId={selectedCemetery?.id}
-            onSaveGrave={handleSaveGrave}
+            cemeteries={cemeteries}
+            onSaved={handleGraveSaved}
+            onRequireSignIn={openAuthModal}
             onBack={() => setCurrentScreen('capture')}
           />
         )}
 
-        {currentScreen === 'add-photo' && photoTargetGrave && (
+        {currentScreen === 'add-photo' && photoTargetGrave && capturedTelemetry && (
           <AddPhotoConfirmScreen
             grave={photoTargetGrave}
             capturedImage={capturedImage}
@@ -461,7 +487,7 @@ function QabrMapAppContent() {
         {currentScreen === 'survey-session' && (
           <SurveySessionScreen
             session={surveySession}
-            onCaptureNextGrave={() => setCurrentScreen('capture')}
+            onCaptureNextGrave={openCapture}
             onBack={() => setCurrentScreen('home')}
           />
         )}

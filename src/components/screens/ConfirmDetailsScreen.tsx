@@ -1,69 +1,89 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
-import { ArrowLeft, Calendar, CheckCircle2 } from 'lucide-react';
-import { AIStructuredExtraction, DeviceTelemetry, Grave } from '@/types';
+import { AlertTriangle, ArrowLeft, Calendar, CheckCircle2, Loader2 } from 'lucide-react';
+import { AIStructuredExtraction, Cemetery, DeviceTelemetry, Grave } from '@/types';
+import { dataStore } from '@/lib/data/store';
+import { findCemeteryForLocation } from '@/lib/capture/cemeteryForLocation';
+import { NewGraveForm, validateNewGraveForm } from '@/lib/capture/newGrave';
+import { SaveGraveError, UNKNOWN_SAVE_MESSAGE } from '@/lib/supabase/saveGraveErrors';
 
 interface ConfirmDetailsScreenProps {
   initialData: AIStructuredExtraction;
   capturedImage: string;
   telemetry: DeviceTelemetry;
-  cemeteryId?: string;
-  onSaveGrave: (grave: Grave) => void;
+  cemeteries: Cemetery[];
+  onSaved: (grave: Grave) => void;
+  onRequireSignIn: () => void;
   onBack: () => void;
 }
+
+const labelClass = 'block text-[11px] font-semibold text-slate-500 mb-0.5';
+const inputClass =
+  'w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-1 focus:ring-brand-forest';
 
 export const ConfirmDetailsScreen: React.FC<ConfirmDetailsScreenProps> = ({
   initialData,
   capturedImage,
   telemetry,
-  cemeteryId = 'cem_athlone',
-  onSaveGrave,
+  cemeteries,
+  onSaved,
+  onRequireSignIn,
   onBack,
 }) => {
-  // Blank when the stone couldn't be read, so nobody saves a grave under another person's details
-  const [graveNumber, setGraveNumber] = useState(initialData.graveNumber || '');
-  const [firstName, setFirstName] = useState(initialData.firstName || '');
-  const [middleNames, setMiddleNames] = useState(initialData.middleNames?.join(' ') || '');
-  const [surname, setSurname] = useState(initialData.surname || '');
-  const [birthDate, setBirthDate] = useState(initialData.birthDate || '');
-  const [deathDate, setDeathDate] = useState(initialData.deathDate || '');
-  const [isEditing, setIsEditing] = useState(false);
+  const detectedCemetery = useMemo(
+    () => findCemeteryForLocation(cemeteries, telemetry.latitude, telemetry.longitude),
+    [cemeteries, telemetry.latitude, telemetry.longitude]
+  );
 
+  // Blank when the stone couldn't be read, so nobody saves a grave under another person's details
+  const [form, setForm] = useState<NewGraveForm>(() => ({
+    firstName: initialData.firstName || '',
+    middleNames: initialData.middleNames?.join(' ') || '',
+    surname: initialData.surname || '',
+    nickname: '',
+    graveNumber: initialData.graveNumber || '',
+    birthDate: initialData.birthDate || '',
+    deathDate: initialData.deathDate || '',
+    cemeteryId: detectedCemetery?.id || '',
+  }));
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Cemeteries can finish loading after the screen opens
+  useEffect(() => {
+    if (detectedCemetery) {
+      setForm((prev) => (prev.cemeteryId ? prev : { ...prev, cemeteryId: detectedCemetery.id }));
+    }
+  }, [detectedCemetery]);
+
+  const { valid, errors } = validateNewGraveForm(form);
+  const selectedCemetery = cemeteries.find((cemetery) => cemetery.id === form.cemeteryId);
+  const outsideSelectedBoundary = Boolean(selectedCemetery) && detectedCemetery?.id !== selectedCemetery?.id;
   const confidencePercent = Math.round((initialData.confidence ?? 0) * 100);
 
-  const handleConfirm = () => {
-    const fullName = [firstName, middleNames, surname].filter(Boolean).join(' ');
-    const newGrave: Grave = {
-      id: `grave_${Date.now()}`,
-      cemeteryId,
-      cemeteryName: 'Athlone Muslim Cemetery',
-      sectionId: 'sec_b',
-      sectionName: 'Section B',
-      graveNumber,
-      latitude: telemetry.latitude,
-      longitude: telemetry.longitude,
-      positionAccuracyMeters: telemetry.gpsAccuracy,
-      positionConfidence: telemetry.gpsAccuracy <= 3.5 ? 'HIGH' : 'MEDIUM',
-      status: 'MAPPED',
-      primaryPhotoUrl: capturedImage || '/sample-gravestone.svg',
-      photoCount: 1,
-      lastVerifiedAt: '12 September 2026',
-      person: {
-        id: `person_${Date.now()}`,
-        firstName,
-        middleNames,
-        surname,
-        fullName,
-        birthDate,
-        deathDate,
-      },
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+  const update =
+    (field: keyof NewGraveForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+      setForm((prev) => ({ ...prev, [field]: e.target.value }));
 
-    onSaveGrave(newGrave);
+  const handleSave = async () => {
+    if (!valid || isSaving) return;
+    setIsSaving(true);
+    setError(null);
+    try {
+      const grave = await dataStore.saveNewGrave({
+        form,
+        cemeteryName: selectedCemetery?.name,
+        photoDataUrl: capturedImage,
+        telemetry,
+      });
+      onSaved(grave);
+    } catch (err) {
+      setIsSaving(false);
+      setError(err instanceof SaveGraveError ? err.message : UNKNOWN_SAVE_MESSAGE);
+      if (err instanceof SaveGraveError && err.code === 'signed-out') onRequireSignIn();
+    }
   };
 
   return (
@@ -72,7 +92,8 @@ export const ConfirmDetailsScreen: React.FC<ConfirmDetailsScreenProps> = ({
       <div className="px-4 py-3 bg-white border-b border-slate-200/80 flex items-center shrink-0">
         <button
           onClick={onBack}
-          className="w-9 h-9 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-700 transition-colors mr-2"
+          disabled={isSaving}
+          className="w-9 h-9 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-700 transition-colors mr-2 disabled:opacity-40"
           aria-label="Back"
         >
           <ArrowLeft className="w-5 h-5 stroke-[2.2]" />
@@ -80,154 +101,142 @@ export const ConfirmDetailsScreen: React.FC<ConfirmDetailsScreenProps> = ({
         <h1 className="text-lg font-bold text-slate-900 tracking-tight">Confirm Details</h1>
       </div>
 
-      {/* Main Content Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        <p className="text-xs text-slate-500">
-          We found the following information. Please check and edit if needed.
-        </p>
-
-        {/* Thumbnail Preview and Form Layout matching Mockup Screen 10 */}
+        {/* Photo and what it is for */}
         <div className="flex space-x-3 items-start">
-          {/* Gravestone Thumbnail on left */}
           <div className="w-20 h-28 rounded-xl overflow-hidden relative shrink-0 bg-slate-800 border border-slate-300 shadow-sm">
-            <Image
-              src={capturedImage || '/sample-gravestone.svg'}
-              alt="Gravestone crop"
-              fill
-              className="object-cover"
-            />
+            <Image src={capturedImage} alt="Captured gravestone" fill className="object-cover" />
           </div>
+          <p className="text-xs text-slate-500 leading-relaxed">
+            Check the details below. If the stone has no readable details, the photo still records the grave&apos;s
+            location and direction, so type the details in.
+          </p>
+        </div>
 
-          {/* Form Fields Stack */}
-          <div className="flex-1 space-y-2.5">
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-500 mb-0.5">
-                Grave Number
-              </label>
-              <input
-                type="text"
-                value={graveNumber}
-                onChange={(e) => setGraveNumber(e.target.value)}
-                className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-1 focus:ring-brand-forest"
-              />
+        {/* Cemetery */}
+        <div>
+          <label htmlFor="cemetery" className={labelClass}>
+            Cemetery *
+          </label>
+          <select id="cemetery" value={form.cemeteryId} onChange={update('cemeteryId')} className={inputClass}>
+            <option value="">Choose a cemetery</option>
+            {cemeteries.map((cemetery) => (
+              <option key={cemetery.id} value={cemetery.id}>
+                {cemetery.name}
+              </option>
+            ))}
+          </select>
+          {!detectedCemetery && (
+            <p className="mt-1 flex items-start text-[11px] text-amber-700">
+              <AlertTriangle className="w-3.5 h-3.5 mr-1 shrink-0" />
+              Your location isn&apos;t inside a cemetery we know. Choose the cemetery this grave is in.
+            </p>
+          )}
+          {detectedCemetery && outsideSelectedBoundary && selectedCemetery && (
+            <p className="mt-1 flex items-start text-[11px] text-amber-700">
+              <AlertTriangle className="w-3.5 h-3.5 mr-1 shrink-0" />
+              This location is outside {selectedCemetery.name}&apos;s boundary.
+            </p>
+          )}
+        </div>
+
+        {/* Person */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label htmlFor="firstName" className={labelClass}>
+              First name *
+            </label>
+            <input id="firstName" type="text" value={form.firstName} onChange={update('firstName')} className={inputClass} />
+          </div>
+          <div>
+            <label htmlFor="surname" className={labelClass}>
+              Surname *
+            </label>
+            <input id="surname" type="text" value={form.surname} onChange={update('surname')} className={inputClass} />
+          </div>
+        </div>
+
+        <div>
+          <label htmlFor="middleNames" className={labelClass}>
+            Middle names
+          </label>
+          <input id="middleNames" type="text" value={form.middleNames} onChange={update('middleNames')} className={inputClass} />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label htmlFor="nickname" className={labelClass}>
+              Nickname
+            </label>
+            <input id="nickname" type="text" value={form.nickname} onChange={update('nickname')} className={inputClass} />
+          </div>
+          <div>
+            <label htmlFor="graveNumber" className={labelClass}>
+              Grave number
+            </label>
+            <input id="graveNumber" type="text" value={form.graveNumber} onChange={update('graveNumber')} className={inputClass} />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label htmlFor="birthDate" className={labelClass}>
+              Date of birth
+            </label>
+            <div className="relative">
+              <Calendar className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input id="birthDate" type="date" value={form.birthDate} onChange={update('birthDate')} className={`${inputClass} pl-9`} />
             </div>
-
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-500 mb-0.5">
-                First Name
-              </label>
-              <input
-                type="text"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-1 focus:ring-brand-forest"
-              />
+          </div>
+          <div>
+            <label htmlFor="deathDate" className={labelClass}>
+              Date of death
+            </label>
+            <div className="relative">
+              <Calendar className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input id="deathDate" type="date" value={form.deathDate} onChange={update('deathDate')} className={`${inputClass} pl-9`} />
             </div>
           </div>
         </div>
 
-        {/* Remaining Form Fields */}
-        <div className="space-y-3">
-          <div>
-            <label className="block text-[11px] font-semibold text-slate-500 mb-0.5">
-              Middle Names
-            </label>
-            <input
-              type="text"
-              value={middleNames}
-              onChange={(e) => setMiddleNames(e.target.value)}
-              className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-1 focus:ring-brand-forest"
-            />
-          </div>
+        {/* AI Confidence Indicator matching Screen 10 */}
+        <div className="flex items-center justify-between py-2 px-1">
+          <span className="text-xs font-semibold text-slate-600">AI Extraction Confidence</span>
+          <span className="text-xs font-bold text-slate-800">{confidencePercent}%</span>
+        </div>
 
-          <div>
-            <label className="block text-[11px] font-semibold text-slate-500 mb-0.5">
-              Surname
-            </label>
-            <input
-              type="text"
-              value={surname}
-              onChange={(e) => setSurname(e.target.value)}
-              className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-1 focus:ring-brand-forest"
-            />
-          </div>
-
-          <div>
-            <label className="block text-[11px] font-semibold text-slate-500 mb-0.5">
-              Date of Birth
-            </label>
-            <div className="relative">
-              <Calendar className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={birthDate}
-                onChange={(e) => setBirthDate(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-1 focus:ring-brand-forest"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-[11px] font-semibold text-slate-500 mb-0.5">
-              Date of Death
-            </label>
-            <div className="relative">
-              <Calendar className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={deathDate}
-                onChange={(e) => setDeathDate(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-1 focus:ring-brand-forest"
-              />
-            </div>
-          </div>
-
-          {/* AI Confidence Indicator matching Screen 10 */}
-          <div className="flex items-center justify-between py-2 px-1">
-            <span className="text-xs font-semibold text-slate-600">AI Extraction Confidence</span>
-            <div className="flex items-center space-x-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-              <span className="text-xs font-bold text-slate-800">{confidencePercent}%</span>
-            </div>
-          </div>
-
-          {/* Raw OCR Text & Multi-lingual Provenance Preservation */}
-          <div className="mt-2 p-3 bg-slate-100 rounded-xl border border-slate-200 text-xs">
-            <div className="flex items-center justify-between font-bold text-slate-700 text-[11px] mb-1.5">
-              <span>Original OCR Text (Preserved)</span>
-              <span className="text-emerald-700 font-medium">Tesseract Multi-Lingual</span>
-            </div>
-            <pre className="bg-white p-2 rounded-lg text-[11px] font-mono text-slate-700 whitespace-pre-wrap border border-slate-200/70 max-h-24 overflow-y-auto">
-              {initialData.rawOcrText || 'No text could be read from this photo.'}
-            </pre>
-            <div className="grid grid-cols-3 gap-1 mt-2 text-[10px] text-slate-500 text-center">
-              <div className="bg-white p-1 rounded border">
-                No: <b>{Math.round((initialData.fieldConfidences?.graveNumber ?? 0) * 100)}%</b>
-              </div>
-              <div className="bg-white p-1 rounded border">
-                Name: <b>{Math.round((initialData.fieldConfidences?.fullName ?? 0) * 100)}%</b>
-              </div>
-              <div className="bg-white p-1 rounded border">
-                Dates: <b>{Math.round((initialData.fieldConfidences?.dates ?? 0) * 100)}%</b>
-              </div>
-            </div>
-          </div>
+        {/* Raw OCR text, kept so the original reading can be checked */}
+        <div className="p-3 bg-slate-100 rounded-xl border border-slate-200 text-xs">
+          <div className="font-bold text-slate-700 text-[11px] mb-1.5">Text read from the photo</div>
+          <pre className="bg-white p-2 rounded-lg text-[11px] font-mono text-slate-700 whitespace-pre-wrap border border-slate-200/70 max-h-24 overflow-y-auto">
+            {initialData.rawOcrText || 'No text could be read from this photo.'}
+          </pre>
         </div>
       </div>
 
-      {/* Action Buttons matching Screen 10 */}
-      <div className="p-4 bg-white border-t border-slate-200/80 flex space-x-3 shrink-0">
+      {/* Save */}
+      <div className="p-4 bg-white border-t border-slate-200/80 space-y-3 shrink-0">
+        {error && (
+          <div role="alert" className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs font-semibold text-rose-700">
+            {error}
+          </div>
+        )}
         <button
-          onClick={() => setIsEditing(!isEditing)}
-          className="flex-1 py-3 px-4 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+          onClick={handleSave}
+          disabled={!valid || isSaving}
+          className="w-full py-3 px-4 rounded-xl bg-brand-forest hover:bg-brand-dark text-white text-xs font-semibold shadow-md transition-all active:scale-[0.99] flex items-center justify-center space-x-2 disabled:opacity-50 disabled:active:scale-100"
         >
-          Edit Manually
-        </button>
-        <button
-          onClick={handleConfirm}
-          className="flex-1 py-3 px-4 rounded-xl bg-brand-forest hover:bg-brand-dark text-white text-xs font-semibold shadow-md transition-all active:scale-[0.99]"
-        >
-          Confirm & Save
+          {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+          {/* The label names what's still missing, so there's no need for separate field errors */}
+          <span>
+            {isSaving
+              ? 'Saving…'
+              : errors.firstName || errors.surname
+                ? 'Enter a first name and surname'
+                : errors.cemeteryId
+                  ? 'Choose a cemetery'
+                  : 'Confirm & Save'}
+          </span>
         </button>
       </div>
     </div>
