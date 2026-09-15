@@ -17,6 +17,9 @@ if (isSupabaseConfigured) {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
+        // OAuth returns ?code=, exchanged in the browser using the verifier stored at sign-in start
+        flowType: 'pkce',
+        detectSessionInUrl: true,
       },
     });
   } catch (err) {
