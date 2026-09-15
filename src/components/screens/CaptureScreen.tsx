@@ -1,21 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import {
-  ArrowLeft,
-  Zap,
-  ZapOff,
-  Grid,
-  MapPin,
-  Compass,
-  Upload,
-  CameraOff,
-  Loader2,
-} from 'lucide-react';
+import { ArrowLeft, Zap, ZapOff, Grid, MapPin, Compass, CameraOff, Loader2 } from 'lucide-react';
 import { DeviceTelemetry } from '@/types';
 import { formatBearingToCardinal } from '@/lib/geospatial';
 import { isUsableGpsFix } from '@/lib/geospatial/routeProgress';
 import { describeCameraError } from '@/lib/device/cameraErrors';
+import { useCompassHeading } from '@/lib/device/useCompassHeading';
+import { getCaptureReadiness } from '@/lib/capture/readiness';
 
 interface CaptureScreenProps {
   onCaptureComplete: (imageDataUrl: string, telemetry: DeviceTelemetry) => void;
@@ -30,15 +22,9 @@ interface PositionFix {
   accuracy: number;
 }
 
-// Used only for uploaded photos taken before any GPS fix, which is how uploads have always behaved
-const UPLOAD_FALLBACK_POSITION: PositionFix = { lat: -33.967521, lng: 18.503277, accuracy: 4.2 };
-
-export const CaptureScreen: React.FC<CaptureScreenProps> = ({
-  onCaptureComplete,
-  onBack,
-}) => {
+// Photos only come from this camera, because each one records where it was taken and which way it faced
+export const CaptureScreen: React.FC<CaptureScreenProps> = ({ onCaptureComplete, onBack }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [cameraStatus, setCameraStatus] = useState<CameraStatus>('starting');
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -47,10 +33,9 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({
 
   // Real device readings; null until the device reports one
   const [fix, setFix] = useState<PositionFix | null>(null);
-  const [heading, setHeading] = useState<number | null>(null);
+  const { heading, status: compassStatus, requestPermission } = useCompassHeading();
 
-  // Start the rear camera. The <video> element is always mounted so the stream attaches the moment it arrives;
-  // it used to render only after attaching, so the live feed never showed and a demo gravestone sat in its place.
+  // Start the rear camera. The <video> element is always mounted so the stream attaches the moment it arrives.
   useEffect(() => {
     const video = videoRef.current;
     let cancelled = false;
@@ -105,36 +90,17 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({
     return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
-  // Compass heading listener
-  useEffect(() => {
-    const handleOrientation = (e: DeviceOrientationEvent) => {
-      // @ts-expect-error - webkitCompassHeading
-      const h = e.webkitCompassHeading || (e.alpha ? 360 - e.alpha : null);
-      if (h !== null) setHeading(Math.round(h));
-    };
-
-    if (window.DeviceOrientationEvent) {
-      window.addEventListener('deviceorientation', handleOrientation);
-    }
-    return () => window.removeEventListener('deviceorientation', handleOrientation);
-  }, []);
-
   const cameraLive = cameraStatus === 'live';
-  // A grave's position comes from this photo, so the shutter waits for both a live camera and a real GPS fix
-  const canTakePhoto = cameraLive && fix !== null;
-
-  const buildTelemetry = (position: PositionFix): DeviceTelemetry => ({
-    latitude: position.lat,
-    longitude: position.lng,
-    gpsAccuracy: Number(position.accuracy.toFixed(1)),
-    headingDegrees: heading ?? undefined,
-    timestamp: new Date().toISOString(),
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  const readiness = getCaptureReadiness({
+    cameraLive,
+    accuracyMeters: fix?.accuracy ?? null,
+    heading,
+    compassStatus,
   });
 
   const handleTriggerShutter = () => {
     const video = videoRef.current;
-    if (!canTakePhoto || !video || !fix) return;
+    if (!readiness.ready || !video || !fix || heading === null) return;
 
     const canvas = document.createElement('canvas');
     canvas.width = video.videoWidth || 1280;
@@ -142,31 +108,20 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    onCaptureComplete(canvas.toDataURL('image/jpeg', 0.85), buildTelemetry(fix));
-  };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      onCaptureComplete(reader.result as string, buildTelemetry(fix ?? UPLOAD_FALLBACK_POSITION));
-    };
-    reader.readAsDataURL(file);
+    onCaptureComplete(canvas.toDataURL('image/jpeg', 0.85), {
+      latitude: fix.lat,
+      longitude: fix.lng,
+      gpsAccuracy: Number(fix.accuracy.toFixed(1)),
+      headingDegrees: heading,
+      timestamp: new Date().toISOString(),
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      imageDimensions: { width: canvas.width, height: canvas.height },
+    });
   };
 
   return (
     <div className="flex-1 flex flex-col relative bg-black overflow-hidden select-none">
-      {/* Hidden File Input for uploading cemetery photos directly */}
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleFileUpload}
-        accept="image/*"
-        className="hidden"
-      />
-
       {/* Live camera feed, faded in once it is actually playing */}
       <video
         ref={videoRef}
@@ -191,7 +146,7 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({
             <>
               <CameraOff className="w-7 h-7 text-amber-300" />
               <p className="mt-3 text-sm font-semibold text-white">{cameraError || 'Camera unavailable'}</p>
-              <p className="mt-1 text-xs text-white/60">You can still upload a photo of the gravestone.</p>
+              <p className="mt-1 text-xs text-white/60">Allow camera access to map a grave.</p>
             </>
           )}
         </div>
@@ -207,9 +162,7 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({
           <ArrowLeft className="w-5 h-5 stroke-[2.2]" />
         </button>
 
-        <h1 className="text-sm font-bold tracking-tight text-white drop-shadow">
-          Capture Grave
-        </h1>
+        <h1 className="text-sm font-bold tracking-tight text-white drop-shadow">Capture Grave</h1>
 
         <div className="flex items-center space-x-2">
           <button
@@ -235,9 +188,7 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({
 
       {/* Viewfinder Bounding Reticle matching Screen 8 */}
       <div className="flex-1 relative flex flex-col items-center justify-center pointer-events-none z-20 px-8">
-        {/* Rounded Green Target Reticle */}
         <div className="w-full max-w-[280px] aspect-[3/4] border-2 border-emerald-400/90 rounded-3xl relative shadow-[0_0_20px_rgba(16,185,129,0.3)]">
-          {/* Corner Guides */}
           <div className="absolute -top-1 -left-1 w-5 h-5 border-t-4 border-l-4 border-emerald-400 rounded-tl-xl" />
           <div className="absolute -top-1 -right-1 w-5 h-5 border-t-4 border-r-4 border-emerald-400 rounded-tr-xl" />
           <div className="absolute -bottom-1 -left-1 w-5 h-5 border-b-4 border-l-4 border-emerald-400 rounded-bl-xl" />
@@ -258,10 +209,20 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({
           )}
         </div>
 
-        {/* Guidance Instruction Pill */}
+        {/* Guidance: names whatever is still stopping the shutter */}
         <div className="mt-4 bg-black/55 backdrop-blur-md text-white text-xs font-medium py-1.5 px-4 rounded-full border border-white/15">
-          {cameraLive && !fix ? 'Waiting for GPS before taking the photo' : 'Position the gravestone in the frame'}
+          {readiness.message}
         </div>
+
+        {compassStatus === 'needs-permission' && (
+          <button
+            onClick={requestPermission}
+            className="mt-3 pointer-events-auto flex items-center space-x-1.5 bg-emerald-500 hover:bg-emerald-400 text-emerald-950 text-xs font-bold py-2 px-4 rounded-full shadow-lg active:scale-95 transition-transform"
+          >
+            <Compass className="w-4 h-4" />
+            <span>Enable compass</span>
+          </button>
+        )}
 
         {/* Live Telemetry Pill matching Screen 8 */}
         <div className="mt-4 bg-black/75 backdrop-blur-md rounded-2xl py-2 px-4 border border-white/20 text-white text-[11px] space-y-1 shadow-xl">
@@ -280,38 +241,27 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({
           </div>
           <div className="flex items-center space-x-1.5 text-slate-200">
             <Compass className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-            <span>{heading !== null ? `Heading ${formatBearingToCardinal(heading)}` : 'Compass not available'}</span>
+            <span>{heading !== null ? `Heading ${formatBearingToCardinal(heading)}` : 'No compass heading yet'}</span>
           </div>
         </div>
       </div>
 
       {/* Bottom Shutter Controls matching Screen 8 */}
       <div className="h-28 bg-gradient-to-t from-black via-black/80 to-transparent flex items-center justify-around px-8 z-30 shrink-0 pb-3">
-        {/* Keeps the shutter centred between the side controls */}
+        {/* Keeps the shutter centred */}
         <div className="w-12 h-12 shrink-0" aria-hidden="true" />
 
-        {/* Big Circular White Shutter Button */}
         <button
           onClick={handleTriggerShutter}
-          disabled={!canTakePhoto}
+          disabled={!readiness.ready}
           className="w-18 h-18 rounded-full border-4 border-white flex items-center justify-center p-1 group active:scale-95 transition-transform disabled:opacity-40 disabled:active:scale-100"
           aria-label="Take Photo"
-          title={
-            !cameraLive ? 'Camera is not available' : !fix ? 'Waiting for a GPS fix' : 'Take photo'
-          }
+          title={readiness.ready ? 'Take photo' : readiness.message}
         >
           <div className="w-14 h-14 rounded-full bg-white group-hover:bg-emerald-100 group-disabled:group-hover:bg-white transition-colors" />
         </button>
 
-        {/* Upload Existing Photo Button */}
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/30 transition-colors shrink-0"
-          title="Upload Photo File"
-          aria-label="Upload photo"
-        >
-          <Upload className="w-5 h-5" />
-        </button>
+        <div className="w-12 h-12 shrink-0" aria-hidden="true" />
       </div>
     </div>
   );
