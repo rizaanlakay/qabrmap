@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Zap, ZapOff, Grid, MapPin, Compass, CameraOff, Loader2 } from 'lucide-react';
-import { DeviceTelemetry } from '@/types';
+import { AlertTriangle, ArrowLeft, Check, Zap, ZapOff, Grid, MapPin, Compass, CameraOff, Loader2 } from 'lucide-react';
+import { Cemetery, DeviceTelemetry } from '@/types';
+import { findCemeteryForLocation } from '@/lib/capture/cemeteryForLocation';
+import { useWakeLock } from '@/lib/device/useWakeLock';
 import { formatBearingToCardinal } from '@/lib/geospatial';
 import { isUsableGpsFix } from '@/lib/geospatial/routeProgress';
 import { describeCameraError } from '@/lib/device/cameraErrors';
@@ -10,9 +12,17 @@ import { useCompassHeading } from '@/lib/device/useCompassHeading';
 import { getCaptureReadiness } from '@/lib/capture/readiness';
 
 interface CaptureScreenProps {
-  onCaptureComplete: (imageDataUrl: string, telemetry: DeviceTelemetry) => void;
+  // single: one grave, read and confirmed straight away. survey: each photo is queued and the camera stays open.
+  mode?: 'single' | 'survey';
+  onCaptureComplete: (imageDataUrl: string, telemetry: DeviceTelemetry) => void | Promise<void>;
   onBack: () => void;
+  // Survey mode only
+  surveyCemetery?: Cemetery;
+  cemeteries?: Cemetery[];
+  queuedCount?: number;
 }
+
+type ShotState = 'idle' | 'storing' | 'queued' | 'failed';
 
 type CameraStatus = 'starting' | 'live' | 'unavailable';
 
@@ -23,8 +33,20 @@ interface PositionFix {
 }
 
 // Photos only come from this camera, because each one records where it was taken and which way it faced
-export const CaptureScreen: React.FC<CaptureScreenProps> = ({ onCaptureComplete, onBack }) => {
+export const CaptureScreen: React.FC<CaptureScreenProps> = ({
+  mode = 'single',
+  onCaptureComplete,
+  onBack,
+  surveyCemetery,
+  cemeteries = [],
+  queuedCount = 0,
+}) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const isSurvey = mode === 'survey';
+  const [shot, setShot] = useState<ShotState>('idle');
+
+  // A survey walks row after row, so the screen must not lock between photos
+  useWakeLock(isSurvey);
 
   const [cameraStatus, setCameraStatus] = useState<CameraStatus>('starting');
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -98,9 +120,9 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({ onCaptureComplete,
     compassStatus,
   });
 
-  const handleTriggerShutter = () => {
+  const handleTriggerShutter = async () => {
     const video = videoRef.current;
-    if (!readiness.ready || !video || !fix || heading === null) return;
+    if (!readiness.ready || !video || !fix || heading === null || shot === 'storing') return;
 
     const canvas = document.createElement('canvas');
     canvas.width = video.videoWidth || 1280;
@@ -109,7 +131,8 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({ onCaptureComplete,
     if (!ctx) return;
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    onCaptureComplete(canvas.toDataURL('image/jpeg', 0.85), {
+    const photo = canvas.toDataURL('image/jpeg', 0.85);
+    const telemetry: DeviceTelemetry = {
       latitude: fix.lat,
       longitude: fix.lng,
       gpsAccuracy: Number(fix.accuracy.toFixed(1)),
@@ -117,8 +140,32 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({ onCaptureComplete,
       timestamp: new Date().toISOString(),
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       imageDimensions: { width: canvas.width, height: canvas.height },
-    });
+    };
+
+    if (!isSurvey) {
+      void onCaptureComplete(photo, telemetry);
+      return;
+    }
+
+    setShot('storing');
+    try {
+      await onCaptureComplete(photo, telemetry);
+      setShot('queued');
+    } catch {
+      setShot('failed');
+    }
   };
+
+  // "Queued" and the storage error clear themselves so the next photo starts clean
+  useEffect(() => {
+    if (shot !== 'queued' && shot !== 'failed') return;
+    const timer = window.setTimeout(() => setShot('idle'), shot === 'queued' ? 1200 : 4000);
+    return () => window.clearTimeout(timer);
+  }, [shot]);
+
+  const outsideSurveyCemetery =
+    isSurvey && Boolean(fix) && Boolean(surveyCemetery) &&
+    findCemeteryForLocation(cemeteries, fix!.lat, fix!.lng)?.id !== surveyCemetery!.id;
 
   return (
     <div className="flex-1 flex flex-col relative bg-black overflow-hidden select-none">
@@ -154,15 +201,27 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({ onCaptureComplete,
 
       {/* Top Header matching Mockup Screen 8 */}
       <div className="absolute top-0 inset-x-0 z-30 px-4 pt-3 pb-3 bg-gradient-to-b from-black/80 via-black/40 to-transparent flex items-center justify-between text-white">
-        <button
-          onClick={onBack}
-          className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center hover:bg-white/30 transition-colors"
-          aria-label="Back"
-        >
-          <ArrowLeft className="w-5 h-5 stroke-[2.2]" />
-        </button>
+        {isSurvey ? (
+          <button
+            onClick={onBack}
+            className="h-9 px-3.5 rounded-full bg-white/20 backdrop-blur-md text-xs font-semibold hover:bg-white/30 transition-colors"
+          >
+            Done
+          </button>
+        ) : (
+          <button
+            onClick={onBack}
+            className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center hover:bg-white/30 transition-colors"
+            aria-label="Back"
+          >
+            <ArrowLeft className="w-5 h-5 stroke-[2.2]" />
+          </button>
+        )}
 
-        <h1 className="text-sm font-bold tracking-tight text-white drop-shadow">Capture Grave</h1>
+        <div className="min-w-0 px-2 text-center">
+          <h1 className="text-sm font-bold tracking-tight text-white drop-shadow">{isSurvey ? 'Survey' : 'Capture Grave'}</h1>
+          {isSurvey && surveyCemetery && <p className="text-[11px] text-white/70 truncate">{surveyCemetery.name}</p>}
+        </div>
 
         <div className="flex items-center space-x-2">
           <button
@@ -210,9 +269,35 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({ onCaptureComplete,
         </div>
 
         {/* Guidance: names whatever is still stopping the shutter */}
-        <div className="mt-4 bg-black/55 backdrop-blur-md text-white text-xs font-medium py-1.5 px-4 rounded-full border border-white/15">
-          {readiness.message}
+        <div
+          role="status"
+          className={`mt-4 backdrop-blur-md text-xs font-medium py-1.5 px-4 rounded-full border flex items-center ${
+            shot === 'queued'
+              ? 'bg-emerald-600/90 border-emerald-300/40 text-white'
+              : shot === 'failed'
+                ? 'bg-rose-600/90 border-rose-300/40 text-white'
+                : 'bg-black/55 border-white/15 text-white'
+          }`}
+        >
+          {shot === 'queued' ? (
+            <>
+              <Check className="w-3.5 h-3.5 mr-1.5" /> Queued
+            </>
+          ) : shot === 'failed' ? (
+            "Couldn't store this photo on the phone"
+          ) : shot === 'storing' ? (
+            'Storing…'
+          ) : (
+            readiness.message
+          )}
         </div>
+
+        {outsideSurveyCemetery && surveyCemetery && (
+          <div className="mt-2 max-w-[280px] bg-amber-500/90 text-slate-900 text-[11px] font-semibold py-1.5 px-3 rounded-2xl flex items-start">
+            <AlertTriangle className="w-3.5 h-3.5 mr-1.5 mt-px shrink-0" />
+            <span>Outside {surveyCemetery.name}. Photos taken here will wait for review.</span>
+          </div>
+        )}
 
         {/* Live Telemetry Pill matching Screen 8 */}
         <div className="mt-4 bg-black/75 backdrop-blur-md rounded-2xl py-2 px-4 border border-white/20 text-white text-[11px] space-y-1 shadow-xl">
@@ -238,12 +323,19 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({ onCaptureComplete,
 
       {/* Bottom Shutter Controls matching Screen 8 */}
       <div className="h-28 bg-gradient-to-t from-black via-black/80 to-transparent flex items-center justify-around px-8 z-30 shrink-0 pb-3">
-        {/* Keeps the shutter centred */}
-        <div className="w-12 h-12 shrink-0" aria-hidden="true" />
+        {/* Survey mode shows how many photos are stored; otherwise this keeps the shutter centred */}
+        <div className="w-12 h-12 shrink-0 flex flex-col items-center justify-center text-white" aria-live="polite">
+          {isSurvey && (
+            <>
+              <span className="text-base font-bold leading-none">{queuedCount}</span>
+              <span className="text-[10px] text-white/70">taken</span>
+            </>
+          )}
+        </div>
 
         <button
           onClick={handleTriggerShutter}
-          disabled={!readiness.ready}
+          disabled={!readiness.ready || shot === 'storing'}
           className="w-18 h-18 rounded-full border-4 border-white flex items-center justify-center p-1 group active:scale-95 transition-transform disabled:opacity-40 disabled:active:scale-100"
           aria-label="Take Photo"
           title={readiness.ready ? 'Take photo' : readiness.message}
