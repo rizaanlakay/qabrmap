@@ -31,6 +31,9 @@ import { useWakeLock } from '@/lib/device/useWakeLock';
 import { useCompassHeading } from '@/lib/device/useCompassHeading';
 import { graveNumberLabel } from '@/lib/ui/graveLabels';
 import { escapeHtml } from '@/lib/ui/escapeHtml';
+import { VisitConfirmButton } from '@/components/common/VisitConfirmButton';
+import { LookForThisGrave } from '@/components/common/LookForThisGrave';
+import type { VisitFix } from '@/lib/graves/visits';
 import {
   SHEET_CLICK_SUPPRESS_MS,
   SHEET_DRAG_THRESHOLD_PX,
@@ -88,6 +91,8 @@ interface NavigationScreenProps {
   userLocation: { lat: number; lng: number };
   onUpdateUserLocation?: (loc: { lat: number; lng: number }) => void;
   onOpenARGuidance: () => void;
+  // Present only for signed-in users; records "I found it" as a position observation
+  onConfirmVisit?: (grave: Grave, fix: VisitFix) => Promise<Grave>;
   onEndNavigation: () => void;
   onBack: () => void;
 }
@@ -189,6 +194,7 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
   userLocation: initialUserLoc,
   onUpdateUserLocation,
   onOpenARGuidance,
+  onConfirmVisit,
   onEndNavigation,
   onBack,
 }) => {
@@ -200,6 +206,8 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
   const [headingDeg, setHeadingDeg] = useState(42);
   // waiting: no fix yet, so the arrow still sits on the default start; denied/unavailable: no fixes are coming
   const [gpsStatus, setGpsStatus] = useState<'waiting' | 'live' | 'denied' | 'unavailable'>('waiting');
+  // Accuracy of the latest fix, for "I found it"
+  const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null);
   const [mapType, setMapType] = useState<'satellite' | 'roadmap'>('satellite');
   const [zoomDisplay, setZoomDisplay] = useState(100);
   const [isMapReady, setIsMapReady] = useState(false);
@@ -352,6 +360,7 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
           // A 0,0 or malformed fix means the device has no real position; keep the last good one instead
           if (!isUsableGpsFix(next.lat, next.lng)) return;
           setGpsStatus('live');
+          setGpsAccuracy(pos.coords.accuracy);
           // A stationary device repeats the same fix; skip it rather than re-render the map for nothing
           if (lastFix && lastFix.lat === next.lat && lastFix.lng === next.lng) return;
           lastFix = next;
@@ -1509,12 +1518,22 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
           <>
             {/* Walking Mode Content */}
             {isAtGrave ? (
-              <div className="mt-3 p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center space-x-2 text-emerald-800 text-xs font-semibold animate-pulse">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>
-                  You have arrived! {graveNumberLabel(targetGrave) ?? targetGrave.person?.fullName ?? 'The grave'} is right here (±
-                  {targetGrave.positionAccuracyMeters}m).
-                </span>
+              <div className="mt-3 p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-semibold">
+                <div className="flex items-center space-x-2 animate-pulse">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>
+                    You have arrived! {graveNumberLabel(targetGrave) ?? targetGrave.person?.fullName ?? 'The grave'} is right here (±
+                    {targetGrave.positionAccuracyMeters}m).
+                  </span>
+                </div>
+                {targetGrave.gravePhotoUrl && <LookForThisGrave url={targetGrave.gravePhotoUrl} />}
+                {onConfirmVisit && (
+                  <VisitConfirmButton
+                    grave={targetGrave}
+                    fix={gpsAccuracy === null ? null : { lat: currentLoc.lat, lng: currentLoc.lng, accuracy: gpsAccuracy }}
+                    onConfirm={onConfirmVisit}
+                  />
+                )}
               </div>
             ) : isNearby ? (
               <div className="mt-3 p-2.5 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between text-amber-900 text-xs font-semibold">

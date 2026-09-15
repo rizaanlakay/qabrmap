@@ -533,6 +533,7 @@ function QabrMapAppContent() {
             userLocation={userLocation}
             onUpdateUserLocation={setUserLocation}
             onOpenARGuidance={() => setCurrentScreen('ar-guidance')}
+            onConfirmVisit={handleConfirmVisit}
             onEndNavigation={() => setCurrentScreen('grave-details')}
             onBack={() => setCurrentScreen('grave-details')}
           />
