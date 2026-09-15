@@ -120,6 +120,8 @@ function QabrMapAppContent() {
   // Capture & AI Pipeline Temporary State: empty until a photo is actually taken
   const [capturedImage, setCapturedImage] = useState<string>('');
   const [capturedTelemetry, setCapturedTelemetry] = useState<DeviceTelemetry | null>(null);
+  // Whole-grave photo taken after a low-accuracy capture; saved after the grave itself
+  const [capturedGravePhoto, setCapturedGravePhoto] = useState<string | null>(null);
   const [extractedData, setExtractedData] = useState<AIStructuredExtraction>(EMPTY_EXTRACTION);
 
   const { user, openAuthModal, loading: authLoading } = useAuth();
@@ -302,7 +304,7 @@ function QabrMapAppContent() {
   };
 
   // Capture Trigger
-  const handleCaptureComplete = async (dataUrl: string, telemetry: DeviceTelemetry) => {
+  const handleCaptureComplete = async (dataUrl: string, telemetry: DeviceTelemetry, gravePhotoDataUrl?: string) => {
     // Survey photos are stored and processed in the background; a failure here tells the camera to say so.
     // A survey-mode shot must never fall through to the paid ai-processing path below.
     if (captureMode === 'survey') {
@@ -311,6 +313,7 @@ function QabrMapAppContent() {
     }
     setCapturedImage(dataUrl);
     setCapturedTelemetry(telemetry);
+    setCapturedGravePhoto(gravePhotoDataUrl ?? null);
     // A photo for an existing grave skips the AI read and the new-grave form
     setCurrentScreen(photoTargetGrave ? 'add-photo' : 'ai-processing');
   };
@@ -320,6 +323,7 @@ function QabrMapAppContent() {
     if (!capture.photo) return;
     setCapturedImage(await blobToDataUrl(capture.photo));
     setCapturedTelemetry(capture.telemetry);
+    setCapturedGravePhoto(null);
     setExtractedData(capture.reading ?? EMPTY_EXTRACTION);
     reviewAttempt.current = capture.attempt;
     setReviewCapture(capture);

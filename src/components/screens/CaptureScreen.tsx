@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { AlertTriangle, ArrowLeft, Check, Zap, ZapOff, Grid, MapPin, Compass, CameraOff, Loader2 } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Check, Zap, ZapOff, Grid, MapPin, Compass, CameraOff, Loader2, Lock } from 'lucide-react';
 import { Cemetery, DeviceTelemetry } from '@/types';
 import { findCemeteryForLocation } from '@/lib/capture/cemeteryForLocation';
 import { useWakeLock } from '@/lib/device/useWakeLock';
@@ -10,11 +10,13 @@ import { isUsableGpsFix } from '@/lib/geospatial/routeProgress';
 import { describeCameraError } from '@/lib/device/cameraErrors';
 import { useCompassHeading } from '@/lib/device/useCompassHeading';
 import { getCaptureReadiness } from '@/lib/capture/readiness';
+import { pruneFixes, smoothFixes, TimedFix } from '@/lib/capture/gpsFixes';
 
 interface CaptureScreenProps {
   // single: one grave, read and confirmed straight away. survey: each photo is queued and the camera stays open.
   mode?: 'single' | 'survey';
-  onCaptureComplete: (imageDataUrl: string, telemetry: DeviceTelemetry) => void | Promise<void>;
+  // gravePhotoDataUrl: a second photo of the whole grave, only after a low-accuracy capture in single mode
+  onCaptureComplete: (imageDataUrl: string, telemetry: DeviceTelemetry, gravePhotoDataUrl?: string) => void | Promise<void>;
   onBack: () => void;
   // Survey mode only
   surveyCemetery?: Cemetery;
@@ -26,11 +28,12 @@ type ShotState = 'idle' | 'storing' | 'queued' | 'failed';
 
 type CameraStatus = 'starting' | 'live' | 'unavailable';
 
-interface PositionFix {
-  lat: number;
-  lng: number;
-  accuracy: number;
-}
+// stone: the usual gravestone shot. grave: the follow-up whole-grave shot after a low-accuracy capture.
+type CaptureStep = 'stone' | 'grave';
+
+// How long the accuracy blocker must persist before "Capture anyway" is offered
+const CAPTURE_ANYWAY_AFTER_MS = 15_000;
+const GRAVE_STEP_MESSAGE = 'Step back so the whole grave is in the frame. It helps visitors find the spot.';
 
 // Photos only come from this camera, because each one records where it was taken and which way it faced
 export const CaptureScreen: React.FC<CaptureScreenProps> = ({
@@ -54,7 +57,13 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({
   const [showGrid, setShowGrid] = useState(true);
 
   // Real device readings; null until the device reports one. The compass is always on here.
-  const [fix, setFix] = useState<PositionFix | null>(null);
+  const fixesRef = useRef<TimedFix[]>([]);
+  const [fix, setFix] = useState<ReturnType<typeof smoothFixes>>(null);
+  const [lowAccuracyAllowed, setLowAccuracyAllowed] = useState(false);
+  const [offerCaptureAnyway, setOfferCaptureAnyway] = useState(false);
+  const [step, setStep] = useState<CaptureStep>('stone');
+  // The stone photo waiting for its whole-grave companion
+  const pendingStoneRef = useRef<{ photo: string; telemetry: DeviceTelemetry } | null>(null);
   const { heading, status: compassStatus } = useCompassHeading();
 
   // Start the rear camera. The <video> element is always mounted so the stream attaches the moment it arrives.
@@ -98,13 +107,17 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({
     };
   }, []);
 
-  // Keep the position current while the gravestone is being framed
+  // Keep the position current while the gravestone is being framed. Fixes are smoothed over the last ten
+  // seconds, so a single bad reading doesn't lock the shutter and standing still improves the position.
   useEffect(() => {
     if (!navigator.geolocation) return;
     const watchId = navigator.geolocation.watchPosition(
       (pos) => {
         if (!isUsableGpsFix(pos.coords.latitude, pos.coords.longitude)) return;
-        setFix({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy });
+        const now = Date.now();
+        fixesRef.current = pruneFixes(fixesRef.current, now);
+        fixesRef.current.push({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy, at: now });
+        setFix(smoothFixes(fixesRef.current, now));
       },
       () => {},
       { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 }
@@ -113,40 +126,46 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({
   }, []);
 
   const cameraLive = cameraStatus === 'live';
-  const readiness = getCaptureReadiness({
+  const stoneReadiness = getCaptureReadiness({
     cameraLive,
     accuracyMeters: fix?.accuracy ?? null,
     heading,
     compassStatus,
+    lowAccuracyAllowed,
   });
+  // The whole-grave shot only needs the camera: its position and heading come from the stone shot
+  const readiness =
+    step === 'grave'
+      ? { ready: cameraLive, blocker: cameraLive ? null : ('camera' as const), message: GRAVE_STEP_MESSAGE, canCaptureAnyway: false, lowAccuracy: false }
+      : stoneReadiness;
 
-  const handleTriggerShutter = async () => {
+  // "Capture anyway" appears once the accuracy blocker has held for a while; a change of blocker restarts the wait
+  useEffect(() => {
+    if (readiness.blocker !== 'gps-accuracy') {
+      setOfferCaptureAnyway(false);
+      return;
+    }
+    const timer = window.setTimeout(() => setOfferCaptureAnyway(true), CAPTURE_ANYWAY_AFTER_MS);
+    return () => window.clearTimeout(timer);
+  }, [readiness.blocker]);
+
+  const snapFrame = (): { photo: string; width: number; height: number } | null => {
     const video = videoRef.current;
-    if (!readiness.ready || !video || !fix || heading === null || shot === 'storing') return;
-
+    if (!video) return null;
     const canvas = document.createElement('canvas');
     canvas.width = video.videoWidth || 1280;
     canvas.height = video.videoHeight || 960;
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) return null;
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    return { photo: canvas.toDataURL('image/jpeg', 0.85), width: canvas.width, height: canvas.height };
+  };
 
-    const photo = canvas.toDataURL('image/jpeg', 0.85);
-    const telemetry: DeviceTelemetry = {
-      latitude: fix.lat,
-      longitude: fix.lng,
-      gpsAccuracy: Number(fix.accuracy.toFixed(1)),
-      headingDegrees: heading,
-      timestamp: new Date().toISOString(),
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      imageDimensions: { width: canvas.width, height: canvas.height },
-    };
-
+  const finishCapture = async (photo: string, telemetry: DeviceTelemetry, gravePhoto?: string) => {
     if (!isSurvey) {
-      void onCaptureComplete(photo, telemetry);
+      void onCaptureComplete(photo, telemetry, gravePhoto);
       return;
     }
-
     setShot('storing');
     try {
       await onCaptureComplete(photo, telemetry);
@@ -154,6 +173,47 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({
     } catch {
       setShot('failed');
     }
+  };
+
+  const handleTriggerShutter = async () => {
+    if (!readiness.ready || shot === 'storing') return;
+
+    if (step === 'grave') {
+      const pending = pendingStoneRef.current;
+      const frame = snapFrame();
+      if (!pending || !frame) return;
+      pendingStoneRef.current = null;
+      await finishCapture(pending.photo, pending.telemetry, frame.photo);
+      return;
+    }
+
+    if (!fix || heading === null) return;
+    const frame = snapFrame();
+    if (!frame) return;
+    const telemetry: DeviceTelemetry = {
+      latitude: fix.lat,
+      longitude: fix.lng,
+      gpsAccuracy: Number(fix.accuracy.toFixed(1)),
+      headingDegrees: heading,
+      timestamp: new Date().toISOString(),
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      imageDimensions: { width: frame.width, height: frame.height },
+    };
+
+    // A low-accuracy grave is harder to find again, so ask for a photo of the whole grave as a visual clue
+    if (!isSurvey && readiness.lowAccuracy) {
+      pendingStoneRef.current = { photo: frame.photo, telemetry };
+      setStep('grave');
+      return;
+    }
+    await finishCapture(frame.photo, telemetry);
+  };
+
+  const skipGravePhoto = () => {
+    const pending = pendingStoneRef.current;
+    if (!pending) return;
+    pendingStoneRef.current = null;
+    void finishCapture(pending.photo, pending.telemetry);
   };
 
   // "Queued" and the storage error clear themselves so the next photo starts clean
@@ -201,7 +261,14 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({
 
       {/* Top Header matching Mockup Screen 8 */}
       <div className="absolute top-0 inset-x-0 z-30 px-4 pt-3 pb-3 bg-gradient-to-b from-black/80 via-black/40 to-transparent flex items-center justify-between text-white">
-        {isSurvey ? (
+        {step === 'grave' ? (
+          <button
+            onClick={skipGravePhoto}
+            className="h-9 px-3.5 rounded-full bg-white/20 backdrop-blur-md text-xs font-semibold hover:bg-white/30 transition-colors"
+          >
+            Skip
+          </button>
+        ) : isSurvey ? (
           <button
             onClick={onBack}
             className="h-9 px-3.5 rounded-full bg-white/20 backdrop-blur-md text-xs font-semibold hover:bg-white/30 transition-colors"
@@ -219,7 +286,9 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({
         )}
 
         <div className="min-w-0 px-2 text-center">
-          <h1 className="text-sm font-bold tracking-tight text-white drop-shadow">{isSurvey ? 'Survey' : 'Capture Grave'}</h1>
+          <h1 className="text-sm font-bold tracking-tight text-white drop-shadow">
+            {step === 'grave' ? 'Photograph the whole grave' : isSurvey ? 'Survey' : 'Capture Grave'}
+          </h1>
           {isSurvey && surveyCemetery && <p className="text-[11px] text-white/70 truncate">{surveyCemetery.name}</p>}
         </div>
 
@@ -247,7 +316,11 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({
 
       {/* Viewfinder Bounding Reticle matching Screen 8 */}
       <div className="flex-1 relative flex flex-col items-center justify-center pointer-events-none z-20 px-8">
-        <div className="w-full max-w-[280px] aspect-[3/4] border-2 border-emerald-400/90 rounded-3xl relative shadow-[0_0_20px_rgba(16,185,129,0.3)]">
+        <div
+          className={`w-full border-2 border-emerald-400/90 rounded-3xl relative shadow-[0_0_20px_rgba(16,185,129,0.3)] ${
+            step === 'grave' ? 'max-w-[340px] aspect-[4/3]' : 'max-w-[280px] aspect-[3/4]'
+          }`}
+        >
           <div className="absolute -top-1 -left-1 w-5 h-5 border-t-4 border-l-4 border-emerald-400 rounded-tl-xl" />
           <div className="absolute -top-1 -right-1 w-5 h-5 border-t-4 border-r-4 border-emerald-400 rounded-tr-xl" />
           <div className="absolute -bottom-1 -left-1 w-5 h-5 border-b-4 border-l-4 border-emerald-400 rounded-bl-xl" />
@@ -291,6 +364,15 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({
             readiness.message
           )}
         </div>
+
+        {offerCaptureAnyway && readiness.canCaptureAnyway && (
+          <button
+            onClick={() => setLowAccuracyAllowed(true)}
+            className="mt-2 text-[11px] font-semibold text-amber-300 underline underline-offset-2 pointer-events-auto"
+          >
+            Capture anyway
+          </button>
+        )}
 
         {outsideSurveyCemetery && surveyCemetery && (
           <div className="mt-2 max-w-[280px] bg-amber-500/90 text-slate-900 text-[11px] font-semibold py-1.5 px-3 rounded-2xl flex items-start">
@@ -336,11 +418,15 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({
         <button
           onClick={handleTriggerShutter}
           disabled={!readiness.ready || shot === 'storing'}
-          className="w-18 h-18 rounded-full border-4 border-white flex items-center justify-center p-1 group active:scale-95 transition-transform disabled:opacity-40 disabled:active:scale-100"
+          className={`w-18 h-18 rounded-full border-4 flex items-center justify-center p-1 group active:scale-95 transition-transform disabled:opacity-40 disabled:active:scale-100 ${
+            readiness.lowAccuracy ? 'border-amber-400' : 'border-white'
+          }`}
           aria-label="Take Photo"
           title={readiness.ready ? 'Take photo' : readiness.message}
         >
-          <div className="w-14 h-14 rounded-full bg-white group-hover:bg-emerald-100 group-disabled:group-hover:bg-white transition-colors" />
+          <div className="w-14 h-14 rounded-full bg-white group-hover:bg-emerald-100 group-disabled:group-hover:bg-white transition-colors flex items-center justify-center">
+            {readiness.blocker === 'gps-accuracy' && <Lock className="w-5 h-5 text-slate-500" aria-hidden="true" />}
+          </div>
         </button>
 
         <div className="w-12 h-12 shrink-0" aria-hidden="true" />
