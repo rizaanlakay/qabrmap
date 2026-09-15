@@ -236,6 +236,32 @@ async function resolveRow(row, existing, townCentres) {
   return entry;
 }
 
+function failedEntry(row, key, message) {
+  return {
+    key,
+    status: 'needs_review',
+    existing_id: null,
+    id: cemeteryIdFor(row.cemetery_name),
+    name: row.cemetery_name,
+    aliases: [],
+    site_type: null,
+    site_status: null,
+    province: row.province || null,
+    city: row.city_or_area || null,
+    address: row.location || null,
+    point: null,
+    point_source: 'none',
+    google_place_id: null,
+    google_candidates: [],
+    outline: null,
+    verification_status: row.verification_status || null,
+    verification_source: row.verification_source || null,
+    source_urls: rowSourceUrls(row),
+    overrides: {},
+    notes: [`Failed: ${message}`],
+  };
+}
+
 function writeReport(entries, existing) {
   const count = (fn) => entries.filter(fn).length;
   const lines = [
@@ -277,6 +303,10 @@ async function main() {
   );
   const existing = await loadExisting();
   const previous = existsSync(REVIEW) ? JSON.parse(readFileSync(REVIEW, 'utf8')) : [];
+  if (only && previous.length === 0) {
+    console.error('--only needs an existing review.json: run once without --only first');
+    process.exit(1);
+  }
   const decided = new Map(previous.filter((e) => e.status === 'approved' || e.status === 'skip').map((e) => [e.key, e]));
   const townCentres = new Map();
   const entries = [];
@@ -297,7 +327,7 @@ async function main() {
       entries.push(await resolveRow(row, existing, townCentres));
     } catch (error) {
       console.error(`  failed: ${error.message}`);
-      entries.push({ key, status: 'needs_review', id: cemeteryIdFor(row.cemetery_name), name: row.cemetery_name, point: null, point_source: 'none', outline: null, notes: [`Failed: ${error.message}`] });
+      entries.push(failedEntry(row, key, error.message));
     }
   }
   if (dryRun) {
