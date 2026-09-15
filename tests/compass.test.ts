@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { createCompassPermission, readCompassHeading } from '../src/lib/device/compass';
+import { createCompassPermission, readCompassHeading, readDevicePitch } from '../src/lib/device/compass';
 
 describe('Compass Heading Tests', () => {
   it('uses the iOS compass heading, including due north', () => {
@@ -22,6 +22,28 @@ describe('Compass Heading Tests', () => {
     expect(readCompassHeading({ alpha: null }, 'absolute')).toBeNull();
     expect(readCompassHeading({}, 'absolute')).toBeNull();
     expect(readCompassHeading({ webkitCompassHeading: Number.NaN }, 'relative')).toBeNull();
+  });
+});
+
+describe('Device Pitch Tests', () => {
+  it('reads the camera pitch for a phone held upright', () => {
+    expect(readDevicePitch({ beta: 90 })).toBe(0);
+  });
+
+  it('is negative when the camera points at the ground', () => {
+    expect(readDevicePitch({ beta: 45 })).toBe(-45);
+    expect(readDevicePitch({ beta: 0 })).toBe(-90);
+  });
+
+  it('is positive when the camera points up, and clamps', () => {
+    expect(readDevicePitch({ beta: 120 })).toBe(30);
+    expect(readDevicePitch({ beta: -100 })).toBe(-90);
+  });
+
+  it('returns null without a reading', () => {
+    expect(readDevicePitch({})).toBeNull();
+    expect(readDevicePitch({ beta: null })).toBeNull();
+    expect(readDevicePitch({ beta: Number.NaN })).toBeNull();
   });
 });
 

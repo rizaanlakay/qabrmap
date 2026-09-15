@@ -6,6 +6,8 @@ export type CompassSource = 'absolute' | 'relative';
 
 export interface OrientationReading {
   alpha?: number | null;
+  // Front-to-back tilt: 90 when the phone stands upright, 0 lying flat with the screen up
+  beta?: number | null;
   webkitCompassHeading?: number | null;
 }
 
@@ -19,6 +21,13 @@ export function readCompassHeading(reading: OrientationReading, source: CompassS
     return wholeDegrees(360 - reading.alpha);
   }
   return null;
+}
+
+// Pitch of the rear camera in degrees above horizontal for a phone held upright in portrait, -90 to 90
+export function readDevicePitch(reading: OrientationReading): number | null {
+  const beta = reading.beta;
+  if (typeof beta !== 'number' || !Number.isFinite(beta)) return null;
+  return Math.max(-90, Math.min(90, beta - 90));
 }
 
 function wholeDegrees(deg: number): number {

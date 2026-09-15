@@ -7,6 +7,7 @@ import {
   OrientationReading,
   compassPermission,
   readCompassHeading,
+  readDevicePitch,
 } from './compass';
 
 // Laptops expose the orientation API but never send readings, so give up after this long
@@ -14,10 +15,11 @@ const NO_READING_TIMEOUT_MS = 3000;
 
 // The compass is always on and can't be switched off. On iOS it starts once motion access is allowed, which is
 // asked for from the tap that opens the camera, or failing that from the first tap on the screen.
-export function useCompassHeading(): { heading: number | null; status: CompassStatus } {
+export function useCompassHeading(): { heading: number | null; pitch: number | null; status: CompassStatus } {
   const [supported] = useState(() => typeof window !== 'undefined' && 'DeviceOrientationEvent' in window);
   const [permission, setPermission] = useState<CompassPermission>(() => compassPermission.get());
   const [heading, setHeading] = useState<number | null>(null);
+  const [pitch, setPitch] = useState<number | null>(null);
   const [timedOut, setTimedOut] = useState(false);
 
   useEffect(() => {
@@ -45,8 +47,12 @@ export function useCompassHeading(): { heading: number | null; status: CompassSt
     if (!canListen) return;
 
     const handle = (source: 'absolute' | 'relative') => (event: Event) => {
-      const next = readCompassHeading(event as unknown as OrientationReading, source);
+      const reading = event as unknown as OrientationReading;
+      const next = readCompassHeading(reading, source);
       if (next !== null) setHeading(next);
+      // Both event kinds carry the tilt, so pitch works even where only relative events are sent
+      const nextPitch = readDevicePitch(reading);
+      if (nextPitch !== null) setPitch(nextPitch);
     };
     const onAbsolute = handle('absolute');
     const onRelative = handle('relative');
@@ -69,5 +75,5 @@ export function useCompassHeading(): { heading: number | null; status: CompassSt
   else if (permission === 'unknown') status = 'needs-permission';
   else status = timedOut ? 'unsupported' : 'waiting';
 
-  return { heading, status };
+  return { heading, pitch, status };
 }
