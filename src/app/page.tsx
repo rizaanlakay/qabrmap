@@ -1,10 +1,23 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Cemetery, Grave, DeviceTelemetry, AIStructuredExtraction, SurveySession } from '@/types';
+import { Cemetery, Grave, DeviceTelemetry, AIStructuredExtraction, CaptureSaveAttempt, Survey, SurveyCapture } from '@/types';
 import { dataStore } from '@/lib/data/store';
 import { getGraveIdFromUrl, withGraveParam } from '@/lib/share/graveLink';
 import { compassPermission } from '@/lib/device/compass';
+import { surveyStore } from '@/lib/surveys/surveyStore';
+import {
+  discardSurveyCapture,
+  markCaptureSaved,
+  queueSurveyCapture,
+  rememberCaptureAttempt,
+  startSurveyQueue,
+  surveyQueue,
+} from '@/lib/surveys/surveyQueue';
+import { useLiveValue } from '@/lib/surveys/useSurveyData';
+import { countCaptures } from '@/lib/surveys/queueRules';
+import { blobToDataUrl } from '@/lib/surveys/capturePhoto';
+import type { OpenGraveResult } from '@/components/surveys/SurveyCaptureList';
 
 // Components
 import { StatusBar } from '@/components/ui/StatusBar';
@@ -75,7 +88,6 @@ function QabrMapAppContent() {
   const [storeVersion, setStoreVersion] = useState(0);
   const [mounted, setMounted] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
-  const [pendingUploads, setPendingUploads] = useState(0);
 
   // Keep mobile screen awake when navigating to a cemetery or in AR mode
   const shouldKeepAwake = ['navigation', 'ar-guidance', 'cemetery-map'].includes(currentScreen);
@@ -93,7 +105,11 @@ function QabrMapAppContent() {
   const [photoTargetGrave, setPhotoTargetGrave] = useState<Grave | null>(null);
   // Bumped after a photo is added so the grave details carousel reloads its photos
   const [gravePhotosVersion, setGravePhotosVersion] = useState(0);
-  const [surveySession, setSurveySession] = useState<SurveySession>(dataStore.getActiveSurveySession());
+  // The survey camera adds to surveyForCamera; reviewCapture is the survey photo open on the Confirm screen
+  const [captureMode, setCaptureMode] = useState<'single' | 'survey'>('single');
+  const [surveyForCamera, setSurveyForCamera] = useState<Survey | null>(null);
+  const [reviewCapture, setReviewCapture] = useState<SurveyCapture | null>(null);
+  const reviewAttempt = useRef<CaptureSaveAttempt | null>(null);
 
   // User simulated/real GPS (Cape Town Athlone Cemetery vicinity)
   const [userLocation, setUserLocation] = useState({
@@ -107,6 +123,25 @@ function QabrMapAppContent() {
   const [extractedData, setExtractedData] = useState<AIStructuredExtraction>(EMPTY_EXTRACTION);
 
   const { user, openAuthModal, loading: authLoading } = useAuth();
+  const userId = user?.id;
+
+  // Survey photos on this phone, for the offline screen and the survey camera's counter
+  const myCaptures = useLiveValue<SurveyCapture[]>(
+    () => (userId ? surveyStore.userCaptures(userId) : Promise.resolve([])),
+    [userId],
+    []
+  );
+  const pendingUploads = countCaptures(myCaptures).pending;
+  const queuedCount = surveyForCamera ? myCaptures.filter((capture) => capture.surveyId === surveyForCamera.id).length : 0;
+
+  // The survey queue runs while the app is open. Signing in lifts a pause caused by an ended session.
+  useEffect(() => {
+    if (mounted) startSurveyQueue();
+  }, [mounted]);
+  useEffect(() => {
+    if (userId) void surveyQueue.signedIn();
+  }, [userId]);
+
   // Set by the ?mode=capture home screen shortcut; acted on once auth has loaded
   const pendingCaptureLaunch = useRef(false);
 
@@ -188,9 +223,19 @@ function QabrMapAppContent() {
     // Ask for compass access inside this tap, because iOS only shows the prompt during a tap
     void compassPermission.request();
     setCurrentNavTab('capture');
+    setCaptureMode('single');
     setPhotoTargetGrave(null);
     setCurrentScreen('capture');
   }, [user, openAuthModal]);
+
+  // The survey camera stays open and queues each photo for the survey
+  const openSurveyCamera = (survey: Survey) => {
+    void compassPermission.request();
+    setSurveyForCamera(survey);
+    setCaptureMode('survey');
+    setPhotoTargetGrave(null);
+    setCurrentScreen('capture');
+  };
 
   useEffect(() => {
     if (!pendingCaptureLaunch.current || authLoading) return;
@@ -239,6 +284,7 @@ function QabrMapAppContent() {
     if (previousScreen === 'my-cemeteries') setCurrentScreen('my-cemeteries');
     else if (previousScreen === 'cemetery-map') setCurrentScreen('cemetery-map');
     else if (previousScreen === 'home') setCurrentScreen('home');
+    else if (previousScreen === 'survey-session') setCurrentScreen('survey-session');
     else setCurrentScreen('search');
   };
 
@@ -256,11 +302,42 @@ function QabrMapAppContent() {
   };
 
   // Capture Trigger
-  const handleCaptureComplete = (dataUrl: string, telemetry: DeviceTelemetry) => {
+  const handleCaptureComplete = async (dataUrl: string, telemetry: DeviceTelemetry) => {
+    // Survey photos are stored and processed in the background; a failure here tells the camera to say so
+    if (captureMode === 'survey' && surveyForCamera) {
+      await queueSurveyCapture(surveyForCamera, dataUrl, telemetry, cemeteries);
+      return;
+    }
     setCapturedImage(dataUrl);
     setCapturedTelemetry(telemetry);
     // A photo for an existing grave skips the AI read and the new-grave form
     setCurrentScreen(photoTargetGrave ? 'add-photo' : 'ai-processing');
+  };
+
+  // A survey photo that needs a person opens on the Confirm screen with its own photo, reading and save ids
+  const handleReviewCapture = async (capture: SurveyCapture) => {
+    if (!capture.photo) return;
+    setCapturedImage(await blobToDataUrl(capture.photo));
+    setCapturedTelemetry(capture.telemetry);
+    setExtractedData(capture.reading ?? EMPTY_EXTRACTION);
+    reviewAttempt.current = capture.attempt;
+    setReviewCapture(capture);
+    setCurrentScreen('confirm-details');
+  };
+
+  const leaveReview = () => {
+    setReviewCapture(null);
+    reviewAttempt.current = null;
+    setCurrentScreen('survey-session');
+  };
+
+  const openSavedGrave = async (graveId: string): Promise<OpenGraveResult> => {
+    const grave = await dataStore.getGraveById(graveId).catch(() => undefined);
+    if (!grave) return navigator.onLine ? 'removed' : 'offline';
+    setPreviousScreen('survey-session');
+    setSelectedGrave(grave);
+    setCurrentScreen('grave-details');
+    return 'opened';
   };
 
   // The photo has been read. Stable so the processing screen doesn't read it again on every render.
@@ -282,15 +359,14 @@ function QabrMapAppContent() {
     const cemetery = cemeteries.find((c) => c.id === saved.cemeteryId);
     if (cemetery) setSelectedCemetery(cemetery);
     dataStore.getGraves(saved.cemeteryId).then(setGraves);
-    setSurveySession({ ...dataStore.getActiveSurveySession() });
     setPreviousScreen('home');
     setCurrentNavTab('home');
     setCurrentScreen('grave-details');
   };
 
-  // Survey captures are processed by the survey queue; Task 9 wires it in here
+  // Sync Now on the offline screen wakes the survey queue
   const handleTriggerSync = async () => {
-    setPendingUploads(0);
+    await surveyQueue.wake();
   };
 
   // Screens where bottom nav is hidden (immersive viewports)
@@ -449,9 +525,16 @@ function QabrMapAppContent() {
 
         {currentScreen === 'capture' && (
           <CaptureScreen
+            mode={captureMode}
+            surveyCemetery={captureMode === 'survey' ? cemeteries.find((c) => c.id === surveyForCamera?.cemeteryId) : undefined}
+            cemeteries={cemeteries}
+            queuedCount={queuedCount}
             onCaptureComplete={handleCaptureComplete}
             onBack={() => {
-              if (photoTargetGrave) {
+              if (captureMode === 'survey') {
+                setCaptureMode('single');
+                setCurrentScreen('survey-session');
+              } else if (photoTargetGrave) {
                 setPhotoTargetGrave(null);
                 setCurrentScreen('grave-details');
               } else {
@@ -472,13 +555,39 @@ function QabrMapAppContent() {
 
         {currentScreen === 'confirm-details' && capturedTelemetry && (
           <ConfirmDetailsScreen
+            // A new key per capture, so a review never reuses another photo's form or save ids
+            key={reviewCapture?.id ?? 'capture'}
             initialData={extractedData}
             capturedImage={capturedImage}
             telemetry={capturedTelemetry}
             cemeteries={cemeteries}
-            onSaved={handleGraveSaved}
+            title={reviewCapture ? 'Review Survey Photo' : undefined}
+            defaultCemeteryId={reviewCapture?.cemeteryId}
+            initialAttempt={reviewCapture?.attempt}
+            initialCandidate={reviewCapture?.matchCandidate}
+            onAttemptChange={(attempt) => {
+              if (!reviewCapture) return;
+              reviewAttempt.current = attempt;
+              void rememberCaptureAttempt(reviewCapture.id, attempt);
+            }}
+            onDiscard={
+              reviewCapture
+                ? () => {
+                    void discardSurveyCapture(reviewCapture.id);
+                    leaveReview();
+                  }
+                : undefined
+            }
+            onSaved={(grave, outcome) => {
+              if (reviewCapture) {
+                void markCaptureSaved(reviewCapture.id, grave.id, outcome, reviewAttempt.current ?? reviewCapture.attempt);
+                setReviewCapture(null);
+                reviewAttempt.current = null;
+              }
+              handleGraveSaved(grave, outcome);
+            }}
             onRequireSignIn={openAuthModal}
-            onBack={() => setCurrentScreen('capture')}
+            onBack={() => (reviewCapture ? leaveReview() : setCurrentScreen('capture'))}
           />
         )}
 
@@ -500,13 +609,27 @@ function QabrMapAppContent() {
           />
         )}
 
-        {currentScreen === 'survey-session' && (
-          <SurveySessionScreen
-            session={surveySession}
-            onCaptureNextGrave={openCapture}
-            onBack={() => setCurrentScreen('home')}
-          />
-        )}
+        {currentScreen === 'survey-session' &&
+          (user ? (
+            <SurveySessionScreen
+              userId={user.id}
+              cemeteries={cemeteries}
+              onContinueSurvey={openSurveyCamera}
+              onReviewCapture={(capture) => void handleReviewCapture(capture)}
+              onOpenGrave={openSavedGrave}
+              onBack={() => setCurrentScreen('home')}
+            />
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+              <p className="text-sm font-semibold text-slate-800">Sign in to run surveys</p>
+              <button
+                onClick={openAuthModal}
+                className="mt-3 py-2.5 px-5 rounded-xl bg-brand-forest hover:bg-brand-dark text-white text-xs font-semibold"
+              >
+                Sign in
+              </button>
+            </div>
+          ))}
 
         {currentScreen === 'offline-status' && (
           <OfflineStatusScreen

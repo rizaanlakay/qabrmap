@@ -18,6 +18,10 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { dataStore } from '@/lib/data/store';
+import { SurveyCapture } from '@/types';
+import { surveyStore } from '@/lib/surveys/surveyStore';
+import { useLiveValue } from '@/lib/surveys/useSurveyData';
+import { countCaptures } from '@/lib/surveys/queueRules';
 
 interface ProfileScreenProps {
   onNavigate: (screen: string) => void;
@@ -35,7 +39,14 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate, onBack
   const initial = displayName.charAt(0).toUpperCase();
 
   const savedGravesCount = dataStore.getMyCemeteriesGraveCount();
-  const activeSession = dataStore.getActiveSurveySession();
+  const userId = user?.id;
+  const surveyCount = useLiveValue(() => (userId ? surveyStore.listSurveys(userId).then((s) => s.length) : Promise.resolve(0)), [userId], 0);
+  const surveyCaptures = useLiveValue<SurveyCapture[]>(
+    () => (userId ? surveyStore.userCaptures(userId) : Promise.resolve([])),
+    [userId],
+    []
+  );
+  const mappedCount = countCaptures(surveyCaptures).saved;
 
   const handleSignOut = async () => {
     setIsSigningOut(true);
@@ -99,7 +110,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate, onBack
           </div>
           <div className="pl-3 text-center">
             <span className="block text-xl font-bold text-brand-forest">
-              {activeSession.capturedCount}
+              {mappedCount}
             </span>
             <span className="text-[11px] text-slate-500 font-medium">
               Graves Mapped
@@ -145,7 +156,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate, onBack
                   My Survey Sessions
                 </h3>
                 <p className="text-[11px] text-slate-500">
-                  {activeSession.capturedCount} field graves cataloged
+                  {surveyCount} {surveyCount === 1 ? 'survey' : 'surveys'}, {mappedCount} {mappedCount === 1 ? 'grave' : 'graves'} saved
                 </p>
               </div>
             </div>

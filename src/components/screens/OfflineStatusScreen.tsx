@@ -20,7 +20,7 @@ interface OfflineStatusScreenProps {
 }
 
 export const OfflineStatusScreen: React.FC<OfflineStatusScreenProps> = ({
-  pendingUploadCount = 3,
+  pendingUploadCount = 0,
   onContinue,
   onTriggerSync,
   onBack,
@@ -33,7 +33,7 @@ export const OfflineStatusScreen: React.FC<OfflineStatusScreenProps> = ({
     setSyncStatus('Connecting to server...');
     try {
       await onTriggerSync();
-      setSyncStatus('Sync complete! All records backed up.');
+      setSyncStatus('Processing survey photos.');
     } catch {
       setSyncStatus('Still offline. Data remains safely queued.');
     } finally {
@@ -75,7 +75,7 @@ export const OfflineStatusScreen: React.FC<OfflineStatusScreenProps> = ({
               <Camera className="w-4 h-4" />
             </div>
             <span className="text-xs font-semibold text-slate-800">
-              {pendingUploadCount} photos pending upload
+              {pendingUploadCount} survey {pendingUploadCount === 1 ? 'photo' : 'photos'} waiting to be read
             </span>
           </div>
 
@@ -132,10 +132,6 @@ export const OfflineStatusScreen: React.FC<OfflineStatusScreenProps> = ({
           <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
           <span>{isSyncing ? 'Syncing...' : 'Sync Now'}</span>
         </button>
-
-        <div className="text-center pt-1 text-[11px] text-slate-400 font-medium">
-          Last synced: 12 Sep 2026, 08:14
-        </div>
       </div>
     </div>
   );

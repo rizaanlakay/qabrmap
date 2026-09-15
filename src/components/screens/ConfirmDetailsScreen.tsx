@@ -8,7 +8,7 @@ import { dataStore } from '@/lib/data/store';
 import { findCemeteryForLocation } from '@/lib/capture/cemeteryForLocation';
 import { NewGraveForm, validateNewGraveForm } from '@/lib/capture/newGrave';
 import { SaveGraveError, UNKNOWN_SAVE_MESSAGE } from '@/lib/supabase/saveGraveErrors';
-import { createSaveAttempt, MatchMode } from '@/lib/capture/saveMappedGrave';
+import { createSaveAttempt, MatchMode, SaveAttempt } from '@/lib/capture/saveMappedGrave';
 import { MatchCandidate, MatchCheckParams, matchCheckParams } from '@/lib/graves/matchCandidate';
 import { DuplicateMatchCard } from '@/components/common/DuplicateMatchCard';
 
@@ -20,6 +20,13 @@ interface ConfirmDetailsScreenProps {
   onSaved: (grave: Grave, outcome: 'created' | 'added-photo') => void;
   onRequireSignIn: () => void;
   onBack: () => void;
+  // Survey review only: the capture's own save ids, cemetery and duplicate, plus a way to throw the photo away
+  title?: string;
+  defaultCemeteryId?: string;
+  initialAttempt?: SaveAttempt;
+  initialCandidate?: MatchCandidate;
+  onAttemptChange?: (attempt: SaveAttempt) => void;
+  onDiscard?: () => void;
 }
 
 const labelClass = 'block text-[11px] font-semibold text-slate-500 mb-0.5';
@@ -37,6 +44,12 @@ export const ConfirmDetailsScreen: React.FC<ConfirmDetailsScreenProps> = ({
   onSaved,
   onRequireSignIn,
   onBack,
+  title,
+  defaultCemeteryId,
+  initialAttempt,
+  initialCandidate,
+  onAttemptChange,
+  onDiscard,
 }) => {
   const detectedCemetery = useMemo(
     () => findCemeteryForLocation(cemeteries, telemetry.latitude, telemetry.longitude),
@@ -52,14 +65,14 @@ export const ConfirmDetailsScreen: React.FC<ConfirmDetailsScreenProps> = ({
     graveNumber: initialData.graveNumber || '',
     birthDate: initialData.birthDate || '',
     deathDate: initialData.deathDate || '',
-    cemeteryId: detectedCemetery?.id || '',
+    cemeteryId: defaultCemeteryId || detectedCemetery?.id || '',
   }));
   // Kept across Save retries, so a retry after a lost response reuses the same photo and grave id
-  const [attempt] = useState(createSaveAttempt);
+  const [attempt] = useState<SaveAttempt>(() => (initialAttempt ? { ...initialAttempt } : createSaveAttempt()));
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // A grave already mapped that may be this person
-  const [candidate, setCandidate] = useState<MatchCandidate | null>(null);
+  const [candidate, setCandidate] = useState<MatchCandidate | null>(initialCandidate ?? null);
   const cardRef = useRef<HTMLDivElement | null>(null);
 
   // Cemeteries can finish loading after the screen opens
@@ -112,6 +125,7 @@ export const ConfirmDetailsScreen: React.FC<ConfirmDetailsScreenProps> = ({
         matchMode,
         addToGraveId,
       });
+      onAttemptChange?.(attempt);
       if (result.outcome === 'match-found') {
         // For example someone saved this person moments ago. Nothing was created, so the user chooses.
         setCandidate(result.candidate);
@@ -121,6 +135,8 @@ export const ConfirmDetailsScreen: React.FC<ConfirmDetailsScreenProps> = ({
       }
       onSaved(result.grave, result.outcome);
     } catch (err) {
+      // An uploaded photo stays on the attempt, so the next try doesn't upload it again
+      onAttemptChange?.(attempt);
       setIsSaving(false);
       setError(err instanceof SaveGraveError ? err.message : UNKNOWN_SAVE_MESSAGE);
       if (err instanceof SaveGraveError && err.code === 'grave-missing') setCandidate(null);
@@ -140,7 +156,7 @@ export const ConfirmDetailsScreen: React.FC<ConfirmDetailsScreenProps> = ({
         >
           <ArrowLeft className="w-5 h-5 stroke-[2.2]" />
         </button>
-        <h1 className="text-lg font-bold text-slate-900 tracking-tight">Confirm Details</h1>
+        <h1 className="text-lg font-bold text-slate-900 tracking-tight">{title ?? 'Confirm Details'}</h1>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -298,6 +314,15 @@ export const ConfirmDetailsScreen: React.FC<ConfirmDetailsScreenProps> = ({
                   : 'Confirm & Save'}
           </span>
         </button>
+        {onDiscard && (
+          <button
+            onClick={onDiscard}
+            disabled={isSaving}
+            className="w-full py-2 text-xs font-semibold text-rose-700 hover:text-rose-800 disabled:opacity-50"
+          >
+            Discard this photo
+          </button>
+        )}
       </div>
     </div>
   );

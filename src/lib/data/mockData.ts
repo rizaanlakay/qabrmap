@@ -1,7 +1,7 @@
 // Realistic Seed & Mock Data for QabrMap
 // Faithfully matches Athlone, Mountview, and Wynberg cemeteries and Abdul Wahab Hassan Narker
 
-import { Cemetery, Grave, SurveySession } from '@/types';
+import { Cemetery, Grave } from '@/types';
 
 export const MOCK_CEMETERIES: Cemetery[] = [
   {
@@ -447,16 +447,3 @@ function generateAthloneGraves(): Grave[] {
 }
 
 export const MOCK_GRAVES: Grave[] = generateAthloneGraves();
-
-export const MOCK_ACTIVE_SURVEY_SESSION: SurveySession = {
-  id: 'survey_athlone_b',
-  cemeteryId: 'cem_athlone',
-  cemeteryName: 'Athlone Muslim Cemetery',
-  sectionCode: 'Section B',
-  startedAt: '14:23',
-  status: 'ACTIVE',
-  capturedCount: 12,
-  processedCount: 10,
-  pendingCount: 2,
-  reviewCount: 0,
-};

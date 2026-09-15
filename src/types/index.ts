@@ -165,20 +165,6 @@ export interface AIStructuredExtraction {
   };
 }
 
-export interface SurveySession {
-  id: string;
-  cemeteryId: string;
-  cemeteryName: string;
-  sectionCode: string;
-  startedAt: string;
-  completedAt?: string;
-  status: 'ACTIVE' | 'PAUSED' | 'COMPLETED';
-  capturedCount: number;
-  processedCount: number;
-  pendingCount: number;
-  reviewCount: number;
-}
-
 // A survey of one cemetery on this phone. Its captures live on the phone until they become graves.
 export type SurveyStatus = 'ACTIVE' | 'COMPLETED';
 

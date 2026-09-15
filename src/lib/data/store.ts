@@ -5,12 +5,11 @@ import {
   Grave,
   GravePhoto,
   DeviceTelemetry,
-  SurveySession,
   ProvenanceLog,
   Correction,
   GraveRelationship,
 } from '@/types';
-import { MOCK_CEMETERIES, MOCK_GRAVES, MOCK_ACTIVE_SURVEY_SESSION } from './mockData';
+import { MOCK_CEMETERIES, MOCK_GRAVES } from './mockData';
 import { offlineDb } from '../offline/db';
 import { supabase, isSupabaseConfigured } from '../supabase/client';
 import { mapDbCemetery, mapDbGrave, mapDbGravePhoto } from '../supabase/mappers';
@@ -43,7 +42,6 @@ export type SaveNewGraveResult = { outcome: 'created' | 'added-photo'; grave: Gr
 class DataStore {
   private isInitialized = false;
   private memoryCemeteries: Cemetery[] = [...MOCK_CEMETERIES];
-  private activeSurvey: SurveySession = { ...MOCK_ACTIVE_SURVEY_SESSION };
   private corrections: Correction[] = [];
   private savedCemeteries: Set<string> = new Set();
   private savedGraveIds: Set<string> = new Set();
@@ -628,11 +626,6 @@ class DataStore {
     if (!isSupabaseConfigured || !supabase) return [];
     if (typeof navigator !== 'undefined' && !navigator.onLine) return [];
     return lookUpMatchingGraves(supabase, params);
-  }
-
-  // --- SURVEY SESSIONS ---
-  getActiveSurveySession(): SurveySession {
-    return this.activeSurvey;
   }
 
   // --- PROVENANCE ---
