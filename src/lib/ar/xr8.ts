@@ -90,3 +90,10 @@ export function loadXR8(): Promise<XR8Api> {
   });
   return loading;
 }
+
+// Starts the download early (about 6.5 MB) so the AR screen opens without a wait; failures are left for the
+// AR screen to report
+export function preloadXR8(): void {
+  if (typeof window === 'undefined') return;
+  loadXR8().catch(() => {});
+}

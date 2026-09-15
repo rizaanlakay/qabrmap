@@ -22,6 +22,7 @@ import { SurveyCapture } from '@/types';
 import { surveyStore } from '@/lib/surveys/surveyStore';
 import { useLiveValue } from '@/lib/surveys/useSurveyData';
 import { countCaptures } from '@/lib/surveys/queueRules';
+import { XR_ENGINE_LICENSE_URL, XR_ENGINE_NOTICE } from '@/lib/ar/xr8';
 
 interface ProfileScreenProps {
   onNavigate: (screen: string) => void;
@@ -234,6 +235,15 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate, onBack
             </Link>
           </div>
         )}
+
+        {/* Required by the XR engine licence wherever the engine is used */}
+        <div className="bg-white border border-slate-200 rounded-2xl p-3 text-[11px] text-slate-500 leading-relaxed">
+          <span className="block text-xs font-semibold text-slate-800 mb-1">Open source and licences</span>
+          {XR_ENGINE_NOTICE}{' '}
+          <a href={XR_ENGINE_LICENSE_URL} target="_blank" rel="noopener noreferrer" className="underline text-emerald-800">
+            Licence
+          </a>
+        </div>
 
         {/* Sign Out Button */}
         <button

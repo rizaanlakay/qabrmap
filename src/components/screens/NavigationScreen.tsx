@@ -54,6 +54,7 @@ import {
   shouldReroute,
 } from '@/lib/geospatial/routeProgress';
 import { GoogleMapsAttribution } from '@/components/common/GoogleMapsAttribution';
+import { preloadXR8 } from '@/lib/ar/xr8';
 
 // Keeps a floating map control a fixed gap above the visible top edge of the bottom sheet
 function aboveSheetStyle(gapPx: number): React.CSSProperties {
@@ -1126,6 +1127,11 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
   useEffect(() => {
     if (isNearby) snapSheet(true);
   }, [isNearby, snapSheet]);
+
+  // The AR engine is a large download, so fetch it as soon as the "Open AR" prompt appears
+  useEffect(() => {
+    if (isNearby) preloadXR8();
+  }, [isNearby]);
 
   // External turn-by-turn navigation URL for drivers
   const externalGoogleMapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${currentLoc.lat},${currentLoc.lng}&destination=${entranceLat},${entranceLng}&travelmode=driving`;
