@@ -67,8 +67,8 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
           )}
         </div>
 
-        {/* Filter Chips matching Mockup Screen 4 */}
-        <div className="flex items-center space-x-2 mt-3 overflow-x-auto pb-0.5">
+        {/* Filter Chips matching Mockup Screen 4; they wrap onto a second line on narrow phones instead of scrolling */}
+        <div className="flex flex-wrap items-center gap-2 mt-3">
           {[
             { id: 'all', label: 'All' },
             { id: 'saved', label: 'Loved Ones' },
