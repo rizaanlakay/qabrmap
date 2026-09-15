@@ -146,9 +146,9 @@ export const CemeterySelectScreen: React.FC<CemeterySelectScreenProps> = ({
                 <div className="flex-1 min-w-0 pr-2">
                   <div className="flex items-center justify-between">
                     <h2 className="text-sm font-bold text-slate-900 truncate">{cem.name}</h2>
-                    {cem.distanceKm && (
+                    {cem.distanceMeters !== undefined && (
                       <span className="text-xs font-semibold text-slate-500 shrink-0 ml-2">
-                        {cem.distanceKm} km
+                        {Math.round(cem.distanceMeters / 100) / 10} km
                       </span>
                     )}
                   </div>

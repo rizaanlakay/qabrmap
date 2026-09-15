@@ -60,7 +60,7 @@ describe('New User Registration & Onboarding Flow', () => {
     const found = myCemsGraves.find((entry) => entry.grave.id === uniqueId);
     expect(found).toBeDefined();
     expect(found?.grave.person?.fullName).toBe('Zubair Hendricks');
-    expect(found?.cemetery?.name).toBe('Mowbray Muslim Cemetery');
+    expect(found?.cemetery?.name).toBe('Mowbray Muslim Cemetery / Gamedia Maqbara');
   });
 
   it('should maintain user count when new relationships are added', () => {

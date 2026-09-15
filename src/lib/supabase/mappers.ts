@@ -22,6 +22,14 @@ export function mapDbCemetery(row: any): Cemetery {
     totalGravesEstimate: row.total_graves_estimate || 0,
     mappedGravesCount: row.mapped_graves_count || 0,
     coveragePercentage: Number(row.coverage_percentage || 0),
+    // The burial-sites migration may not have run yet, so every new column has a default here too
+    siteType: row.site_type || 'muslim_cemetery',
+    siteStatus: row.site_status || 'active',
+    aliases: Array.isArray(row.aliases) ? row.aliases : [],
+    address: row.address || undefined,
+    googlePlaceId: row.google_place_id || undefined,
+    boundarySource: row.boundary_source || undefined,
+    osmId: row.osm_id || undefined,
     thumbnailUrl: row.thumbnail_url || '/sample-gravestone.svg',
   };
 }

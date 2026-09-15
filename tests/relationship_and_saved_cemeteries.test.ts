@@ -120,7 +120,7 @@ describe('My Cemeteries & Grave Relationship System', () => {
     const savedResults = await dataStore.searchGraves('', 'saved');
     expect(savedResults.map((g) => g.id)).toEqual(['grave_test_grandmother']);
     expect(savedResults[0].relationship).toBeDefined();
-    expect(savedResults[0].cemeteryName).toBe('Mowbray Muslim Cemetery');
+    expect(savedResults[0].cemeteryName).toBe('Mowbray Muslim Cemetery / Gamedia Maqbara');
 
     const mowbray = await dataStore.getCemeteryById('cem_mowbray');
     // Without a connection the count comes from the graves cached on this device
@@ -133,7 +133,7 @@ describe('My Cemeteries & Grave Relationship System', () => {
 
     const gmEntry = entries.find((e) => e.grave.id === 'grave_test_grandmother');
     expect(gmEntry).toBeDefined();
-    expect(gmEntry?.cemetery?.name).toBe('Mowbray Muslim Cemetery');
+    expect(gmEntry?.cemetery?.name).toBe('Mowbray Muslim Cemetery / Gamedia Maqbara');
     expect(gmEntry?.grave.person?.firstName).toBe('Fatima');
     expect(gmEntry?.grave.person?.surname).toBe('Hendricks');
     expect(gmEntry?.grave.person?.deathDate).toBe('2018-05-14');

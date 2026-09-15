@@ -23,7 +23,7 @@ describe('Dual-Mode Navigation & Entrance Routing', () => {
     expect(athlone).toBeDefined();
     expect(athlone?.entranceLat).toBeCloseTo(-33.967, 3);
     expect(athlone?.entranceLng).toBeCloseTo(18.5265, 3);
-    expect(athlone?.entranceName).toBe('Johnstone Road Gate');
+    expect(athlone?.entranceName).toBe('Johnson Road Gate');
 
     const wynberg = MOCK_CEMETERIES.find((c) => c.id === 'cem_wynberg');
     expect(wynberg).toBeDefined();

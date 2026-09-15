@@ -17,6 +17,10 @@ export type IssueType =
   | 'DAMAGED'
   | 'OTHER';
 
+export type CemeterySiteType = 'muslim_cemetery' | 'muslim_section' | 'shared_cemetery' | 'historic_cemetery';
+export type CemeterySiteStatus = 'active' | 'closed' | 'unknown';
+export type CemeteryBoundarySource = 'osm' | 'manual';
+
 export interface Cemetery {
   id: string;
   name: string;
@@ -38,7 +42,16 @@ export interface Cemetery {
   totalGravesEstimate: number;
   mappedGravesCount: number;
   coveragePercentage: number;
-  distanceKm?: number;
+  siteType: CemeterySiteType;
+  siteStatus: CemeterySiteStatus;
+  // Other names people search for: the old app name, Google's name, the source's name
+  aliases: string[];
+  address?: string;
+  googlePlaceId?: string;
+  boundarySource?: CemeteryBoundarySource;
+  osmId?: string;
+  // Straight-line distance from the phone, computed on the client and never stored
+  distanceMeters?: number;
   thumbnailUrl?: string;
 }
 

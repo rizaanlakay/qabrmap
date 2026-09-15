@@ -6,7 +6,7 @@ import { Cemetery, Grave } from '@/types';
 export const MOCK_CEMETERIES: Cemetery[] = [
   {
     id: 'cem_athlone',
-    name: 'Athlone Muslim Cemetery',
+    name: 'Vygiekraal / Johnson Road Muslim Cemetery',
     slug: 'athlone-muslim-cemetery',
     description: 'Historical Muslim cemetery in Athlone / Rylands, Cape Town, established in the early 20th century.',
     country: 'South Africa',
@@ -20,7 +20,7 @@ export const MOCK_CEMETERIES: Cemetery[] = [
     originAlt: 24.0,
     entranceLat: -33.9670,
     entranceLng: 18.5265,
-    entranceName: 'Johnstone Road Gate',
+    entranceName: 'Johnson Road Gate',
     boundary: {
       type: 'Polygon',
       coordinates: [
@@ -44,12 +44,14 @@ export const MOCK_CEMETERIES: Cemetery[] = [
     totalGravesEstimate: 0,
     mappedGravesCount: 0,
     coveragePercentage: 0,
-    distanceKm: 2.4,
+    siteType: 'muslim_cemetery',
+    siteStatus: 'active',
+    aliases: ['Athlone Muslim Cemetery', 'Vygiekraal Cemetery', 'Johnson Road Maqbara'],
     thumbnailUrl: '/sample-gravestone.svg',
   },
   {
     id: 'cem_mowbray',
-    name: 'Mowbray Muslim Cemetery',
+    name: 'Mowbray Muslim Cemetery / Gamedia Maqbara',
     slug: 'mowbray-muslim-cemetery',
     description: 'Historic Cape Town Muslim cemetery on Browning Road, Observatory / Mowbray, serving the community since 1886.',
     country: 'South Africa',
@@ -82,7 +84,9 @@ export const MOCK_CEMETERIES: Cemetery[] = [
     totalGravesEstimate: 0,
     mappedGravesCount: 0,
     coveragePercentage: 0,
-    distanceKm: 3.8,
+    siteType: 'muslim_cemetery',
+    siteStatus: 'active',
+    aliases: ['Mowbray Muslim Cemetery', 'Gamedia Maqbara'],
     thumbnailUrl: '/sample-gravestone.svg',
   },
   {
@@ -122,7 +126,9 @@ export const MOCK_CEMETERIES: Cemetery[] = [
     totalGravesEstimate: 0,
     mappedGravesCount: 0,
     coveragePercentage: 0,
-    distanceKm: 5.1,
+    siteType: 'muslim_cemetery',
+    siteStatus: 'unknown',
+    aliases: [],
     thumbnailUrl: '/sample-gravestone.svg',
   },
   {
@@ -155,7 +161,9 @@ export const MOCK_CEMETERIES: Cemetery[] = [
     totalGravesEstimate: 0,
     mappedGravesCount: 0,
     coveragePercentage: 0,
-    distanceKm: 7.3,
+    siteType: 'historic_cemetery',
+    siteStatus: 'closed',
+    aliases: ['Brodie Road Muslim Cemetery'],
     thumbnailUrl: '/sample-gravestone.svg',
   },
 ];

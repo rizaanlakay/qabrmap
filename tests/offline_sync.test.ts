@@ -1,10 +1,11 @@
 import 'fake-indexeddb/auto';
 import { describe, it, expect } from 'vitest';
+import type { Cemetery } from '../src/types';
 import { offlineDb } from '../src/lib/offline/db';
 
 describe('Offline Database & Sync Engine Unit Tests', () => {
   it('stores and retrieves items from Dexie database', async () => {
-    const cemetery = {
+    const cemetery: Cemetery = {
       id: 'test_cem',
       name: 'Test Cemetery',
       slug: 'test-cemetery',
@@ -18,6 +19,9 @@ describe('Offline Database & Sync Engine Unit Tests', () => {
       totalGravesEstimate: 100,
       mappedGravesCount: 50,
       coveragePercentage: 50,
+      siteType: 'muslim_cemetery',
+      siteStatus: 'active',
+      aliases: [],
     };
 
     await offlineDb.cemeteries.put(cemetery);

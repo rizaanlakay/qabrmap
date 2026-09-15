@@ -19,6 +19,9 @@ function cemetery(id: string, ring?: [number, number][]): Cemetery {
     totalGravesEstimate: 0,
     mappedGravesCount: 0,
     coveragePercentage: 0,
+    siteType: 'muslim_cemetery',
+    siteStatus: 'active',
+    aliases: [],
   };
 }
 
