@@ -42,6 +42,9 @@ const PIN_FAR_M = 25;
 // Pin height along the 720 px ground plane, measured from its near edge
 const PIN_NEAR_PX = 260;
 const PIN_FAR_PX = 600;
+// Pin size on the line: full size at the spot, shrinking toward the far end
+const LINE_PIN_MAX_SCALE = 1.4;
+const LINE_PIN_MIN_SCALE = 0.6;
 // Sensor smoothing: quick while walking, slower when close so the marker settles instead of dancing
 const ALPHA_ORIENTATION = 0.25;
 const ALPHA_POSITION = 0.3;
@@ -177,12 +180,13 @@ export const ARGuidanceScreen: React.FC<ARGuidanceScreenProps> = ({
     viewportHeight: viewport.height,
   });
   const accuracy = Math.max(1, targetGrave.positionAccuracyMeters || 1);
-  const ringWidth = Math.min(viewport.width * 1.5, 2 * accuracy * marker.pxPerMeter);
   // The line is the guide while walking; the marker and ring only take over once the person is at the spot
   const caption = arrived ? `± ${accuracy} m. Not the right name? Look around this spot.` : 'Follow the line';
   // Where the pin stands along the line: near the far end when the grave is far, closer as the walk ends
   const pinAlong = Math.min(1, Math.max(0, (distance - ARRIVED_M) / PIN_FAR_M));
   const pinBottom = PIN_NEAR_PX + pinAlong * (PIN_FAR_PX - PIN_NEAR_PX);
+  // The pin shrinks as the grave gets further away, on top of the plane's own perspective
+  const linePinScale = Math.min(LINE_PIN_MAX_SCALE, Math.max(LINE_PIN_MIN_SCALE, LINE_PIN_MAX_SCALE - (distance - ARRIVED_M) / 40));
 
   // Start the rear camera. The <video> element is always mounted so the stream
   // can be attached as soon as permission is granted.
@@ -301,10 +305,10 @@ export const ARGuidanceScreen: React.FC<ARGuidanceScreenProps> = ({
               {/* The destination pin stands on the line where the walk ends */}
               <div
                 className="absolute left-1/2"
-                style={{ bottom: pinBottom, transform: 'translateX(-50%) rotateX(-66deg)', transformOrigin: '50% 100%' }}
+                style={{ bottom: pinBottom, transform: `translateX(-50%) rotateX(-66deg) scale(${linePinScale})`, transformOrigin: '50% 100%' }}
               >
                 <div className="animate-ar-marker">
-                  <MapPin className="w-20 h-20 text-emerald-400 fill-emerald-500/60 drop-shadow-[0_6px_12px_rgba(0,0,0,0.6)]" strokeWidth={1.75} />
+                  <MapPin className="w-28 h-28 text-emerald-400 fill-emerald-500/70 drop-shadow-[0_6px_12px_rgba(0,0,0,0.6)]" strokeWidth={1.5} />
                 </div>
               </div>
               {Array.from({ length: CHEVRON_COUNT }, (_, i) => (
@@ -334,23 +338,18 @@ export const ARGuidanceScreen: React.FC<ARGuidanceScreenProps> = ({
       </div>
 
       {/* At the spot the line stops and the marker takes over: placed from compass, tilt and distance, so it can be a
-          few metres out, which is what the ring shows */}
+          few metres out, which is what the pill under it says */}
       {arrived && (
         <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden" aria-hidden="true">
           {marker.onScreen ? (
             <div className="absolute" style={{ left: marker.x, top: marker.y }}>
-              {/* Ring centred on the projected ground point: the grave is somewhere inside it */}
-              <div
-                className="absolute rounded-full border-2 border-emerald-300/70 bg-emerald-400/20"
-                style={{ width: ringWidth, height: ringWidth * 0.35, transform: 'translate(-50%, -50%)' }}
-              />
               {/* The pin stands on the ground point. Scale sits on this wrapper because the bounce owns transform inside */}
               <div
                 className="absolute left-0 bottom-0"
                 style={{ transform: `translateX(-50%) scale(${marker.scale})`, transformOrigin: '50% 100%' }}
               >
                 <div className="animate-ar-marker">
-                  <MapPin className="w-14 h-14 text-emerald-400 fill-emerald-500/60 drop-shadow-[0_4px_10px_rgba(0,0,0,0.6)]" strokeWidth={1.75} />
+                  <MapPin className="w-24 h-24 text-emerald-400 fill-emerald-500/70 drop-shadow-[0_6px_12px_rgba(0,0,0,0.6)]" strokeWidth={1.5} />
                 </div>
               </div>
             </div>
