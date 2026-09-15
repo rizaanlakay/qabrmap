@@ -1,7 +1,7 @@
 # Tracked AR guidance on the 8th Wall engine
 
 Date: 2026-09-15
-Status: approved design, not yet implemented
+Status: implemented on main; needs a phone walk
 
 ## Problem
 
