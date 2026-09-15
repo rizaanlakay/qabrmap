@@ -13,7 +13,8 @@ export function stoneReadingErrorMessage(status: number, serverMessage?: string)
     case 401:
       return 'Your session has ended. Sign in again to read the photo.';
     case 429:
-      return 'Too many photos are being read right now. Try again in a moment.';
+      // The server says whether the model is busy or this account has read too many photos
+      return serverMessage || 'Too many photos are being read right now. Try again in a moment.';
     case 503:
       return "Reading photos isn't set up yet. Enter the details manually.";
     case 422:

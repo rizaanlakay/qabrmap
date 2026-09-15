@@ -232,6 +232,7 @@ describe('Stone Photo Client Tests', () => {
     expect(stoneReadingErrorMessage(0)).toBe("You're offline. Connect to the internet to read the photo, or enter the details manually.");
     expect(stoneReadingErrorMessage(401)).toBe('Your session has ended. Sign in again to read the photo.');
     expect(stoneReadingErrorMessage(429)).toBe('Too many photos are being read right now. Try again in a moment.');
+    expect(stoneReadingErrorMessage(429, 'Too many photos read. Try again later.')).toBe('Too many photos read. Try again later.');
     expect(stoneReadingErrorMessage(503)).toBe("Reading photos isn't set up yet. Enter the details manually.");
     expect(stoneReadingErrorMessage(422, 'No grave details were found in this photo.')).toBe(
       'No grave details were found in this photo.'
