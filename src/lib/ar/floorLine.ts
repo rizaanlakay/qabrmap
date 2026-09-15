@@ -4,6 +4,7 @@ import * as THREE from 'three';
 // Units are metres; the group is rotated about y to point at the target.
 
 export const FLOOR_LINE_LENGTH_M = 12;
+export const MIN_LINE_LENGTH_M = 0.5;
 // Chevrons on the line at once, and metres per second they travel
 export const CHEVRON_COUNT = 10;
 export const CHEVRON_SPEED_MPS = 1.5;
@@ -18,11 +19,18 @@ export interface FloorLine {
   group: THREE.Group;
   // Advances the chevron animation; elapsed is seconds since the line was created
   animate: (elapsed: number) => void;
+  // Ends the line at the grave when it is closer than the full length
+  setLength: (metres: number) => void;
+  length: () => number;
   dispose: () => void;
 }
 
-// One emerald chevron pointing "up" the texture, which is forward once the plane lies on the floor
-function chevronTexture(): THREE.CanvasTexture {
+// One emerald chevron pointing "up" the texture, which is forward once the plane lies on the floor.
+// Returns null in Node (tests), where there is no document to draw the canvas with.
+function chevronTexture(): THREE.CanvasTexture | null {
+  if (typeof document === 'undefined') {
+    return null;
+  }
   const size = 128;
   const canvas = document.createElement('canvas');
   canvas.width = size;
@@ -52,6 +60,7 @@ export function createFloorLine(): FloorLine {
 
   const stripMaterial = new THREE.MeshBasicMaterial({ color: 0x34d399, transparent: true, opacity: 0.22, depthWrite: false });
   const strip = new THREE.Mesh(new THREE.PlaneGeometry(STRIP_WIDTH_M, FLOOR_LINE_LENGTH_M), stripMaterial);
+  strip.name = 'strip';
   strip.rotation.x = -Math.PI / 2;
   strip.position.set(0, STRIP_LIFT_M, -FLOOR_LINE_LENGTH_M / 2);
   group.add(strip);
@@ -59,13 +68,27 @@ export function createFloorLine(): FloorLine {
   const chevronGeometry = new THREE.PlaneGeometry(CHEVRON_WIDTH_M, CHEVRON_DEPTH_M);
   const chevrons: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>[] = [];
   for (let i = 0; i < CHEVRON_COUNT; i++) {
-    const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false });
+    const material = new THREE.MeshBasicMaterial({
+      map: texture ?? undefined,
+      color: texture ? 0xffffff : 0x34d399,
+      transparent: true,
+      depthWrite: false,
+    });
     const chevron = new THREE.Mesh(chevronGeometry, material);
+    chevron.name = 'chevron';
     chevron.rotation.x = -Math.PI / 2;
     chevron.position.y = CHEVRON_LIFT_M;
     group.add(chevron);
     chevrons.push(chevron);
   }
+
+  let currentLength = FLOOR_LINE_LENGTH_M;
+  const setLength = (metres: number) => {
+    currentLength = Math.min(FLOOR_LINE_LENGTH_M, Math.max(MIN_LINE_LENGTH_M, metres));
+    // The strip is a plane along local y, which lies along -z once it is flat on the floor
+    strip.scale.y = currentLength / FLOOR_LINE_LENGTH_M;
+    strip.position.z = -currentLength / 2;
+  };
 
   const spacing = FLOOR_LINE_LENGTH_M / CHEVRON_COUNT;
   const animate = (elapsed: number) => {
@@ -77,6 +100,7 @@ export function createFloorLine(): FloorLine {
       const fadeIn = Math.min(1, distance / 1.5);
       const fadeOut = Math.min(1, (FLOOR_LINE_LENGTH_M - distance) / 3);
       chevron.material.opacity = Math.max(0, Math.min(fadeIn, fadeOut));
+      chevron.visible = distance <= currentLength;
     });
   };
   animate(0);
@@ -86,8 +110,8 @@ export function createFloorLine(): FloorLine {
     stripMaterial.dispose();
     chevronGeometry.dispose();
     chevrons.forEach((chevron) => chevron.material.dispose());
-    texture.dispose();
+    texture?.dispose();
   };
 
-  return { group, animate, dispose };
+  return { group, animate, setLength, length: () => currentLength, dispose };
 }
