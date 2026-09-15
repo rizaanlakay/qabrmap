@@ -80,7 +80,20 @@ describe('Stone Reading To Form Tests', () => {
       fieldConfidences: { graveNumber: 0, fullName: 0.9, dates: 0.95 },
       otherText: ['786 at the top stands for Bismillah'],
     });
-    expect(extraction.confidence).toBeCloseTo((0 + 0.9 + 0.95) / 3, 5);
+    // Only the groups that were filled count, so a stone with no grave number isn't marked down
+    expect(extraction.confidence).toBeCloseTo((0.9 + 0.95) / 2, 5);
+  });
+
+  it('scores 0 overall when nothing could be filled', () => {
+    const extraction = stoneReadingToExtraction({
+      ...yusuf,
+      firstName: null,
+      surname: null,
+      birthDate: null,
+      deathDate: null,
+      confidence: { name: 0.9, graveNumber: 0.9, dates: 0.9 },
+    });
+    expect(extraction.confidence).toBe(0);
   });
 
   it('trims names, keeps a nickname and drops blank middle names', () => {

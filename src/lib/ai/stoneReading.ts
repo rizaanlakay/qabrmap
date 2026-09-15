@@ -127,6 +127,13 @@ export function stoneReadingToExtraction(reading: StoneReading): AIStructuredExt
   const datesAsWritten = text(reading.datesAsWritten);
   if (datesAsWritten && !(birthDate && deathDate)) otherText.push(`Dates as written: ${datesAsWritten}`);
 
+  // The overall score averages only what was filled, so a stone with no grave number isn't marked down
+  const filledScores = [
+    graveNumber ? fieldConfidences.graveNumber : null,
+    firstName || surname ? fieldConfidences.fullName : null,
+    birthDate || deathDate ? fieldConfidences.dates : null,
+  ].filter((score): score is number => score !== null);
+
   return {
     graveNumber,
     firstName,
@@ -136,7 +143,9 @@ export function stoneReadingToExtraction(reading: StoneReading): AIStructuredExt
     fullName: [firstName, ...middleNames, surname].filter(Boolean).join(' '),
     birthDate,
     deathDate,
-    confidence: (fieldConfidences.graveNumber + fieldConfidences.fullName + fieldConfidences.dates) / 3,
+    confidence: filledScores.length
+      ? filledScores.reduce((sum, score) => sum + score, 0) / filledScores.length
+      : 0,
     rawOcrText: reading.transcript,
     otherText,
     fieldConfidences,
