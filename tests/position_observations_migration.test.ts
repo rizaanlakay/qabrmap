@@ -47,6 +47,12 @@ describe('Position Observations Migration Tests', () => {
     expect(MIGRATION).toMatch(/create or replace function public\.record_photo_observation\(\)/);
     expect(MIGRATION).toMatch(/create trigger grave_photos_record_observation\s+after insert on public\.grave_photos/);
     expect(MIGRATION).toMatch(/coalesce\(new\.captured_at, now\(\)\)/);
+    expect(MIGRATION).toMatch(/> 30 \+ new\.gps_accuracy_meters then/);
+  });
+
+  it('measures distance with one shared haversine function', () => {
+    expect(MIGRATION).toMatch(/create or replace function public\.distance_meters\(/);
+    expect(MIGRATION).toMatch(/v_distance := public\.distance_meters\(p_latitude, p_longitude, v_grave\.latitude, v_grave\.longitude\);/);
   });
 
   it('records visits from signed-in users within 30 m', () => {

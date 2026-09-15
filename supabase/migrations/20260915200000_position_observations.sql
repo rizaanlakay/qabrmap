@@ -92,6 +92,21 @@ create policy "Grave observations are publicly readable"
   to anon, authenticated
   using (true);
 
+-- Haversine distance in metres; shared by the photo trigger and record_grave_visit
+create or replace function public.distance_meters(
+  p_lat1 double precision, p_lng1 double precision, p_lat2 double precision, p_lng2 double precision
+)
+returns double precision
+language sql
+immutable
+set search_path = ''
+as $$
+  select 2 * 6371000 * asin(sqrt(
+    power(sin(radians(p_lat2 - p_lat1) / 2), 2)
+    + cos(radians(p_lat1)) * cos(radians(p_lat2)) * power(sin(radians(p_lng2 - p_lng1) / 2), 2)
+  ))
+$$;
+
 -- Inverse-variance mean of a grave's observations. A verified grave keeps its position but still counts them.
 create or replace function public.recompute_grave_position(p_grave_id text)
 returns void
@@ -199,7 +214,8 @@ begin
     if found then
       if p_accuracy_meters < v_existing.accuracy_meters then
         update public.grave_position_observations
-        set latitude = p_latitude, longitude = p_longitude, accuracy_meters = p_accuracy_meters, observed_at = v_observed_at
+        set latitude = p_latitude, longitude = p_longitude, accuracy_meters = p_accuracy_meters,
+          source = p_source, observed_at = v_observed_at
         where id = v_existing.id;
         perform public.recompute_grave_position(p_grave_id);
       end if;
@@ -222,13 +238,23 @@ language plpgsql
 security definer
 set search_path = ''
 as $$
+declare
+  v_grave record;
 begin
-  if new.capture_latitude is not null and new.capture_longitude is not null and new.gps_accuracy_meters is not null then
-    perform public.add_grave_position_observation(
-      new.grave_id, new.uploaded_by, new.capture_latitude, new.capture_longitude, new.gps_accuracy_meters,
-      'photo', coalesce(new.captured_at, now())
-    );
+  if new.capture_latitude is null or new.capture_longitude is null or new.gps_accuracy_meters is null then
+    return null;
   end if;
+  select latitude, longitude into v_grave from public.graves where id = new.grave_id;
+  if not found then return null; end if;
+  -- A photo taken well away from the grave's position is of something else, so it must not move the grave
+  if public.distance_meters(new.capture_latitude, new.capture_longitude, v_grave.latitude, v_grave.longitude)
+     > 30 + new.gps_accuracy_meters then
+    return null;
+  end if;
+  perform public.add_grave_position_observation(
+    new.grave_id, new.uploaded_by, new.capture_latitude, new.capture_longitude, new.gps_accuracy_meters,
+    'photo', coalesce(new.captured_at, now())
+  );
   return null;
 end;
 $$;
@@ -277,11 +303,7 @@ begin
     raise exception 'The GPS position is not valid.' using errcode = '22023';
   end if;
 
-  -- Haversine distance in metres between the visitor and the grave's current position
-  v_distance := 2 * 6371000 * asin(sqrt(
-    power(sin(radians(p_latitude - v_grave.latitude) / 2), 2)
-    + cos(radians(v_grave.latitude)) * cos(radians(p_latitude)) * power(sin(radians(p_longitude - v_grave.longitude) / 2), 2)
-  ));
+  v_distance := public.distance_meters(p_latitude, p_longitude, v_grave.latitude, v_grave.longitude);
   if v_distance > 30 then
     raise exception 'You''re too far from this grave to confirm it.' using errcode = '22023';
   end if;
@@ -380,7 +402,7 @@ begin
     raise exception 'First name and surname are required.' using errcode = '22023';
   end if;
 
-  if p_accuracy_meters is null or p_accuracy_meters < 0 or p_accuracy_meters > 25 then
+  if p_accuracy_meters is null or p_accuracy_meters <= 0 or p_accuracy_meters > 25 then
     raise exception 'GPS accuracy must be 25 m or better.' using errcode = '22023';
   end if;
 
