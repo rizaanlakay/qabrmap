@@ -294,16 +294,12 @@ export const ARTrackedGuidanceScreen: React.FC<ARTrackedGuidanceScreenProps> = (
         </div>
       </div>
 
-      {/* What to do right now */}
-      <div className="absolute inset-x-0 bottom-36 z-30 flex justify-center pointer-events-none px-6">
-        <div className="max-w-[300px] bg-black/60 backdrop-blur-md border border-white/20 rounded-xl px-4 py-2 text-sm font-semibold text-white text-center" role="status">
+      {/* The instruction pill stacks above the card, so it stays clear however tall the card grows */}
+      <div className="absolute bottom-10 inset-x-5 z-30 pointer-events-auto flex flex-col items-center space-y-3">
+        <div className="max-w-[300px] bg-black/60 backdrop-blur-md border border-white/20 rounded-xl px-4 py-2 text-sm font-semibold text-white text-center pointer-events-none" role="status">
           {pill}
         </div>
-      </div>
-
-      {/* Grave card */}
-      <div className="absolute bottom-10 inset-x-5 z-30 pointer-events-auto">
-        <div className="bg-white/95 backdrop-blur-md rounded-2xl p-3 shadow-2xl border border-white/40">
+        <div className="w-full bg-white/95 backdrop-blur-md rounded-2xl p-3 shadow-2xl border border-white/40">
           <div className="flex items-center space-x-3.5">
             <div className="w-14 h-14 rounded-xl overflow-hidden relative shrink-0 bg-slate-100 border border-slate-200">
               <Image src={targetGrave.primaryPhotoUrl || '/sample-gravestone.svg'} alt={targetGrave.person?.fullName || 'Target Grave'} fill className="object-cover" />
