@@ -57,6 +57,7 @@ export interface Person {
   middleNames?: string;
   surname: string;
   fullName: string;
+  nickname?: string;
   gender?: 'male' | 'female' | 'unknown';
   birthDate?: string; // YYYY-MM-DD
   deathDate?: string; // YYYY-MM-DD

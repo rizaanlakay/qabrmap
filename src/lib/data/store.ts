@@ -539,7 +539,8 @@ class DataStore {
       return saved.filter((g) => {
         const numMatch = g.graveNumber.toLowerCase().includes(q);
         const fullNameMatch = g.person?.fullName.toLowerCase().includes(q) ?? false;
-        return numMatch || fullNameMatch;
+        const nicknameMatch = g.person?.nickname?.toLowerCase().includes(q) ?? false;
+        return numMatch || fullNameMatch || nicknameMatch;
       });
     }
 
@@ -552,14 +553,16 @@ class DataStore {
       const fullNameMatch = g.person?.fullName.toLowerCase().includes(q) ?? false;
       const firstNameMatch = g.person?.firstName.toLowerCase().includes(q) ?? false;
       const surnameMatch = g.person?.surname.toLowerCase().includes(q) ?? false;
+      // Families often only know someone by their nickname
+      const nicknameMatch = g.person?.nickname?.toLowerCase().includes(q) ?? false;
 
       if (filterType === 'names') {
-        return fullNameMatch || firstNameMatch || surnameMatch;
+        return fullNameMatch || firstNameMatch || surnameMatch || nicknameMatch;
       }
       if (filterType === 'numbers') {
         return numMatch;
       }
-      return numMatch || fullNameMatch || firstNameMatch || surnameMatch;
+      return numMatch || fullNameMatch || firstNameMatch || surnameMatch || nicknameMatch;
     });
   }
 

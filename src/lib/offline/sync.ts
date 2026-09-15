@@ -156,7 +156,8 @@ export class SyncManager {
         const numMatch = grave.graveNumber.toLowerCase().includes(q);
         const nameMatch = grave.person?.fullName.toLowerCase().includes(q) ?? false;
         const surnameMatch = grave.person?.surname.toLowerCase().includes(q) ?? false;
-        return numMatch || nameMatch || surnameMatch;
+        const nicknameMatch = grave.person?.nickname?.toLowerCase().includes(q) ?? false;
+        return numMatch || nameMatch || surnameMatch || nicknameMatch;
       })
       .toArray();
   }
