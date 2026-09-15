@@ -75,8 +75,8 @@ export const CemeterySelectScreen: React.FC<CemeterySelectScreenProps> = ({
           />
         </div>
 
-        {/* Filter Chips: Nearby, My cemeteries, Recent, All */}
-        <div className="flex items-center space-x-2 mt-3 overflow-x-auto pb-0.5">
+        {/* Filter Chips: Nearby, My cemeteries, Recent, All; centred, and wrapped onto a second line on narrow phones instead of scrolling */}
+        <div className="flex flex-wrap items-center justify-center gap-2 mt-3">
           {[
             { id: 'nearby', label: 'Nearby' },
             { id: 'my-cemeteries', label: 'My cemeteries' },
