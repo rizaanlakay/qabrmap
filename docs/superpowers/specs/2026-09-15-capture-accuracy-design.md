@@ -1,7 +1,7 @@
 # Capture accuracy, position observations and the AR marker
 
 Date: 2026-09-15
-Status: approved design, not yet implemented
+Status: implemented on feature/my-surveys; migration 20260915200000_position_observations.sql must be run in the Supabase SQL Editor
 
 ## Problem
 
