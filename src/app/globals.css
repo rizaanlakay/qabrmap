@@ -108,6 +108,10 @@ body {
   .ar-chevron {
     animation-play-state: paused;
   }
+
+  .animate-ar-marker {
+    animation: none;
+  }
 }
 
 /* AR grave marker: a slow bob so it reads as a pin standing on the ground */

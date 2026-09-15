@@ -310,18 +310,25 @@ export const ARGuidanceScreen: React.FC<ARGuidanceScreenProps> = ({
       {/* Grave marker on the camera view. Placed from compass, tilt and distance, so it can be a few metres out. */}
       <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden" aria-hidden="true">
         {marker.onScreen ? (
-          <div
-            className="absolute flex flex-col items-center transition-[left,top] duration-150 ease-out"
-            style={{ left: marker.x, top: marker.y, transform: 'translate(-50%, -100%)' }}
-          >
-            <div className="animate-ar-marker" style={{ transform: `scale(${marker.scale})`, transformOrigin: '50% 100%' }}>
-              <MapPin className="w-14 h-14 text-emerald-400 fill-emerald-500/60 drop-shadow-[0_4px_10px_rgba(0,0,0,0.6)]" strokeWidth={1.75} />
+          <div className="absolute" style={{ left: marker.x, top: marker.y }}>
+            {/* Ring centred on the projected ground point: the grave is somewhere inside it */}
+            <div
+              className="absolute rounded-full border-2 border-emerald-300/70 bg-emerald-400/20"
+              style={{ width: ringWidth, height: ringWidth * 0.35, transform: 'translate(-50%, -50%)' }}
+            />
+            {/* The pin stands on the ground point. Scale sits on this wrapper because the bounce owns transform inside */}
+            <div
+              className="absolute left-0 bottom-0"
+              style={{ transform: `translateX(-50%) scale(${marker.scale})`, transformOrigin: '50% 100%' }}
+            >
+              <div className="animate-ar-marker">
+                <MapPin className="w-14 h-14 text-emerald-400 fill-emerald-500/60 drop-shadow-[0_4px_10px_rgba(0,0,0,0.6)]" strokeWidth={1.75} />
+              </div>
             </div>
             <div
-              className="rounded-full border-2 border-emerald-300/70 bg-emerald-400/20 -mt-2"
-              style={{ width: ringWidth, height: ringWidth * 0.35 }}
-            />
-            <div className="mt-2 max-w-[240px] text-center text-[11px] font-semibold text-white bg-black/60 backdrop-blur-md rounded-full px-3 py-1">
+              className="absolute left-0 w-max max-w-[240px] text-center text-[11px] font-semibold text-white bg-black/60 backdrop-blur-md rounded-full px-3 py-1"
+              style={{ top: (ringWidth * 0.35) / 2 + 8, transform: 'translateX(-50%)' }}
+            >
               {caption}
             </div>
           </div>
