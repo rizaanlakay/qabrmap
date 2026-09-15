@@ -31,9 +31,9 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({ onCaptureComplete,
   const [flashOn, setFlashOn] = useState(false);
   const [showGrid, setShowGrid] = useState(true);
 
-  // Real device readings; null until the device reports one
+  // Real device readings; null until the device reports one. The compass is always on here.
   const [fix, setFix] = useState<PositionFix | null>(null);
-  const { heading, status: compassStatus, requestPermission } = useCompassHeading();
+  const { heading, status: compassStatus } = useCompassHeading();
 
   // Start the rear camera. The <video> element is always mounted so the stream attaches the moment it arrives.
   useEffect(() => {
@@ -213,16 +213,6 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({ onCaptureComplete,
         <div className="mt-4 bg-black/55 backdrop-blur-md text-white text-xs font-medium py-1.5 px-4 rounded-full border border-white/15">
           {readiness.message}
         </div>
-
-        {compassStatus === 'needs-permission' && (
-          <button
-            onClick={requestPermission}
-            className="mt-3 pointer-events-auto flex items-center space-x-1.5 bg-emerald-500 hover:bg-emerald-400 text-emerald-950 text-xs font-bold py-2 px-4 rounded-full shadow-lg active:scale-95 transition-transform"
-          >
-            <Compass className="w-4 h-4" />
-            <span>Enable compass</span>
-          </button>
-        )}
 
         {/* Live Telemetry Pill matching Screen 8 */}
         <div className="mt-4 bg-black/75 backdrop-blur-md rounded-2xl py-2 px-4 border border-white/20 text-white text-[11px] space-y-1 shadow-xl">

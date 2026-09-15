@@ -35,14 +35,14 @@ export function getCaptureReadiness({
     };
   }
   if (compassStatus === 'needs-permission') {
-    return { ready: false, blocker: 'compass-permission', message: 'Tap Enable compass to record the direction' };
+    return { ready: false, blocker: 'compass-permission', message: 'Tap the screen to start the compass' };
   }
   if (heading === null) {
     const message =
       compassStatus === 'waiting'
         ? 'Waiting for compass…'
         : compassStatus === 'denied'
-          ? 'Compass permission was denied'
+          ? 'Allow motion access for this site in Settings to map a grave'
           : 'Compass not available on this device';
     return { ready: false, blocker: 'compass', message };
   }

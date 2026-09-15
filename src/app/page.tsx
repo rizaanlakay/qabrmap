@@ -5,6 +5,7 @@ import { Cemetery, Grave, DeviceTelemetry, AIStructuredExtraction, AIProcessingS
 import { dataStore } from '@/lib/data/store';
 import { getGraveIdFromUrl, withGraveParam } from '@/lib/share/graveLink';
 import { syncManager } from '@/lib/offline/sync';
+import { compassPermission } from '@/lib/device/compass';
 
 // Components
 import { StatusBar } from '@/components/ui/StatusBar';
@@ -183,6 +184,8 @@ function QabrMapAppContent() {
       openAuthModal();
       return;
     }
+    // Ask for compass access inside this tap, because iOS only shows the prompt during a tap
+    void compassPermission.request();
     setCurrentNavTab('capture');
     setPhotoTargetGrave(null);
     setCurrentScreen('capture');
@@ -393,6 +396,8 @@ function QabrMapAppContent() {
                 openAuthModal();
                 return;
               }
+              // Same as opening Capture: iOS only shows the compass prompt during a tap
+              void compassPermission.request();
               setPhotoTargetGrave(grave);
               setCurrentScreen('capture');
             }}

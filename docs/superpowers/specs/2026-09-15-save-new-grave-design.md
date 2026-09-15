@@ -259,3 +259,10 @@ Apply the migration before deploying the client. If the client ships first, savi
 - The uploaded photo is deleted only when the database itself rejects the save (the error carries a Postgres or PostgREST code). A dropped connection or gateway timeout may have happened after the save committed, so the photo is kept.
 - `create_mapped_grave` returns the existing grave when the same user sends a grave id that is already saved, so a retry after a lost response neither fails nor creates a second grave.
 - If the saved grave can't be read back straight after saving, the app builds it from what it sent instead of reporting a failure.
+
+## Compass always on (added 2026-09-15)
+
+- The compass can't be switched on or off on the capture screen; there is no compass button.
+- On iOS, motion access is asked for inside the tap that opens the camera (Capture tab, Map a grave, Capture Next Grave, Add a Photo). If the camera was opened without a tap (home screen shortcut, reload), the first tap anywhere on the screen asks, with the hint "Tap the screen to start the compass".
+- The answer is kept in one shared record, so every screen uses it and nobody is asked twice.
+- If motion access is refused, the shutter stays disabled with "Allow motion access for this site in Settings to map a grave".

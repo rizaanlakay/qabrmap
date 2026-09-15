@@ -1,74 +1,73 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import { CompassStatus, OrientationReading, readCompassHeading } from './compass';
-
-type OrientationEventConstructor = typeof DeviceOrientationEvent & {
-  requestPermission?: () => Promise<'granted' | 'denied'>;
-};
+import { useEffect, useState } from 'react';
+import {
+  CompassPermission,
+  CompassStatus,
+  OrientationReading,
+  compassPermission,
+  readCompassHeading,
+} from './compass';
 
 // Laptops expose the orientation API but never send readings, so give up after this long
 const NO_READING_TIMEOUT_MS = 3000;
 
-export function useCompassHeading() {
+// The compass is always on and can't be switched off. On iOS it starts once motion access is allowed, which is
+// asked for from the tap that opens the camera, or failing that from the first tap on the screen.
+export function useCompassHeading(): { heading: number | null; status: CompassStatus } {
+  const [supported] = useState(() => typeof window !== 'undefined' && 'DeviceOrientationEvent' in window);
+  const [permission, setPermission] = useState<CompassPermission>(() => compassPermission.get());
   const [heading, setHeading] = useState<number | null>(null);
-  const [status, setStatus] = useState<CompassStatus>('waiting');
-  const [listening, setListening] = useState(false);
+  const [timedOut, setTimedOut] = useState(false);
 
   useEffect(() => {
-    if (!('DeviceOrientationEvent' in window)) {
-      setStatus('unsupported');
-      return;
-    }
-    const ctor = window.DeviceOrientationEvent as OrientationEventConstructor;
-    if (typeof ctor.requestPermission === 'function') {
-      setStatus('needs-permission');
-    } else {
-      setListening(true);
-    }
+    setPermission(compassPermission.get());
+    return compassPermission.subscribe(setPermission);
   }, []);
 
+  // No tap on the way in (home screen shortcut or a reload), so the next tap anywhere asks
   useEffect(() => {
-    if (!listening) return;
-    setStatus((current) => (current === 'active' ? current : 'waiting'));
+    if (!supported || permission !== 'unknown') return;
+    const ask = () => {
+      void compassPermission.request();
+    };
+    window.addEventListener('touchend', ask);
+    window.addEventListener('click', ask);
+    return () => {
+      window.removeEventListener('touchend', ask);
+      window.removeEventListener('click', ask);
+    };
+  }, [supported, permission]);
+
+  const canListen = supported && (permission === 'granted' || permission === 'not-required');
+
+  useEffect(() => {
+    if (!canListen) return;
 
     const handle = (source: 'absolute' | 'relative') => (event: Event) => {
       const next = readCompassHeading(event as unknown as OrientationReading, source);
-      if (next === null) return;
-      setHeading(next);
-      setStatus('active');
+      if (next !== null) setHeading(next);
     };
     const onAbsolute = handle('absolute');
     const onRelative = handle('relative');
 
     window.addEventListener('deviceorientationabsolute', onAbsolute);
     window.addEventListener('deviceorientation', onRelative);
-    const timer = window.setTimeout(() => {
-      setStatus((current) => (current === 'waiting' ? 'unsupported' : current));
-    }, NO_READING_TIMEOUT_MS);
+    const timer = window.setTimeout(() => setTimedOut(true), NO_READING_TIMEOUT_MS);
 
     return () => {
       window.removeEventListener('deviceorientationabsolute', onAbsolute);
       window.removeEventListener('deviceorientation', onRelative);
       window.clearTimeout(timer);
     };
-  }, [listening]);
+  }, [canListen]);
 
-  // iOS only allows this from a tap
-  const requestPermission = useCallback(async () => {
-    const ctor = window.DeviceOrientationEvent as OrientationEventConstructor;
-    if (typeof ctor.requestPermission !== 'function') return;
-    try {
-      const result = await ctor.requestPermission();
-      if (result === 'granted') {
-        setListening(true);
-      } else {
-        setStatus('denied');
-      }
-    } catch {
-      setStatus('denied');
-    }
-  }, []);
+  let status: CompassStatus;
+  if (!supported) status = 'unsupported';
+  else if (heading !== null) status = 'active';
+  else if (permission === 'denied') status = 'denied';
+  else if (permission === 'unknown') status = 'needs-permission';
+  else status = timedOut ? 'unsupported' : 'waiting';
 
-  return { heading, status, requestPermission };
+  return { heading, status };
 }

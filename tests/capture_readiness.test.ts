@@ -35,18 +35,20 @@ describe('Capture Readiness Tests', () => {
     });
   });
 
-  it('asks for compass permission on iOS', () => {
+  it('asks for a tap when iOS still needs compass permission', () => {
     expect(getCaptureReadiness({ ...everythingReady, heading: null, compassStatus: 'needs-permission' })).toEqual({
       ready: false,
       blocker: 'compass-permission',
-      message: 'Tap Enable compass to record the direction',
+      message: 'Tap the screen to start the compass',
     });
   });
 
   it('explains why there is no heading', () => {
     const noHeading = { ...everythingReady, heading: null };
     expect(getCaptureReadiness({ ...noHeading, compassStatus: 'waiting' }).message).toBe('Waiting for compass…');
-    expect(getCaptureReadiness({ ...noHeading, compassStatus: 'denied' }).message).toBe('Compass permission was denied');
+    expect(getCaptureReadiness({ ...noHeading, compassStatus: 'denied' }).message).toBe(
+      'Allow motion access for this site in Settings to map a grave'
+    );
     expect(getCaptureReadiness({ ...noHeading, compassStatus: 'unsupported' })).toEqual({
       ready: false,
       blocker: 'compass',
