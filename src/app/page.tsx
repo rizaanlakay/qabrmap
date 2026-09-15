@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Cemetery, Grave, DeviceTelemetry, AIStructuredExtraction, CaptureSaveAttempt, Survey, SurveyCapture } from '@/types';
 import { dataStore } from '@/lib/data/store';
 import { getGraveIdFromUrl, withGraveParam } from '@/lib/share/graveLink';
+import type { VisitFix } from '@/lib/graves/visits';
 import { compassPermission } from '@/lib/device/compass';
 import { surveyStore } from '@/lib/surveys/surveyStore';
 import {
@@ -373,6 +374,16 @@ function QabrMapAppContent() {
     setCurrentNavTab('home');
     setCurrentScreen('grave-details');
   };
+
+  // Only signed-in visitors can confirm a grave, so the screens get no handler otherwise
+  const handleConfirmVisit = user
+    ? async (grave: Grave, fix: VisitFix) => {
+        const updated = await dataStore.recordGraveVisit(grave, fix);
+        setSelectedGrave(updated);
+        setGraves((list) => list.map((item) => (item.id === updated.id ? updated : item)));
+        return updated;
+      }
+    : undefined;
 
   // Sync Now on the offline screen wakes the survey queue
   const handleTriggerSync = async () => {

@@ -22,7 +22,8 @@ import {
   deleteMappedGrave,
   staleGraveIds,
 } from '../graves/deleteMappedGrave';
-import { SaveGraveError, NOT_SET_UP_MESSAGE } from '../supabase/saveGraveErrors';
+import { SaveGraveError, NOT_SET_UP_MESSAGE, OFFLINE_MESSAGE, mapSaveGraveError } from '../supabase/saveGraveErrors';
+import { applyVisitResult, parseVisitResult, VISIT_FAILED_MESSAGE, VisitFix } from '../graves/visits';
 import { GRAVE_PHOTOS_BUCKET, deleteGravePhoto, uploadGravePhoto } from '../supabase/storage';
 import { isMissingTableError } from '../supabase/errors';
 import { cemeteryCoveragePercent } from './cemeteryStats';
@@ -638,6 +639,26 @@ class DataStore {
     if (!isSupabaseConfigured || !supabase) return [];
     if (typeof navigator !== 'undefined' && !navigator.onLine) return [];
     return lookUpMatchingGraves(supabase, params);
+  }
+
+  // "I found it" at the grave. The database averages the fix into the grave's position and answers with the result.
+  async recordGraveVisit(grave: Grave, fix: VisitFix): Promise<Grave> {
+    if (!isSupabaseConfigured || !supabase) throw new SaveGraveError('not-set-up', NOT_SET_UP_MESSAGE);
+    if (typeof navigator !== 'undefined' && !navigator.onLine) throw new SaveGraveError('offline', OFFLINE_MESSAGE);
+
+    const { data, error } = await supabase.rpc('record_grave_visit', {
+      p_grave_id: grave.id,
+      p_latitude: fix.lat,
+      p_longitude: fix.lng,
+      p_accuracy_meters: Number(fix.accuracy.toFixed(1)),
+    });
+    if (error) throw mapSaveGraveError(error);
+    const result = parseVisitResult(data);
+    if (!result) throw new SaveGraveError('unknown', VISIT_FAILED_MESSAGE);
+
+    const updated = applyVisitResult(grave, result);
+    if (typeof window !== 'undefined') offlineDb.graves.put(updated).catch(() => {});
+    return updated;
   }
 
   // --- PROVENANCE ---
