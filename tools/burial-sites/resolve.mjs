@@ -37,7 +37,7 @@ if (!GOOGLE_KEY) {
 mkdirSync(CACHE, { recursive: true });
 
 // Every request is cached by a hash of its url and body, so the review file is regenerated without new calls
-async function cachedJson(name, url, init) {
+async function cachedJson(name, url, init, validate) {
   const hash = createHash('sha1').update(url + (init?.body || '')).digest('hex').slice(0, 16);
   const file = path.join(CACHE, `${name}-${hash}.json`);
   if (existsSync(file)) return JSON.parse(readFileSync(file, 'utf8'));
@@ -45,8 +45,13 @@ async function cachedJson(name, url, init) {
   const response = await fetch(url, init);
   const text = await response.text();
   if (!response.ok) throw new Error(`${name} ${response.status}: ${text.slice(0, 300)}`);
+  const data = JSON.parse(text);
+  if (validate) {
+    const problem = validate(data);
+    if (problem) throw new Error(problem);
+  }
   writeFileSync(file, text);
-  return JSON.parse(text);
+  return data;
 }
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -76,18 +81,27 @@ async function placesSearch(textQuery, anchor, includedType) {
 
 async function geocode(address) {
   const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&region=za&key=${GOOGLE_KEY}`;
-  const data = await cachedJson('geocode', url);
+  const data = await cachedJson('geocode', url, undefined, (data) =>
+    data.status === 'OK' || data.status === 'ZERO_RESULTS'
+      ? null
+      : `Geocoding refused the request: ${data.status}${data.error_message ? ' (' + data.error_message + ')' : ''}`
+  );
   const first = data?.results?.[0];
   if (!first) return null;
   return { lat: first.geometry.location.lat, lng: first.geometry.location.lng, formatted: first.formatted_address };
 }
 
 async function overpass(query) {
-  const data = await cachedJson('overpass', 'https://overpass-api.de/api/interpreter', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `data=${encodeURIComponent(query)}`,
-  });
+  const data = await cachedJson(
+    'overpass',
+    'https://overpass-api.de/api/interpreter',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `data=${encodeURIComponent(query)}`,
+    },
+    (data) => (data.remark ? `Overpass returned a remark: ${data.remark}` : null)
+  );
   await sleep(1000);
   return data?.elements || [];
 }
