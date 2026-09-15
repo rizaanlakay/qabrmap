@@ -2,10 +2,13 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { X, Compass } from 'lucide-react';
+import { X } from 'lucide-react';
 import { Grave } from '@/types';
 import { calculateDistanceMeters, calculateBearing } from '@/lib/geospatial';
 import { useWakeLock } from '@/lib/device/useWakeLock';
+import { useCompassHeading } from '@/lib/device/useCompassHeading';
+import type { CompassStatus } from '@/lib/device/compass';
+import { graveNumberLabel } from '@/lib/ui/graveLabels';
 
 interface ARGuidanceScreenProps {
   targetGrave: Grave;
@@ -30,6 +33,14 @@ function describeCameraError(err: unknown): string {
   return 'Camera unavailable';
 }
 
+// Shown instead of turn directions until the compass reports a heading
+function describeMissingHeading(status: CompassStatus): string {
+  if (status === 'needs-permission') return 'Tap the screen to start the compass';
+  if (status === 'denied') return 'Allow motion access for this site in Settings';
+  if (status === 'unsupported') return 'Compass not available on this device';
+  return 'Waiting for compass…';
+}
+
 export const ARGuidanceScreen: React.FC<ARGuidanceScreenProps> = ({
   targetGrave,
   userLocation,
@@ -42,7 +53,8 @@ export const ARGuidanceScreen: React.FC<ARGuidanceScreenProps> = ({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [cameraStatus, setCameraStatus] = useState<CameraStatus>('starting');
   const [cameraError, setCameraError] = useState<string | null>(null);
-  const [phoneHeading, setPhoneHeading] = useState(62);
+  // The same always-on, true-north compass Capture saves with every grave, so it can't be switched off or faked
+  const { heading: phoneHeading, status: compassStatus } = useCompassHeading();
 
   // Compute live distance and bearing if user location provided
   const liveDistance = userLocation
@@ -53,13 +65,15 @@ export const ARGuidanceScreen: React.FC<ARGuidanceScreenProps> = ({
     ? calculateBearing(userLocation.lat, userLocation.lng, targetGrave.latitude, targetGrave.longitude)
     : 62;
 
-  // Calculate relative angle difference between phone heading and target bearing
-  const diffAngle = ((targetBearing - phoneHeading + 540) % 360) - 180; // -180 to +180
+  // Relative angle between where the phone points and the grave; the path stays straight until the compass reports
+  const diffAngle = phoneHeading === null ? 0 : ((targetBearing - phoneHeading + 540) % 360) - 180; // -180 to +180
   const arrived = liveDistance <= 3;
 
   let guidanceText = 'Keep straight';
   if (arrived) {
     guidanceText = 'Arrived at Grave Area';
+  } else if (phoneHeading === null) {
+    guidanceText = describeMissingHeading(compassStatus);
   } else if (Math.abs(diffAngle) > 120) {
     guidanceText = 'Turn Around';
   } else if (diffAngle > 35) {
@@ -112,24 +126,8 @@ export const ARGuidanceScreen: React.FC<ARGuidanceScreenProps> = ({
     };
   }, []);
 
-  // Compass listener
-  useEffect(() => {
-    const handleOrientation = (e: DeviceOrientationEvent) => {
-      // @ts-expect-error - webkitCompassHeading
-      const h = e.webkitCompassHeading || (e.alpha ? 360 - e.alpha : null);
-      if (h !== null) setPhoneHeading(Math.round(h));
-    };
-
-    if (window.DeviceOrientationEvent) {
-      window.addEventListener('deviceorientation', handleOrientation);
-    }
-
-    return () => {
-      window.removeEventListener('deviceorientation', handleOrientation);
-    };
-  }, []);
-
   const cameraLive = cameraStatus === 'live';
+  const numberLabel = graveNumberLabel(targetGrave);
 
   return (
     <div className="flex-1 flex flex-col relative bg-black overflow-hidden select-none">
@@ -179,13 +177,8 @@ export const ARGuidanceScreen: React.FC<ARGuidanceScreenProps> = ({
           )}
         </div>
 
-        <button
-          onClick={() => setPhoneHeading((h) => (h + 30) % 360)}
-          className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center hover:bg-white/30"
-          title="Simulate heading rotate"
-        >
-          <Compass className="w-4 h-4 text-emerald-400" />
-        </button>
+        {/* Keeps the title centred now that there is no compass button */}
+        <div className="w-9 h-9" aria-hidden="true" />
       </div>
 
       {/* 3D ground path: a plane tilted away from the viewer, turned toward the target */}
@@ -259,11 +252,11 @@ export const ARGuidanceScreen: React.FC<ARGuidanceScreenProps> = ({
           {/* Details */}
           <div className="flex-1 min-w-0">
             <h2 className="text-xs font-bold text-slate-900 truncate">
-              {targetGrave.person?.fullName || 'Grave'}
+              {targetGrave.person?.fullName || numberLabel || 'Grave'}
             </h2>
-            <div className="text-[11px] text-emerald-700 font-semibold mt-0.5">
-              Grave {targetGrave.graveNumber}
-            </div>
+            {numberLabel && (
+              <div className="text-[11px] text-emerald-700 font-semibold mt-0.5">{numberLabel}</div>
+            )}
             <div className="text-[10px] text-slate-500 truncate mt-0.5">
               {targetGrave.cemeteryName || 'Athlone Muslim Cemetery'}
             </div>
