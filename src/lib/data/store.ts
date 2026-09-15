@@ -13,7 +13,9 @@ import {
 import { MOCK_CEMETERIES, MOCK_GRAVES, MOCK_ACTIVE_SURVEY_SESSION } from './mockData';
 import { offlineDb } from '../offline/db';
 import { supabase, isSupabaseConfigured } from '../supabase/client';
-import { mapDbCemetery, mapDbGrave, mapDbGravePhoto, graveToDb, personToDb } from '../supabase/mappers';
+import { mapDbCemetery, mapDbGrave, mapDbGravePhoto } from '../supabase/mappers';
+import { saveMappedGrave, SaveMappedGraveInput } from '../capture/saveMappedGrave';
+import { SaveGraveError, NOT_SET_UP_MESSAGE, UNKNOWN_SAVE_MESSAGE } from '../supabase/saveGraveErrors';
 import { deleteGravePhoto, uploadGravePhoto } from '../supabase/storage';
 import { isMissingTableError } from '../supabase/errors';
 import { cemeteryCoveragePercent } from './cemeteryStats';
@@ -32,8 +34,6 @@ export interface MyCemeteryGraveEntry {
 class DataStore {
   private isInitialized = false;
   private memoryCemeteries: Cemetery[] = [...MOCK_CEMETERIES];
-  // Only graves saved on this device when the cloud is unavailable; there is no built-in sample data
-  private memoryGraves: Grave[] = [];
   private activeSurvey: SurveySession = { ...MOCK_ACTIVE_SURVEY_SESSION };
   private corrections: Correction[] = [];
   private savedCemeteries: Set<string> = new Set();
@@ -345,7 +345,8 @@ class DataStore {
         console.warn('Could not count graves, using this device:', err);
       }
     }
-    if (typeof window === 'undefined') return null;
+    // No IndexedDB during server rendering or in Node
+    if (typeof indexedDB === 'undefined') return null;
     try {
       return await offlineDb.graves.where('cemeteryId').equals(cemeteryId).count();
     } catch {
@@ -383,6 +384,11 @@ class DataStore {
     return this.memoryCemeteries;
   }
 
+  // Graves from the database don't carry their cemetery's name, which screens show
+  private cemeteryNameFor(cemeteryId: string): string | undefined {
+    return this.memoryCemeteries.find((cemetery) => cemetery.id === cemeteryId)?.name;
+  }
+
   async getCemeteryById(id: string): Promise<Cemetery | undefined> {
     const list = await this.getCemeteries();
     return list.find((c) => c.id === id);
@@ -415,7 +421,7 @@ class DataStore {
     }
 
     // 2. Offline or unreachable: use the graves cached on this device
-    if (!loadedFromCloud && typeof window !== 'undefined') {
+    if (!loadedFromCloud && typeof indexedDB !== 'undefined') {
       try {
         if (cemeteryId) {
           resultList = await offlineDb.graves.where('cemeteryId').equals(cemeteryId).toArray();
@@ -425,18 +431,10 @@ class DataStore {
       } catch (e) {}
     }
 
-    // 3. No cloud and no cache: only graves saved during this visit
-    if (!loadedFromCloud && resultList.length === 0) {
-      if (cemeteryId) {
-        resultList = this.memoryGraves.filter((g) => g.cemeteryId === cemeteryId);
-      } else {
-        resultList = this.memoryGraves;
-      }
-    }
-
     // Attach saved personal relationships (Family, Friend, Coworker, etc.)
     return resultList.map((g) => ({
       ...g,
+      cemeteryName: g.cemeteryName || this.cemeteryNameFor(g.cemeteryId),
       relationship: this.relationships.get(g.id),
     }));
   }
@@ -453,6 +451,7 @@ class DataStore {
 
         if (!error && data) {
           const grave = mapDbGrave(data);
+          grave.cemeteryName = this.cemeteryNameFor(grave.cemeteryId);
           grave.relationship = this.relationships.get(grave.id);
           return grave;
         }
@@ -566,92 +565,29 @@ class DataStore {
     });
   }
 
-  async saveNewGrave(grave: Grave): Promise<Grave> {
-    const rawPhoto = grave.primaryPhotoUrl;
-    const isBase64 = typeof rawPhoto === 'string' && rawPhoto.startsWith('data:');
+  // Saves a grave captured on this device. Needs a signed-in user and a connection; throws SaveGraveError.
+  async saveNewGrave(input: SaveMappedGraveInput): Promise<Grave> {
+    if (!isSupabaseConfigured || !supabase) throw new SaveGraveError('not-set-up', NOT_SET_UP_MESSAGE);
 
-    if (isBase64) {
-      if (isSupabaseConfigured && supabase && typeof navigator !== 'undefined' && navigator.onLine) {
-        try {
-          const uploadRes = await uploadGravePhoto({
-            file: rawPhoto,
-            cemeteryId: grave.cemeteryId,
-            graveId: grave.id,
-          });
-          if (uploadRes?.publicUrl) {
-            grave.primaryPhotoUrl = uploadRes.publicUrl;
-          }
-        } catch (uploadErr) {
-          console.warn('Direct photo upload to Supabase storage failed, queuing for offline sync:', uploadErr);
-          if (typeof window !== 'undefined') {
-            await offlineDb.offlineUploadQueue.add({
-              id: `queue_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-              graveId: grave.id,
-              cemeteryId: grave.cemeteryId,
-              photoBlob: rawPhoto,
-              telemetry: {
-                latitude: grave.latitude,
-                longitude: grave.longitude,
-                gpsAccuracy: grave.positionAccuracyMeters,
-                headingDegrees: grave.orientationDegrees || 0,
-                timestamp: new Date().toISOString(),
-              },
-              status: 'queued',
-              retryCount: 0,
-              createdAt: new Date().toISOString(),
-            }).catch(() => {});
-          }
-        }
-      } else {
-        // Offline or not configured: queue photo for background sync
-        if (typeof window !== 'undefined') {
-          await offlineDb.offlineUploadQueue.add({
-            id: `queue_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-            graveId: grave.id,
-            cemeteryId: grave.cemeteryId,
-            photoBlob: rawPhoto,
-            telemetry: {
-              latitude: grave.latitude,
-              longitude: grave.longitude,
-              gpsAccuracy: grave.positionAccuracyMeters,
-              headingDegrees: grave.orientationDegrees || 0,
-              timestamp: new Date().toISOString(),
-            },
-            status: 'queued',
-            retryCount: 0,
-            createdAt: new Date().toISOString(),
-          }).catch(() => {});
-        }
-      }
-    }
+    const graveId = await saveMappedGrave(input, {
+      client: supabase,
+      isOnline: () => typeof navigator === 'undefined' || navigator.onLine,
+      uploadPhoto: uploadGravePhoto,
+      deletePhoto: deleteGravePhoto,
+      newId: () => crypto.randomUUID(),
+    });
 
-    this.memoryGraves.unshift(grave);
+    const saved = await this.getGraveById(graveId);
+    if (!saved) throw new SaveGraveError('unknown', UNKNOWN_SAVE_MESSAGE);
 
-    // Save to local IndexedDB
     if (typeof window !== 'undefined') {
-      try {
-        await offlineDb.graves.put(grave);
-      } catch (e) {
-        console.warn('Failed to save to local IndexedDB', e);
-      }
-    }
-
-    // Save to Supabase Cloud
-    if (isSupabaseConfigured && supabase) {
-      try {
-        if (grave.person) {
-          await supabase.from('persons').upsert(personToDb(grave.person), { onConflict: 'id' });
-        }
-        await supabase.from('graves').upsert(graveToDb(grave), { onConflict: 'id' });
-      } catch (err) {
-        console.warn('Failed to sync new grave to Supabase:', err);
-      }
+      offlineDb.graves.put(saved).catch(() => {});
     }
 
     // Update active survey counts
     this.activeSurvey.capturedCount++;
     this.activeSurvey.processedCount++;
-    return grave;
+    return saved;
   }
 
   // --- SURVEY SESSIONS ---

@@ -1,5 +1,7 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import 'fake-indexeddb/auto';
+import { describe, it, expect } from 'vitest';
 import { dataStore } from '../src/lib/data/store';
+import { offlineDb } from '../src/lib/offline/db';
 import { Grave, GraveRelationship } from '../src/types';
 
 function testGrave(id: string, overrides: Partial<Grave> = {}): Grave {
@@ -102,8 +104,11 @@ describe('My Cemeteries & Grave Relationship System', () => {
   });
 
   it('should filter search results by loved ones and show grave counts', async () => {
-    await dataStore.saveNewGrave(testGrave('grave_test_grandmother'));
-    await dataStore.saveNewGrave(testGrave('grave_test_unrelated', { graveNumber: '1403' }));
+    // Graves reach the device from the cloud; here they are placed in the offline cache directly
+    await offlineDb.graves.bulkPut([
+      testGrave('grave_test_grandmother'),
+      testGrave('grave_test_unrelated', { graveNumber: '1403' }),
+    ]);
     dataStore.saveGraveRelationship({
       graveId: 'grave_test_grandmother',
       category: 'family',
@@ -115,10 +120,11 @@ describe('My Cemeteries & Grave Relationship System', () => {
     const savedResults = await dataStore.searchGraves('', 'saved');
     expect(savedResults.map((g) => g.id)).toEqual(['grave_test_grandmother']);
     expect(savedResults[0].relationship).toBeDefined();
+    expect(savedResults[0].cemeteryName).toBe('Mowbray Muslim Cemetery');
 
     const mowbray = await dataStore.getCemeteryById('cem_mowbray');
-    // Without a connection or offline cache in tests there is nothing to count, so it reports 0
-    expect(mowbray?.mappedGravesCount).toBe(0);
+    // Without a connection the count comes from the graves cached on this device
+    expect(mowbray?.mappedGravesCount).toBe(2);
   });
 
   it('should return My cemeteries list with Grandmother at Mowbray showing Name, Surname, DOD, and relation', async () => {

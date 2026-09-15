@@ -19,7 +19,6 @@ import {
   Calendar
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthContext';
-import { dataStore } from '@/lib/data/store';
 import { Cemetery, RelationshipCategory } from '@/types';
 
 interface RegisterScreenProps {
@@ -110,44 +109,6 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
         setErrorMessage(error);
         setLoading(false);
         return;
-      }
-
-      // 2. If user provided a loved one, save it into DataStore
-      if (hasLovedOne && lovedOneName.trim()) {
-        const dummyGraveId = `grave_user_loved_${Date.now()}`;
-        const newGrave = {
-          id: dummyGraveId,
-          cemeteryId: selectedCemeteryId,
-          graveNumber: 'NEW',
-          latitude: -33.967521,
-          longitude: 18.503277,
-          positionAccuracyMeters: 3.0,
-          positionConfidence: 'HIGH' as const,
-          status: 'MAPPED' as const,
-          primaryPhotoUrl: '/sample-gravestone.svg',
-          photoCount: 1,
-          person: {
-            id: `person_${dummyGraveId}`,
-            firstName: lovedOneName.trim().split(' ')[0] || lovedOneName,
-            surname: lovedOneName.trim().split(' ').slice(1).join(' ') || '',
-            fullName: lovedOneName.trim(),
-            gender: 'unknown' as const,
-          },
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-
-        // Save grave to data store
-        await dataStore.saveNewGrave(newGrave);
-
-        // Save relationship
-        dataStore.saveGraveRelationship({
-          graveId: dummyGraveId,
-          category: relationshipCategory,
-          specificRelation: specificRelation,
-          notes: lovedOneNote.trim() || 'Saved during registration',
-          savedAt: new Date().toISOString(),
-        });
       }
 
       // Move to success step 5
@@ -647,7 +608,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
               <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm text-left max-w-xs mx-auto">
                 <div className="flex items-center space-x-2 text-xs font-semibold text-slate-800">
                   <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
-                  <span>Saved to My Cemeteries:</span>
+                  <span>Next, find or map their grave:</span>
                 </div>
                 <p className="text-sm font-bold text-brand-dark mt-1">
                   {lovedOneName}
@@ -660,6 +621,9 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
                     {cemeteries.find((c) => c.id === selectedCemeteryId)?.name || 'Cemetery'}
                   </span>
                 </div>
+                <p className="text-[11px] text-slate-500 mt-2">
+                  Search for the grave, or photograph it with Capture, then tap the heart to save it to My Cemeteries.
+                </p>
               </div>
             )}
 

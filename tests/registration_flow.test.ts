@@ -1,5 +1,7 @@
+import 'fake-indexeddb/auto';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { dataStore } from '../src/lib/data/store';
+import { offlineDb } from '../src/lib/offline/db';
 import { isSupabaseConfigured } from '../src/lib/supabase/client';
 
 describe('New User Registration & Onboarding Flow', () => {
@@ -12,9 +14,10 @@ describe('New User Registration & Onboarding Flow', () => {
     expect(typeof isSupabaseConfigured).toBe('boolean');
   });
 
-  it('should successfully save a newly registered loved one into My Cemeteries', async () => {
+  it("shows a loved one's grave in My Cemeteries once a relationship is saved", async () => {
     const uniqueId = `grave_reg_test_${Date.now()}`;
-    const lovedOneGrave = {
+    // Registration no longer creates graves; this one is already mapped and cached on the device
+    await offlineDb.graves.put({
       id: uniqueId,
       cemeteryId: 'cem_mowbray',
       graveNumber: 'REG-101',
@@ -34,12 +37,8 @@ describe('New User Registration & Onboarding Flow', () => {
       },
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-    };
+    });
 
-    // Save newly entered grave
-    await dataStore.saveNewGrave(lovedOneGrave);
-
-    // Save relationship created during registration
     dataStore.saveGraveRelationship({
       graveId: uniqueId,
       category: 'family',
@@ -66,7 +65,7 @@ describe('New User Registration & Onboarding Flow', () => {
 
   it('should maintain user count when new relationships are added', () => {
     const initialCount = dataStore.getMyCemeteriesGraveCount();
-    expect(initialCount).toBeGreaterThanOrEqual(1); // The loved one registered in the previous test
+    expect(initialCount).toBeGreaterThanOrEqual(1); // The loved one saved in the previous test
   });
 
   it('supports Google OAuth provider for Sign In and Account Creation', async () => {
