@@ -29,7 +29,7 @@ Capture looks like it saves a grave, but the grave never reaches Supabase.
 | Topic | Decision |
 |---|---|
 | Sign-in | Required before capturing a new grave |
-| Write path | Browser writes directly, protected by row level security, with `created_by` on graves and persons |
+| Write path | One database function, `create_mapped_grave`, that checks the signed-in user and records `created_by` on graves and persons. No direct INSERT rights on either table |
 | Visibility | Public immediately, marked unverified |
 | Cemetery | Chosen automatically from GPS and boundary, user can change it |
 | Photo source | Live in-app camera only. Upload is removed everywhere, including Add Photo |
@@ -56,9 +56,7 @@ New migration `supabase/migrations/20260915120000_create_mapped_grave.sql`, safe
 
 ### Policies
 
-- `persons` INSERT to `authenticated` with check `created_by = (select auth.uid())`.
-- `graves` INSERT to `authenticated` with check `created_by = (select auth.uid())`.
-- No UPDATE or DELETE policies on either table.
+- No INSERT, UPDATE or DELETE policies on `graves` or `persons`. With row level security on and no policy, the API rejects direct writes, so the only way to add a grave is `create_mapped_grave`. Open INSERT policies would let a client skip the function and insert a grave as `VERIFIED` with no photo or GPS checks.
 - `storage.objects` DELETE to `authenticated` using `bucket_id = 'grave-photos' and owner_id = (select auth.uid())::text`. Today only INSERT exists, so the existing "delete the orphaned file" cleanup in `addGravePhoto` silently fails. This policy fixes that path and the new one.
 
 ### Duplicate grave numbers
@@ -69,7 +67,7 @@ Partial unique index on `graves (cemetery_id, grave_number) where grave_number <
 
 Runs the three inserts in one transaction so a grave is never half saved.
 
-- `security invoker`, `set search_path = ''`, so the policies above still decide what the caller may insert.
+- `security definer`, `set search_path = ''`. It is the only write path, so it checks `(select auth.uid())` is not null first (raising `42501`) and stamps that id into `persons.created_by`, `graves.created_by` and `grave_photos.uploaded_by` itself.
 - `revoke execute ... from public, anon`, `grant execute ... to authenticated`.
 - Parameters: grave id, person id, cemetery id, grave number, first name, middle names, surname, nickname, birth date, death date, latitude, longitude, GPS accuracy in metres, heading in degrees, captured at, photo public URL, photo storage path.
 - Validation, raising `22023` (invalid parameter) with a readable message:
@@ -231,10 +229,16 @@ Errors show inline above the buttons. The form keeps every value. The button sho
 Read the migration file as text, like `tests/grave_photos.test.ts`, and check:
 
 - `created_by` on both tables, and the nickname column
-- INSERT policies with `(select auth.uid())` and no bare `auth.uid()` in policies
+- no INSERT, UPDATE or DELETE policies on `graves` or `persons`, and no bare `auth.uid()`
 - the partial unique index
-- `create_mapped_grave` is `security invoker` with `set search_path = ''`, not executable by `anon`
+- `create_mapped_grave` is `security definer` with `set search_path = ''`, checks the caller, and is not executable by `anon`
 - the storage DELETE policy
+
+### Notes added while planning
+
+- The compass hook also has a `waiting` status (listening, no reading yet). It becomes `unsupported` after 3 seconds without a reading, which is what laptops do.
+- Graves loaded from the database don't carry a cemetery name, so screens fell back to "Athlone Muslim Cemetery". The store now fills in `cemeteryName` from the loaded cemeteries.
+- Navigation map markers build HTML strings. Names and entrance names are escaped with a small `escapeHtml` helper, because they are now typed in by users.
 
 ### Manual end-to-end
 
