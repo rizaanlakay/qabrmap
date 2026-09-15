@@ -1156,8 +1156,9 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
   return (
     <div ref={rootRef} className="flex-1 flex flex-col relative bg-slate-950 overflow-hidden select-none">
       {/* Top Floating Navigation Bar */}
-      <div className="absolute top-0 inset-x-0 z-20 px-4 pt-3 pb-2 bg-gradient-to-b from-black/90 via-black/60 to-transparent flex items-center justify-between text-white pointer-events-auto">
-        <div className="flex items-center space-x-3">
+      <div className="absolute top-0 inset-x-0 z-20 px-4 pt-3 pb-2 bg-gradient-to-b from-black/90 via-black/60 to-transparent text-white pointer-events-auto">
+        {/* Controls first, left-aligned, so the mode toggle and End never run off a narrow screen */}
+        <div className="flex items-center space-x-2">
           <button
             onClick={onBack}
             className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center hover:bg-white/30 transition-colors shrink-0"
@@ -1165,22 +1166,6 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
           >
             <ArrowLeft className="w-5 h-5 stroke-[2.2]" />
           </button>
-          <div>
-            <h1 className="text-sm font-bold tracking-tight">
-              {activeMode === 'driving' ? 'Drive to Cemetery' : 'Navigate to Grave'}
-            </h1>
-            <p className="text-[11px] text-emerald-300 font-medium truncate max-w-[190px]">
-              {activeMode === 'driving'
-                ? `🚗 ${entranceName}`
-                : [targetGrave.person?.fullName || 'Grave', targetGrave.graveNumber && `Plot ${targetGrave.graveNumber}`]
-                    .filter(Boolean)
-                    .join(' • ')}
-            </p>
-          </div>
-        </div>
-
-        {/* Mode Toggle & End Button */}
-        <div className="flex items-center space-x-2">
           <div className="flex items-center bg-white/15 backdrop-blur-md p-0.5 rounded-full border border-white/20">
             <button
               onClick={() => {
@@ -1221,11 +1206,24 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
             End
           </button>
         </div>
+
+        <div className="mt-1.5 min-w-0">
+          <h1 className="text-sm font-bold tracking-tight">
+            {activeMode === 'driving' ? 'Drive to Cemetery' : 'Navigate to Grave'}
+          </h1>
+          <p className="text-[11px] text-emerald-300 font-medium truncate">
+            {activeMode === 'driving'
+              ? `🚗 ${entranceName}`
+              : [targetGrave.person?.fullName || 'Grave', targetGrave.graveNumber && `Plot ${targetGrave.graveNumber}`]
+                  .filter(Boolean)
+                  .join(' • ')}
+          </p>
+        </div>
       </div>
 
       {/* Garmin / Google Maps Turn Guidance Banner (Only in Driving Mode) */}
       {activeMode === 'driving' && (
-        <div className="absolute top-14 inset-x-3 z-20 pointer-events-auto transition-all duration-300">
+        <div className="absolute top-24 inset-x-3 z-20 pointer-events-auto transition-all duration-300">
           <div className="relative bg-emerald-800/95 backdrop-blur-md text-white rounded-2xl p-3.5 shadow-2xl border border-emerald-500/40 flex items-center justify-between">
             {/* Top-Right Maneuver Step Badge (e.g. 2/13) */}
             {drivingSteps.length > 1 && (
@@ -1312,7 +1310,7 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
         {/* GPS status: tells the driver when the arrow isn't following their real position */}
         {gpsStatus !== 'live' && (
           <div
-            className={`absolute left-3.5 z-20 pointer-events-none ${activeMode === 'driving' ? 'top-44' : 'top-16'}`}
+            className={`absolute left-3.5 z-20 pointer-events-none ${activeMode === 'driving' ? 'top-[13.5rem]' : 'top-[6.5rem]'}`}
             role="status"
           >
             <div
@@ -1351,7 +1349,7 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
         {/* Floating Controls Toolbar (Top Right) - Moved down below guidance card in driving mode */}
         <div
           className={`absolute right-3.5 z-20 flex flex-col space-y-2 pointer-events-auto transition-all ${
-            activeMode === 'driving' ? 'top-44' : 'top-16'
+            activeMode === 'driving' ? 'top-[13.5rem]' : 'top-[6.5rem]'
           }`}
         >
           {/* Layer Switcher (Satellite <-> Roadmap) */}
