@@ -42,6 +42,12 @@ export interface XR8Api {
       facing?: { w: number; x: number; y: number; z: number };
     }) => void;
     recenter: () => void;
+    // Estimates the 3D point under a screen position (0..1 from the top left) from the tracker's feature points
+    hitTest: (
+      x: number,
+      y: number,
+      includedTypes: Array<'FEATURE_POINT' | 'ESTIMATED_SURFACE' | 'DETECTED_SURFACE'>
+    ) => Array<{ type: string; position: { x: number; y: number; z: number }; distance: number }>;
   };
   XrConfig: { device: () => { ANY: unknown; MOBILE: unknown } };
 }

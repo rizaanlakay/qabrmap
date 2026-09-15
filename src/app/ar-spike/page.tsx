@@ -3,14 +3,21 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { createFloorLine } from '@/lib/ar/floorLine';
+import { createFloorEstimator } from '@/lib/ar/floorEstimate';
 import { loadXR8, XR8Api, XR8PipelineModule, XR_ENGINE_LICENSE_URL, XR_ENGINE_NOTICE } from '@/lib/ar/xr8';
 
 // Spike: does the 8th Wall engine binary track the floor well enough on our phones for a real AR line?
 // Not linked from anywhere. Open /ar-spike on the phone, allow the camera, move the phone slowly, and
 // watch whether the chevrons stay on the ground while you tilt, turn and walk.
 
-// Where the phone starts above the floor; the engine scales the world so the ground sits at y = 0
+// Where the phone starts above the floor until the real floor has been measured from tracked points
 const EYE_HEIGHT_M = 1.5;
+// Screen spots (0..1 from the top left) probed for ground points: the lower middle of the view
+const FLOOR_PROBES: Array<[number, number]> = [[0.3, 0.7], [0.5, 0.75], [0.7, 0.7], [0.5, 0.9]];
+// Probe every this many frames; hit tests are not free
+const FLOOR_PROBE_EVERY = 6;
+// How quickly the line follows the phone and the measured floor, per frame
+const FOLLOW_ALPHA = 0.08;
 
 type Phase = 'loading' | 'camera' | 'initialising' | 'tracking' | 'limited' | 'failed';
 
@@ -61,8 +68,10 @@ export default function ArSpikePage() {
       window.THREE = THREE;
 
       const line = createFloorLine();
+      const floor = createFloorEstimator();
       const startedAt = performance.now();
       let frameCount = 0;
+      let trackedCamera: THREE.PerspectiveCamera | null = null;
 
       const floorLineModule: XR8PipelineModule = {
         name: 'qabrmap-floor-line',
@@ -70,6 +79,7 @@ export default function ArSpikePage() {
           // The engine writes its own inline size on start; pin the canvas to the screen again
           fitCanvas();
           const { scene, camera } = XR8.Threejs.xrScene();
+          trackedCamera = camera;
           scene.add(line.group);
           camera.position.set(0, EYE_HEIGHT_M, 0);
           XR8.XrController.updateCameraProjectionMatrix({ origin: camera.position, facing: camera.quaternion });
@@ -78,13 +88,39 @@ export default function ArSpikePage() {
         onUpdate: ({ processCpuResult }) => {
           line.animate((performance.now() - startedAt) / 1000);
           frameCount += 1;
-          if (frameCount % 30 === 0) setFrames(frameCount);
           const reality = processCpuResult.reality;
-          if (reality) {
+          const camera = trackedCamera;
+
+          // Measure the floor from tracked points below the camera, a few screen spots at a time
+          if (camera && reality?.position && frameCount % FLOOR_PROBE_EVERY === 0) {
+            for (const [x, y] of FLOOR_PROBES) {
+              try {
+                for (const hit of XR8.XrController.hitTest(x, y, ['FEATURE_POINT', 'ESTIMATED_SURFACE'])) {
+                  floor.addSample(hit.position.y, camera.position.y);
+                }
+              } catch {
+                // No tracker on this device (desktop): the assumed floor stays
+              }
+            }
+          }
+
+          // The line starts at the phone's feet and sits on the measured floor, easing so it never jumps
+          if (camera) {
+            const floorY = floor.floorY();
+            const target = line.group.position;
+            target.x += (camera.position.x - target.x) * FOLLOW_ALPHA;
+            target.z += (camera.position.z - target.z) * FOLLOW_ALPHA;
+            if (floorY !== null) target.y += (floorY - target.y) * FOLLOW_ALPHA;
+          }
+
+          if (frameCount % 30 === 0) setFrames(frameCount);
+          if (reality && frameCount % 10 === 0) {
             // Desktop browsers report tracking status without a position, so the position is optional here
             const p = reality.position;
-            const where = p ? `  x ${p.x.toFixed(2)} y ${p.y.toFixed(2)} z ${p.z.toFixed(2)}` : '';
-            setDetail(`${reality.trackingStatus} ${reality.trackingReason}${where}`);
+            const where = p ? `  cam y ${p.y.toFixed(2)}` : '';
+            const floorY = floor.floorY();
+            const ground = floorY === null ? `  floor: measuring (${floor.sampleCount()} pts)` : `  floor y ${floorY.toFixed(2)}`;
+            setDetail(`${reality.trackingStatus} ${reality.trackingReason}${where}${ground}`);
           }
         },
         onCameraStatusChange: ({ status }) => {
