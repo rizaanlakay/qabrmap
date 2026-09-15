@@ -303,6 +303,29 @@ describe('Save Mapped Grave Tests', () => {
     expect(deps.deletePhoto).not.toHaveBeenCalled();
     expect(attempt.upload).toEqual(UPLOADED);
   });
+
+  it('saves the whole-grave photo after the grave and reports it', async () => {
+    const saveGravePhoto = vi.fn(async () => {});
+    const { deps } = makeDeps({ saveGravePhoto });
+    const result = await saveMappedGrave(input({ gravePhotoDataUrl: 'data:image/jpeg;base64,grave' }), deps);
+    expect(result).toMatchObject({ outcome: 'created', graveId: 'grave_id1', gravePhotoSaved: true });
+    expect(saveGravePhoto).toHaveBeenCalledWith('grave_id1', 'cem_athlone', 'data:image/jpeg;base64,grave');
+  });
+
+  it('keeps the saved grave when the whole-grave photo fails', async () => {
+    const saveGravePhoto = vi.fn(async () => {
+      throw new Error('storage down');
+    });
+    const result = await saveMappedGrave(input({ gravePhotoDataUrl: 'data:image/jpeg;base64,grave' }), makeDeps({ saveGravePhoto }).deps);
+    expect(result).toMatchObject({ outcome: 'created', gravePhotoSaved: false });
+  });
+
+  it('does not touch the whole-grave photo when none was taken', async () => {
+    const saveGravePhoto = vi.fn(async () => {});
+    const result = await saveMappedGrave(input(), makeDeps({ saveGravePhoto }).deps);
+    expect(saveGravePhoto).not.toHaveBeenCalled();
+    expect((result as { gravePhotoSaved?: boolean }).gravePhotoSaved).toBeUndefined();
+  });
 });
 
 describe('Saved Grave Fallback Tests', () => {

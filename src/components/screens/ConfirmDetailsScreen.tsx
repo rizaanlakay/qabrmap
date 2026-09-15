@@ -17,7 +17,9 @@ interface ConfirmDetailsScreenProps {
   capturedImage: string;
   telemetry: DeviceTelemetry;
   cemeteries: Cemetery[];
-  onSaved: (grave: Grave, outcome: 'created' | 'added-photo') => void;
+  // A whole-grave photo taken after a low-accuracy capture, saved once the grave is created
+  gravePhoto?: string;
+  onSaved: (grave: Grave, outcome: 'created' | 'added-photo', gravePhotoSaved?: boolean) => void;
   onRequireSignIn: () => void;
   onBack: () => void;
   // Survey review only: the capture's own save ids, cemetery and duplicate, plus a way to throw the photo away
@@ -41,6 +43,7 @@ export const ConfirmDetailsScreen: React.FC<ConfirmDetailsScreenProps> = ({
   capturedImage,
   telemetry,
   cemeteries,
+  gravePhoto,
   onSaved,
   onRequireSignIn,
   onBack,
@@ -130,6 +133,7 @@ export const ConfirmDetailsScreen: React.FC<ConfirmDetailsScreenProps> = ({
         attempt,
         matchMode,
         addToGraveId,
+        gravePhotoDataUrl: gravePhoto,
       });
       onAttemptChange?.(attempt);
       if (result.outcome === 'match-found') {
@@ -139,7 +143,7 @@ export const ConfirmDetailsScreen: React.FC<ConfirmDetailsScreenProps> = ({
         window.setTimeout(() => cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
         return;
       }
-      onSaved(result.grave, result.outcome);
+      onSaved(result.grave, result.outcome, result.gravePhotoSaved);
     } catch (err) {
       // An uploaded photo stays on the attempt, so the next try doesn't upload it again
       onAttemptChange?.(attempt);

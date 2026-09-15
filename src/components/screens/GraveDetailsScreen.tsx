@@ -34,6 +34,8 @@ interface GraveDetailsScreenProps {
   onDeleted?: () => void;
   // Changes after a photo is added, to reload this grave's photos
   photosVersion?: number;
+  // One-off message from the screen that opened this one, such as a photo that couldn't be saved
+  notice?: string | null;
 }
 
 export const GraveDetailsScreen: React.FC<GraveDetailsScreenProps> = ({
@@ -44,6 +46,7 @@ export const GraveDetailsScreen: React.FC<GraveDetailsScreenProps> = ({
   photosVersion = 0,
   canDelete = false,
   onDeleted,
+  notice = null,
 }) => {
   const [showProvenance, setShowProvenance] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
@@ -202,6 +205,12 @@ export const GraveDetailsScreen: React.FC<GraveDetailsScreenProps> = ({
           <div className="absolute top-full right-4 mt-2 flex items-center text-[11px] font-semibold text-white bg-slate-900/90 px-3 py-1.5 rounded-full shadow-lg">
             <CheckCircle2 className="w-3.5 h-3.5 mr-1 text-emerald-400" />
             {shareNotice}
+          </div>
+        )}
+        {!shareNotice && notice && (
+          <div className="absolute top-full right-4 mt-2 flex items-center text-[11px] font-semibold text-white bg-slate-900/90 px-3 py-1.5 rounded-full shadow-lg">
+            <AlertTriangle className="w-3.5 h-3.5 mr-1 text-amber-300" />
+            {notice}
           </div>
         )}
       </div>

@@ -38,7 +38,9 @@ export interface MyCemeteryGraveEntry {
   relationship?: GraveRelationship;
 }
 
-export type SaveNewGraveResult = { outcome: 'created' | 'added-photo'; grave: Grave } | MatchFoundResult;
+export type SaveNewGraveResult =
+  | { outcome: 'created' | 'added-photo'; grave: Grave; gravePhotoSaved?: boolean }
+  | MatchFoundResult;
 
 class DataStore {
   private isInitialized = false;
@@ -614,6 +616,9 @@ class DataStore {
       isOnline: () => typeof navigator === 'undefined' || navigator.onLine,
       uploadPhoto: uploadGravePhoto,
       deletePhoto: deleteGravePhoto,
+      saveGravePhoto: async (graveId, cemeteryId, dataUrl) => {
+        await this.addGravePhoto({ id: graveId, cemeteryId }, dataUrl, input.telemetry, 'grave');
+      },
     });
     if (result.outcome === 'match-found') return result;
 
@@ -625,7 +630,7 @@ class DataStore {
     if (typeof window !== 'undefined' && (fresh || result.outcome === 'created')) {
       offlineDb.graves.put(saved).catch(() => {});
     }
-    return { outcome: result.outcome, grave: saved };
+    return { outcome: result.outcome, grave: saved, gravePhotoSaved: result.gravePhotoSaved };
   }
 
   // Graves already mapped that may be this person. Empty offline or on any failure, because the save checks again.

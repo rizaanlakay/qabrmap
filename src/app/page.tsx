@@ -123,6 +123,8 @@ function QabrMapAppContent() {
   // Whole-grave photo taken after a low-accuracy capture; saved after the grave itself
   const [capturedGravePhoto, setCapturedGravePhoto] = useState<string | null>(null);
   const [extractedData, setExtractedData] = useState<AIStructuredExtraction>(EMPTY_EXTRACTION);
+  // Shown once on the grave details page after a save, for example when the whole-grave photo failed
+  const [detailsNotice, setDetailsNotice] = useState<string | null>(null);
 
   const { user, openAuthModal, loading: authLoading } = useAuth();
   const userId = user?.id;
@@ -283,6 +285,7 @@ function QabrMapAppContent() {
 
   // Back from grave details to wherever it was opened from
   const leaveGraveDetails = () => {
+    setDetailsNotice(null);
     if (previousScreen === 'my-cemeteries') setCurrentScreen('my-cemeteries');
     else if (previousScreen === 'cemetery-map') setCurrentScreen('cemetery-map');
     else if (previousScreen === 'home') setCurrentScreen('home');
@@ -357,10 +360,12 @@ function QabrMapAppContent() {
   };
 
   // A saved grave opens on its own details page
-  const handleGraveSaved = (saved: Grave, outcome: 'created' | 'added-photo') => {
+  const handleGraveSaved = (saved: Grave, outcome: 'created' | 'added-photo', gravePhotoSaved?: boolean) => {
     setSelectedGrave(saved);
     // The photo went onto a grave that was already mapped, so its photo carousel must reload
     if (outcome === 'added-photo') setGravePhotosVersion((v) => v + 1);
+    setDetailsNotice(gravePhotoSaved === false ? "The whole-grave photo couldn't be saved. You can add it from this page." : null);
+    setCapturedGravePhoto(null);
     const cemetery = cemeteries.find((c) => c.id === saved.cemeteryId);
     if (cemetery) setSelectedCemetery(cemetery);
     dataStore.getGraves(saved.cemeteryId).then(setGraves);
@@ -494,6 +499,7 @@ function QabrMapAppContent() {
               setCurrentScreen('capture');
             }}
             photosVersion={gravePhotosVersion}
+            notice={detailsNotice}
             canDelete={Boolean(user && selectedGrave.createdBy === user.id)}
             onDeleted={() => {
               const deletedId = selectedGrave.id;
@@ -567,6 +573,7 @@ function QabrMapAppContent() {
             capturedImage={capturedImage}
             telemetry={capturedTelemetry}
             cemeteries={cemeteries}
+            gravePhoto={capturedGravePhoto ?? undefined}
             title={reviewCapture ? 'Review Survey Photo' : undefined}
             defaultCemeteryId={reviewCapture?.cemeteryId}
             initialAttempt={reviewCapture?.attempt}
@@ -584,13 +591,13 @@ function QabrMapAppContent() {
                   }
                 : undefined
             }
-            onSaved={(grave, outcome) => {
+            onSaved={(grave, outcome, gravePhotoSaved) => {
               if (reviewCapture) {
                 void markCaptureSaved(reviewCapture.id, grave.id, outcome, reviewAttempt.current ?? reviewCapture.attempt);
                 setReviewCapture(null);
                 reviewAttempt.current = null;
               }
-              handleGraveSaved(grave, outcome);
+              handleGraveSaved(grave, outcome, gravePhotoSaved);
             }}
             onRequireSignIn={openAuthModal}
             onBack={() => (reviewCapture ? leaveReview() : setCurrentScreen('capture'))}

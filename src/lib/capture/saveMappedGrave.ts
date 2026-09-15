@@ -37,6 +37,8 @@ export interface SaveMappedGraveInput {
   matchMode: MatchMode;
   // Adds the photo to this grave instead of creating one
   addToGraveId?: string;
+  // Whole-grave photo taken after a low-accuracy capture, saved once the grave exists
+  gravePhotoDataUrl?: string;
 }
 
 // Passed in so the save can be tested without Supabase
@@ -45,6 +47,7 @@ export interface SaveMappedGraveDeps {
   isOnline: () => boolean;
   uploadPhoto: (options: UploadPhotoOptions) => Promise<UploadPhotoResult | null>;
   deletePhoto: (path: string) => Promise<boolean>;
+  saveGravePhoto?: (graveId: string, cemeteryId: string, dataUrl: string) => Promise<void>;
 }
 
 export interface SavedGraveResult {
@@ -52,6 +55,8 @@ export interface SavedGraveResult {
   graveId: string;
   personId: string;
   photoUrl: string;
+  // Only set when a whole-grave photo was given: false means the grave saved but the extra photo didn't
+  gravePhotoSaved?: boolean;
 }
 
 export interface MatchFoundResult {
@@ -161,7 +166,17 @@ export async function saveMappedGrave(input: SaveMappedGraveInput, deps: SaveMap
   if (!outcome) throw new SaveGraveError('unknown', UNKNOWN_SAVE_MESSAGE);
   // Nothing was written; the uploaded photo stays on the attempt for whichever choice the user makes next
   if (outcome.outcome === 'match-found') return outcome;
-  return { outcome: outcome.outcome, graveId: outcome.graveId, personId: attempt.personId, photoUrl: upload.publicUrl };
+  const saved: SavedGraveResult = { outcome: outcome.outcome, graveId: outcome.graveId, personId: attempt.personId, photoUrl: upload.publicUrl };
+  // The grave is saved at this point; the whole-grave photo is a bonus, so its failure is reported, not thrown
+  if (input.gravePhotoDataUrl && deps.saveGravePhoto) {
+    try {
+      await deps.saveGravePhoto(outcome.graveId, form.cemeteryId, input.gravePhotoDataUrl);
+      saved.gravePhotoSaved = true;
+    } catch {
+      saved.gravePhotoSaved = false;
+    }
+  }
+  return saved;
 }
 
 // The grave as the database stored it, for when it can't be read back straight after saving.
