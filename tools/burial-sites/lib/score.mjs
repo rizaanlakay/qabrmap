@@ -16,7 +16,7 @@ export function haversineMeters(lat1, lng1, lat2, lng2) {
 export function nameTokens(name) {
   return name
     .toLowerCase()
-    .replace(/[''']/g, '')
+    .replace(/[‘’']/g, '')
     .split(/[^a-z0-9]+/)
     .filter((token) => token && !FILLER.has(token));
 }

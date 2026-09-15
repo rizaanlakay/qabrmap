@@ -137,6 +137,7 @@ describe('score', () => {
   it('drops filler words from names before comparing', () => {
     expect(nameTokens('Mowbray Muslim Cemetery / Gamedia Maqbara')).toEqual(['mowbray', 'gamedia']);
     expect(nameTokens('Klip Road North Muslim Cemetery')).toEqual(['klip', 'north']);
+    expect(nameTokens('Mitchell’s Plain/Khayelitsha Muslim Cemetery (Swartklip)')).toContain('mitchells');
   });
 
   it('rejects a candidate beyond the anchor limit and scores closer, better-named cemeteries higher', () => {
