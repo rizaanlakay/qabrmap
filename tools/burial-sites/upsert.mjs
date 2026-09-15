@@ -2,7 +2,7 @@
 // Step 3 of the burial-sites import: write approved review.json entries to the cemeteries table.
 // Usage: node tools/burial-sites/upsert.mjs [--dry-run]
 
-import { existsSync, readFileSync, writeFileSync, appendFileSync } from 'node:fs';
+import { existsSync, readFileSync, appendFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createClient } from '@supabase/supabase-js';
@@ -53,6 +53,8 @@ function payloadFor(entry, isNew) {
     updated_at: new Date().toISOString(),
     ...(entry.overrides || {}),
   };
+  // The row id is never an override: a stray "id" in review.json must not redirect the write
+  payload.id = entry.id;
   if (manual) {
     payload.boundary = manual;
     payload.boundary_source = 'manual';
