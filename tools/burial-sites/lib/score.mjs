@@ -23,6 +23,7 @@ export function nameTokens(name) {
 
 // Score: up to 1 for closeness, up to 1 for shared name words, 0.5 for being a cemetery. Null when too far.
 export function scoreCandidate({ csvName, anchor, anchorKind, candidate }) {
+  if (!candidate.location) return null;
   const limit = ANCHOR_LIMITS[anchorKind];
   const distance = haversineMeters(anchor.lat, anchor.lng, candidate.location.latitude, candidate.location.longitude);
   if (distance > limit) return null;
@@ -35,6 +36,7 @@ export function scoreCandidate({ csvName, anchor, anchorKind, candidate }) {
 
 export function rankCandidates(row, anchor, anchorKind, candidates) {
   return candidates
+    .filter((candidate) => candidate.location)
     .map((candidate) => ({
       candidate,
       score: scoreCandidate({ csvName: row.cemetery_name, anchor, anchorKind, candidate }),

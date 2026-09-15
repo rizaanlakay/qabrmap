@@ -168,6 +168,15 @@ describe('score', () => {
     expect(ranked[0].candidate.displayName).toBe('Mowbray Muslim Cemetery');
     expect(ranked[0].distanceMeters).toBeCloseTo(0, 0);
   });
+
+  it('skips a candidate without a location instead of throwing', () => {
+    const good = google('Mowbray Muslim Cemetery', -33.93908, 18.46112);
+    const broken = { displayName: 'No Location', types: ['cemetery'] } as unknown as ReturnType<typeof google>;
+    expect(scoreCandidate({ csvName: 'Mowbray Muslim Cemetery', anchor, anchorKind: 'row', candidate: broken })).toBeNull();
+    const ranked = rankCandidates({ cemetery_name: 'Mowbray Muslim Cemetery' }, anchor, 'row', [broken, good]);
+    expect(ranked).toHaveLength(1);
+    expect(ranked[0].candidate.displayName).toBe('Mowbray Muslim Cemetery');
+  });
 });
 
 describe('overpass', () => {
