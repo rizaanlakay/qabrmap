@@ -8,6 +8,7 @@ import { dataStore } from '@/lib/data/store';
 import { findCemeteryForLocation } from '@/lib/capture/cemeteryForLocation';
 import { NewGraveForm, validateNewGraveForm } from '@/lib/capture/newGrave';
 import { SaveGraveError, UNKNOWN_SAVE_MESSAGE } from '@/lib/supabase/saveGraveErrors';
+import { createSaveAttempt } from '@/lib/capture/saveMappedGrave';
 
 interface ConfirmDetailsScreenProps {
   initialData: AIStructuredExtraction;
@@ -48,6 +49,8 @@ export const ConfirmDetailsScreen: React.FC<ConfirmDetailsScreenProps> = ({
     deathDate: initialData.deathDate || '',
     cemeteryId: detectedCemetery?.id || '',
   }));
+  // Kept across Save retries, so a retry after a lost response reuses the same photo and grave id
+  const [attempt] = useState(createSaveAttempt);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -77,6 +80,7 @@ export const ConfirmDetailsScreen: React.FC<ConfirmDetailsScreenProps> = ({
         cemeteryName: selectedCemetery?.name,
         photoDataUrl: capturedImage,
         telemetry,
+        attempt,
       });
       onSaved(grave);
     } catch (err) {

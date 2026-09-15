@@ -14,8 +14,8 @@ import { MOCK_CEMETERIES, MOCK_GRAVES, MOCK_ACTIVE_SURVEY_SESSION } from './mock
 import { offlineDb } from '../offline/db';
 import { supabase, isSupabaseConfigured } from '../supabase/client';
 import { mapDbCemetery, mapDbGrave, mapDbGravePhoto } from '../supabase/mappers';
-import { saveMappedGrave, SaveMappedGraveInput } from '../capture/saveMappedGrave';
-import { SaveGraveError, NOT_SET_UP_MESSAGE, UNKNOWN_SAVE_MESSAGE } from '../supabase/saveGraveErrors';
+import { buildSavedGrave, saveMappedGrave, SaveMappedGraveInput } from '../capture/saveMappedGrave';
+import { SaveGraveError, NOT_SET_UP_MESSAGE } from '../supabase/saveGraveErrors';
 import { deleteGravePhoto, uploadGravePhoto } from '../supabase/storage';
 import { isMissingTableError } from '../supabase/errors';
 import { cemeteryCoveragePercent } from './cemeteryStats';
@@ -569,16 +569,17 @@ class DataStore {
   async saveNewGrave(input: SaveMappedGraveInput): Promise<Grave> {
     if (!isSupabaseConfigured || !supabase) throw new SaveGraveError('not-set-up', NOT_SET_UP_MESSAGE);
 
-    const graveId = await saveMappedGrave(input, {
+    const result = await saveMappedGrave(input, {
       client: supabase,
       isOnline: () => typeof navigator === 'undefined' || navigator.onLine,
       uploadPhoto: uploadGravePhoto,
       deletePhoto: deleteGravePhoto,
-      newId: () => crypto.randomUUID(),
     });
 
-    const saved = await this.getGraveById(graveId);
-    if (!saved) throw new SaveGraveError('unknown', UNKNOWN_SAVE_MESSAGE);
+    // The grave is saved at this point, so a failed read-back on a weak connection mustn't report a failure
+    const saved =
+      (await this.getGraveById(result.graveId).catch(() => undefined)) ??
+      buildSavedGrave(input, result, new Date().toISOString());
 
     if (typeof window !== 'undefined') {
       offlineDb.graves.put(saved).catch(() => {});

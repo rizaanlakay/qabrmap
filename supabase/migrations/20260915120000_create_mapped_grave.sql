@@ -54,6 +54,11 @@ begin
     raise exception 'Sign in to map a grave.' using errcode = '42501';
   end if;
 
+  -- A retry after a lost response sends the same ids; the grave is already saved, so return it
+  if exists (select 1 from public.graves where id = p_grave_id and created_by = v_caller) then
+    return p_grave_id;
+  end if;
+
   if v_first_name is null or v_surname is null then
     raise exception 'First name and surname are required.' using errcode = '22023';
   end if;

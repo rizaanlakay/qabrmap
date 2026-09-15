@@ -252,3 +252,10 @@ Read the migration file as text, like `tests/grave_photos.test.ts`, and check:
 ## Rollout
 
 Apply the migration before deploying the client. If the client ships first, saving shows "Saving graves isn't set up in the database yet." instead of failing silently.
+
+## Retries on weak connections (added after code review)
+
+- Each capture keeps one grave id, person id and uploaded photo across Save retries.
+- The uploaded photo is deleted only when the database itself rejects the save (the error carries a Postgres or PostgREST code). A dropped connection or gateway timeout may have happened after the save committed, so the photo is kept.
+- `create_mapped_grave` returns the existing grave when the same user sends a grave id that is already saved, so a retry after a lost response neither fails nor creates a second grave.
+- If the saved grave can't be read back straight after saving, the app builds it from what it sent instead of reporting a failure.

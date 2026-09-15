@@ -35,6 +35,12 @@ describe('Create Mapped Grave Migration Tests', () => {
     expect(MIGRATION).toMatch(/grant execute on function public\.create_mapped_grave\([^)]*\) to authenticated;/);
   });
 
+  it('returns the existing grave when the same user retries a save with the same id', () => {
+    expect(MIGRATION).toMatch(
+      /if exists \(select 1 from public\.graves where id = p_grave_id and created_by = v_caller\) then\s+return p_grave_id;\s+end if;/
+    );
+  });
+
   it('validates required names, GPS accuracy and heading in the database', () => {
     expect(MIGRATION).toMatch(/if v_first_name is null or v_surname is null then/);
     expect(MIGRATION).toMatch(/p_accuracy_meters > 10/);
