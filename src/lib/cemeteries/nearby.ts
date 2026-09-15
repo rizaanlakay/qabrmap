@@ -38,7 +38,7 @@ export function formatDistance(meters: number): string {
 export function matchesCemeterySearch(cemetery: Cemetery, query: string): boolean {
   const q = query.toLowerCase().trim();
   if (!q) return true;
-  const haystack = [cemetery.name, ...cemetery.aliases, cemetery.city, cemetery.province];
+  const haystack = [cemetery.name, ...(cemetery.aliases ?? []), cemetery.city, cemetery.province];
   return haystack.some((text) => text.toLowerCase().includes(q));
 }
 

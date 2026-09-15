@@ -383,7 +383,15 @@ class DataStore {
     if (typeof window !== 'undefined') {
       try {
         const stored = await offlineDb.cemeteries.toArray();
-        if (stored.length > 0) return stored;
+        if (stored.length > 0) {
+          // Rows cached before the burial-sites fields existed must still satisfy the Cemetery type
+          return stored.map((cemetery) => ({
+            ...cemetery,
+            siteType: cemetery.siteType || 'muslim_cemetery',
+            siteStatus: cemetery.siteStatus || 'active',
+            aliases: Array.isArray(cemetery.aliases) ? cemetery.aliases : [],
+          }));
+        }
       } catch (e) {}
     }
 

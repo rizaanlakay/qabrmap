@@ -102,6 +102,13 @@ describe('matchesCemeterySearch', () => {
   it('matches everything on a blank query', () => {
     expect(matchesCemeterySearch(athlone, '   ')).toBe(true);
   });
+
+  it('survives a cemetery cached before aliases existed', () => {
+    const old = { ...cemetery('old', 0, 0, { name: 'Old Cemetery' }) } as Cemetery;
+    delete (old as Partial<Cemetery>).aliases;
+    expect(() => matchesCemeterySearch(old, 'old')).not.toThrow();
+    expect(matchesCemeterySearch(old, 'old')).toBe(true);
+  });
 });
 
 describe('sortCemeteries', () => {
