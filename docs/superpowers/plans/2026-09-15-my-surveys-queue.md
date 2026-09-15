@@ -4211,7 +4211,7 @@ Expected: no errors.
 Run: `npm run build`
 Expected: success.
 
-Run: `git diff main --name-only | xargs grep -nP "\x{2014}" || echo "no em dashes"`
+Run: `git diff main --name-only | xargs grep -n $'\xe2\x80\x94' || echo "no em dashes"`
 Expected: `no em dashes`.
 
 - [ ] **Step 2: Start the dev server**

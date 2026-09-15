@@ -3033,7 +3033,7 @@ Expected: success.
 
 - [ ] **Step 2: Search for em dashes in the changed files**
 
-Run: `git diff main --name-only | xargs grep -nP "\x{2014}" || echo "no em dashes"`
+Run: `git diff main --name-only | xargs grep -n $'\xe2\x80\x94' || echo "no em dashes"`
 Expected: `no em dashes` (the spec and older plans are not part of this diff unless edited).
 
 - [ ] **Step 3: Update the deploy memory**
