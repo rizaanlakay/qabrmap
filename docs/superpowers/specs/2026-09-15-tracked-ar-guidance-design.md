@@ -15,13 +15,13 @@ The spike at `/ar-spike` proved the free 8th Wall engine binary tracks the world
 |---|---|
 | Engine | 8th Wall distributed engine binary 1.0.0 from jsDelivr, loaded on demand, world tracking in absolute scale |
 | Renderer | three.js 0.170 through the engine's three.js pipeline module |
-| Fallback | If the engine cannot load or start, or the camera fails, the existing sensor-driven screen is shown unchanged |
+| Fallback | The unchanged sensor-driven screen replaces this one on engine load failure, engine start failure, camera failure, compass denied or unsupported, and 30 s from opening without a first alignment. Limited tracking mid-walk never leaves the screen. |
 | Line | Chevron line on the measured floor from the phone's feet to the grave, up to 12 m long |
 | Marker | A 3D pin, 20 cm thick, standing at the grave's spot on the floor, bouncing and slowly spinning |
-| North | The compass heading at the moment tracking becomes NORMAL fixes the tracked world's north; drift is corrected slowly from the compass afterwards |
-| Grave position in the world | Re-derived from each smoothed GPS fix as the phone's tracked position plus distance along the bearing, then eased |
-| Arrival | 5 m or less: the line is hidden and only the pin marks the spot, with the "look around" pill |
-| Floor | Median of tracked feature points well below the camera; 1.5 m below the starting camera until measured |
+| North | The compass heading at the moment tracking becomes NORMAL fixes the tracked world's north; drift is corrected slowly from the compass afterwards, and only on steady frames (the engine yaw moved 1.5 degrees or less since the last one) because the compass lags the engine through a turn |
+| Grave position in the world | Re-derived from each smoothed GPS fix as the phone's tracked position plus distance along the bearing, then eased. Each fix carries its own timestamp and is paired with the camera pose recorded at that moment, so a fix seconds old is not planted from where the phone has walked to since. |
+| Arrival | 5 m or less: the line is hidden and only the pin marks the spot, with the "look around" pill. It clears again only beyond 6.5 m, and the scene driver decides it for the whole screen. |
+| Floor | Median of tracked feature points well below the camera; 1.5 m below the starting camera until measured. Once a floor is known, points more than 0.3 m above it are refused so headstone tops cannot drag it up. |
 | Tracking states | Coaching text while initialising, a limited-tracking hint, a lost-tracking recovery |
 | Preload | Navigation starts downloading the engine when it shows the "Open AR" prompt |
 | Licence | The Niantic Spatial notice and licence link on the AR screen footer and on the profile screen |
@@ -35,7 +35,7 @@ The spike at `/ar-spike` proved the free 8th Wall engine binary tracks the world
 
 ### `src/lib/ar/floorEstimate.ts` (exists, tested)
 
-Unchanged.
+Gains one rule: once `floorY()` is known, a point more than 0.3 m above it is refused, so a row of headstone tops cannot drag an established floor up. Points below are still taken, since a real step down should be followed.
 
 ### `src/lib/ar/worldAlignment.ts` (new, pure, tested)
 
@@ -64,10 +64,10 @@ Gains `setLength(metres)`: the strip is scaled to the length and chevrons beyond
 Owns everything inside the engine's pipeline module so the screen stays small: builds the line and pin, runs the floor estimator, applies the north alignment, and exposes a plain interface the screen calls with GPS data.
 
 ```
-createSceneDriver(XR8): {
-  pipelineModule: XR8PipelineModule;          // add to the engine
-  setTarget({ bearingDeg, distanceM }): void;  // from each smoothed GPS fix
-  setHeading(headingDeg | null): void;         // from the compass hook
+createSceneDriver(XR8, now?, clock?): {
+  pipelineModule: XR8PipelineModule;               // add to the engine
+  setTarget({ bearingDeg, distanceM, at? }): void;  // from each smoothed GPS fix, with the fix's own timestamp
+  setHeading(headingDeg | null): void;              // from the compass hook
   onState(listener: (state: DriverState) => void): void;
   dispose(): void;
 }
@@ -75,6 +75,7 @@ DriverState = {
   tracking: 'initialising' | 'limited' | 'normal';
   floorMeasured: boolean;
   aligned: boolean;                            // north offset known
+  arrived: boolean;                            // 5 m or less, clearing again beyond 6.5 m
 }
 ```
 
@@ -82,9 +83,10 @@ Per frame (`onUpdate`):
 
 1. Read the camera's world position and forward vector from the three.js camera the engine drives.
 2. Every 6th frame while tracking is NORMAL, hit-test the four floor probes and feed the estimator. Ease the floor height.
-3. If the compass heading is known and tracking is NORMAL, update the north alignment with the engine yaw.
-4. If aligned and a target is set: compute the grave's world position from the feet (camera x, z) at the latest fix and the target's bearing and distance; ease it (alpha 0.1). Place the line group at the feet on the floor, rotate it toward the grave, set its length to the distance, hide it when the distance is 5 m or less. Place the pin at the grave position on the floor; when the grave is further than 12 m, place it at the line's end instead.
-5. Animate the line and the pin.
+3. If the compass heading is known, tracking is NORMAL and the frame is steady, update the north alignment with the engine yaw. A frame counts as steady when the yaw moved 1.5 degrees or less since the last one (about 90 degrees per second); a yaw read mid-turn pairs a lagging compass reading with a fresh yaw and would pollute the offset.
+4. Record the camera pose against the wall clock in a 15 s ring buffer, so a fix that describes a point seconds old can be paired with the pose from its own moment.
+5. If aligned and a target is set: compute the grave's world position from the feet (camera x, z) recorded at the fix's timestamp, falling back to the live camera when the buffer cannot cover it, and the target's bearing and distance; ease it (alpha 0.1). Place the line group at the feet on the floor, rotate it toward the grave, set its length to the distance, hide it while arrived. Place the pin at the grave position on the floor; when the grave is further than 12 m, place it at the line's end instead.
+6. Animate the line and the pin.
 
 ### Screens
 
@@ -96,6 +98,7 @@ Per frame (`onUpdate`):
 
 ### Start
 
+0. One 30 s deadline covers the whole start-up: engine download, camera prompt, first world lock and compass. It is armed at mount and cleared for good the first time the driver is aligned with NORMAL tracking, so nothing can sit black or unaligned for ever, and nothing that happens mid-walk can trip it.
 1. Show the camera-starting state and call `loadXR8()`. Navigation has usually preloaded it, so this is instant on a repeat visit.
 2. Size the canvas to the viewport (the engine copies the canvas attributes), set `window.THREE`, configure absolute scale, add the XrController, GlTextureRenderer, three.js and scene-driver modules, run.
 3. While the engine reports LIMITED and INITIALIZING: the status pill reads "Move the phone slowly sideways so it can find the floor". The line and pin are not shown.
@@ -109,6 +112,7 @@ Per frame (`onUpdate`):
 
 ### Arrival (5 m or less)
 
+- The scene driver decides arrival and reports it in `DriverState`, so the pill, the guidance text and the visit button all read the same value. It holds until the world distance passes 6.5 m, so a metre of wobble cannot flicker the line. Before the driver is running and aligned, the GPS distance decides it as before.
 - The line is hidden. The pin stays at the spot, bouncing and spinning.
 - Pill: "± 3 m. Not the right name? Look around this spot."
 - "I found it" on the card, with the stand-at-the-stone sheet.
@@ -116,7 +120,7 @@ Per frame (`onUpdate`):
 ### Tracking lost or limited
 
 - The pill shows "Tracking is limited. Point at the ground and move slowly". The line and pin keep their last world position (the engine keeps rendering with what it has) rather than disappearing.
-- Fallback to the sensor screen only happens when the engine cannot start at all, not on limited tracking.
+- The sensor screen takes over on engine load failure, engine start failure, camera failure, compass denied or unsupported, and 30 s from opening without a first alignment. Limited tracking mid-walk never leaves the screen.
 
 ### Leaving
 
