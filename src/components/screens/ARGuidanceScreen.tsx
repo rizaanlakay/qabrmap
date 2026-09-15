@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { X, ChevronUp, Compass } from 'lucide-react';
+import { X, Compass } from 'lucide-react';
 import { Grave } from '@/types';
 import { calculateDistanceMeters, calculateBearing } from '@/lib/geospatial';
 import { useWakeLock } from '@/lib/device/useWakeLock';
@@ -12,6 +12,22 @@ interface ARGuidanceScreenProps {
   userLocation?: { lat: number; lng: number };
   distanceMeters?: number;
   onClose: () => void;
+}
+
+type CameraStatus = 'starting' | 'live' | 'unavailable';
+
+// Chevrons travelling along the ground path at any moment, and seconds for one to cross it
+const CHEVRON_COUNT = 6;
+const CHEVRON_CYCLE_S = 3.6;
+// Clamp so the path never swings behind the camera
+const MAX_PATH_TURN_DEG = 60;
+
+function describeCameraError(err: unknown): string {
+  const name = err instanceof DOMException ? err.name : '';
+  if (name === 'NotAllowedError') return 'Camera permission denied';
+  if (name === 'NotFoundError' || name === 'OverconstrainedError') return 'No camera found';
+  if (name === 'NotReadableError') return 'Camera is in use by another app';
+  return 'Camera unavailable';
 }
 
 export const ARGuidanceScreen: React.FC<ARGuidanceScreenProps> = ({
@@ -24,7 +40,8 @@ export const ARGuidanceScreen: React.FC<ARGuidanceScreenProps> = ({
   useWakeLock(true);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const [hasCameraStream, setHasCameraStream] = useState(false);
+  const [cameraStatus, setCameraStatus] = useState<CameraStatus>('starting');
+  const [cameraError, setCameraError] = useState<string | null>(null);
   const [phoneHeading, setPhoneHeading] = useState(62);
 
   // Compute live distance and bearing if user location provided
@@ -38,79 +55,87 @@ export const ARGuidanceScreen: React.FC<ARGuidanceScreenProps> = ({
 
   // Calculate relative angle difference between phone heading and target bearing
   const diffAngle = ((targetBearing - phoneHeading + 540) % 360) - 180; // -180 to +180
+  const arrived = liveDistance <= 3;
 
   let guidanceText = 'Keep straight';
-  let chevronRotation = 0;
-
-  if (liveDistance <= 3) {
+  if (arrived) {
     guidanceText = 'Arrived at Grave Area';
-  } else if (diffAngle > 35) {
-    guidanceText = `Turn Right (${Math.abs(Math.round(diffAngle))}°)`;
-    chevronRotation = Math.min(45, diffAngle);
-  } else if (diffAngle < -35) {
-    guidanceText = `Turn Left (${Math.abs(Math.round(diffAngle))}°)`;
-    chevronRotation = Math.max(-45, diffAngle);
   } else if (Math.abs(diffAngle) > 120) {
     guidanceText = 'Turn Around';
-    chevronRotation = 180;
+  } else if (diffAngle > 35) {
+    guidanceText = `Turn Right (${Math.round(diffAngle)}°)`;
+  } else if (diffAngle < -35) {
+    guidanceText = `Turn Left (${Math.abs(Math.round(diffAngle))}°)`;
   }
 
-  // Initialize hardware camera stream if supported
+  const pathTurn = Math.max(-MAX_PATH_TURN_DEG, Math.min(MAX_PATH_TURN_DEG, diffAngle));
+
+  // Start the rear camera. The <video> element is always mounted so the stream
+  // can be attached as soon as permission is granted.
   useEffect(() => {
+    const video = videoRef.current;
+    let cancelled = false;
     let stream: MediaStream | null = null;
-    if (typeof navigator !== 'undefined' && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      navigator.mediaDevices
-        .getUserMedia({
-          video: { facingMode: { ideal: 'environment' } },
-          audio: false,
-        })
-        .then((s) => {
-          stream = s;
-          if (videoRef.current) {
-            videoRef.current.srcObject = s;
-            videoRef.current.play().catch(() => {});
-            setHasCameraStream(true);
-          }
-        })
-        .catch(() => {
-          setHasCameraStream(false);
-        });
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraError(window.isSecureContext ? 'Camera not supported in this browser' : 'Camera requires HTTPS');
+      setCameraStatus('unavailable');
+      return;
     }
 
-    // Compass listener
+    navigator.mediaDevices
+      .getUserMedia({
+        video: { facingMode: { ideal: 'environment' } },
+        audio: false,
+      })
+      .then((s) => {
+        if (cancelled) {
+          s.getTracks().forEach((track) => track.stop());
+          return;
+        }
+        stream = s;
+        if (video) {
+          video.srcObject = s;
+          video.play().catch(() => {});
+        }
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setCameraError(describeCameraError(err));
+        setCameraStatus('unavailable');
+      });
+
+    return () => {
+      cancelled = true;
+      stream?.getTracks().forEach((track) => track.stop());
+      if (video) video.srcObject = null;
+    };
+  }, []);
+
+  // Compass listener
+  useEffect(() => {
     const handleOrientation = (e: DeviceOrientationEvent) => {
       // @ts-expect-error - webkitCompassHeading
       const h = e.webkitCompassHeading || (e.alpha ? 360 - e.alpha : null);
       if (h !== null) setPhoneHeading(Math.round(h));
     };
 
-    if (typeof window !== 'undefined' && window.DeviceOrientationEvent) {
+    if (window.DeviceOrientationEvent) {
       window.addEventListener('deviceorientation', handleOrientation);
     }
 
     return () => {
-      if (stream) {
-        stream.getTracks().forEach((track) => track.stop());
-      }
-      if (typeof window !== 'undefined') {
-        window.removeEventListener('deviceorientation', handleOrientation);
-      }
+      window.removeEventListener('deviceorientation', handleOrientation);
     };
   }, []);
 
+  const cameraLive = cameraStatus === 'live';
+
   return (
     <div className="flex-1 flex flex-col relative bg-black overflow-hidden select-none">
-      {/* Background Camera Feed or Realistic Cemetery Photogrammetry View */}
-      {hasCameraStream ? (
-        <video
-          ref={videoRef}
-          playsInline
-          muted
-          autoPlay
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-      ) : (
-        <div className="absolute inset-0 w-full h-full relative overflow-hidden">
+      {/* Fallback preview while the camera starts or when it is unavailable */}
+      {!cameraLive && (
+        <div className="absolute inset-0 overflow-hidden">
           <Image
             src="/sample-gravestone.svg"
             alt="AR View"
@@ -120,6 +145,18 @@ export const ARGuidanceScreen: React.FC<ARGuidanceScreenProps> = ({
           <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60" />
         </div>
       )}
+
+      {/* Live camera feed */}
+      <video
+        ref={videoRef}
+        playsInline
+        muted
+        autoPlay
+        onPlaying={() => setCameraStatus('live')}
+        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${
+          cameraLive ? 'opacity-100' : 'opacity-0'
+        }`}
+      />
 
       {/* Top Bar matching Mockup Screen 7 */}
       <div className="absolute top-0 inset-x-0 z-30 px-4 pt-3 pb-3 bg-gradient-to-b from-black/80 via-black/40 to-transparent flex items-center justify-between text-white">
@@ -135,6 +172,11 @@ export const ARGuidanceScreen: React.FC<ARGuidanceScreenProps> = ({
           <h1 className="text-sm font-bold tracking-wide text-white drop-shadow">
             Approaching your destination
           </h1>
+          {cameraStatus === 'unavailable' && cameraError && (
+            <span className="mt-1 px-2 py-0.5 rounded-full bg-black/50 text-[10px] font-semibold text-amber-200">
+              {cameraError}
+            </span>
+          )}
         </div>
 
         <button
@@ -146,36 +188,57 @@ export const ARGuidanceScreen: React.FC<ARGuidanceScreenProps> = ({
         </button>
       </div>
 
-      {/* AR Overlays Layer (3D perspective ground arrows and floating HUD) */}
-      <div className="flex-1 relative flex flex-col items-center justify-center pointer-events-none z-20">
-        {/* Floating Distance Badge matching Screen 7 */}
-        <div className="mb-8 transform -translate-y-6">
-          <div className="bg-brand-dark/95 backdrop-blur-md border border-emerald-500/60 rounded-2xl py-2 px-5 shadow-2xl text-center text-white">
-            <div className="text-xl font-extrabold text-white tracking-wide">
-              {Math.round(liveDistance)} m
-            </div>
-            <div className="text-xs text-emerald-300 font-semibold mt-0.5">
-              {guidanceText}
-            </div>
-          </div>
-        </div>
-
-        {/* Dynamic 3D Ground Perspective Chevrons Pointing Toward Destination */}
+      {/* 3D ground path: a plane tilted away from the viewer, turned toward the target */}
+      <div
+        className="absolute inset-0 z-10 pointer-events-none overflow-hidden"
+        style={{ perspective: '600px', perspectiveOrigin: '50% 35%' }}
+      >
         <div
-          style={{ transform: `rotate(${chevronRotation}deg)` }}
-          className="flex flex-col items-center space-y-2.5 opacity-95 transition-transform duration-300 ease-out"
+          className="absolute left-1/2 bottom-24 w-44 h-[720px] transition-transform duration-500 ease-out"
+          style={{
+            transform: `translateX(-50%) rotateX(66deg) rotateZ(${pathTurn}deg)`,
+            transformOrigin: '50% 100%',
+          }}
         >
-          {/* Distant chevron */}
-          <div className="text-emerald-400 transform scale-75 opacity-60">
-            <ChevronUp className="w-12 h-12 stroke-[4]" />
+          {arrived ? (
+            <div className="absolute left-1/2 bottom-32 -ml-14 w-28 h-28 rounded-full border-4 border-emerald-300 bg-emerald-400/30 animate-radar" />
+          ) : (
+            <>
+              <div className="absolute inset-x-6 inset-y-0 rounded-t-full bg-gradient-to-t from-emerald-400/35 via-emerald-400/10 to-transparent" />
+              {Array.from({ length: CHEVRON_COUNT }, (_, i) => (
+                <svg
+                  key={i}
+                  viewBox="0 0 120 80"
+                  className="ar-chevron absolute left-1/2 bottom-0 w-[150px] text-emerald-400"
+                  style={{
+                    animationDuration: `${CHEVRON_CYCLE_S}s`,
+                    animationDelay: `${-(i * CHEVRON_CYCLE_S) / CHEVRON_COUNT}s`,
+                  }}
+                  aria-hidden="true"
+                >
+                  <polyline
+                    points="14,66 60,20 106,66"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="24"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              ))}
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Floating Distance Badge matching Screen 7 */}
+      <div className="absolute top-[22%] inset-x-0 z-20 flex justify-center pointer-events-none">
+        <div className="bg-brand-dark/95 backdrop-blur-md border border-emerald-500/60 rounded-2xl py-2 px-5 shadow-2xl text-center text-white">
+          <div className="text-xl font-extrabold text-white tracking-wide">
+            {Math.round(liveDistance)} m
           </div>
-          {/* Midground chevron */}
-          <div className="text-emerald-400 transform scale-100 opacity-80">
-            <ChevronUp className="w-14 h-14 stroke-[4]" />
-          </div>
-          {/* Foreground chevron */}
-          <div className="text-emerald-300 transform scale-125 drop-shadow-[0_0_15px_rgba(16,185,129,0.9)] animate-pulse">
-            <ChevronUp className="w-16 h-16 stroke-[4]" />
+          <div className="text-xs text-emerald-300 font-semibold mt-0.5">
+            {guidanceText}
           </div>
         </div>
       </div>
