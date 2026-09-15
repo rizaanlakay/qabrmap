@@ -16,10 +16,10 @@
     "lucide-react": "^0.468.0",
     "maplibre-gl": "^4.7.1",
     "next": "^14.2.24",
+    "openai": "7.15.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "tailwind-merge": "^2.5.5",
-    "tesseract.js": "^7.0.0"
+    "tailwind-merge": "^2.5.5"
   },
   "devDependencies": {
     "@types/node": "^20.17.10",

@@ -140,33 +140,13 @@ export interface GravestoneBoundingBox {
   height: number;
 }
 
-export interface AIQualityResult {
-  usable: boolean;
-  blurScore: number;
-  lightingScore: number;
-  stoneVisibilityScore: number;
-  warnings: string[];
-  recommendation?: string;
-}
-
-export interface AIDetectionResult {
-  boundingBox: GravestoneBoundingBox;
-  estimatedStoneDimensions: { widthCm: number; heightCm: number };
-  stoneOrientationDegrees: number;
-  groundPlaneDetected: boolean;
-}
-
-export interface OCRLine {
-  text: string;
-  confidence: number;
-  language: string;
-}
-
+// Grave details read from a photo, used to fill in the Confirm screen
 export interface AIStructuredExtraction {
   graveNumber: string;
   firstName: string;
   middleNames: string[];
   surname: string;
+  nickname?: string;
   fullName: string;
   birthDate?: string;
   deathDate?: string;
@@ -179,37 +159,6 @@ export interface AIStructuredExtraction {
     graveNumber: number;
     fullName: number;
     dates: number;
-  };
-}
-
-export interface AIProcessingState {
-  step: 'quality' | 'detection' | 'ocr' | 'extraction' | 'positioning' | 'duplicates' | 'complete';
-  quality: 'pending' | 'processing' | 'complete' | 'failed';
-  detection: 'pending' | 'processing' | 'complete' | 'failed';
-  ocr: 'pending' | 'processing' | 'complete' | 'failed';
-  extraction: 'pending' | 'processing' | 'complete' | 'failed';
-  positioning: 'pending' | 'processing' | 'complete' | 'failed';
-  duplicates: 'pending' | 'processing' | 'complete' | 'failed';
-  error?: string;
-  data?: {
-    quality?: AIQualityResult;
-    detection?: AIDetectionResult;
-    structured?: AIStructuredExtraction;
-    position?: {
-      estimatedLat: number;
-      estimatedLng: number;
-      distanceMeters: number;
-      bearingDegrees: number;
-      accuracyMeters: number;
-      confidence: ConfidenceLevel;
-      localX?: number;
-      localY?: number;
-    };
-    duplicateMatch?: {
-      found: boolean;
-      graveId?: string;
-      confidence?: number;
-    };
   };
 }
 

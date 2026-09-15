@@ -1,102 +1,44 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import {
-  AlertTriangle,
-  ArrowLeft,
-  CheckCircle2,
-  Loader2,
-  Clock,
-  Sparkles,
-} from 'lucide-react';
-import { AIProcessingState, DeviceTelemetry } from '@/types';
-import { GravestoneProcessingPipeline } from '@/lib/ai/pipeline';
+import { AlertTriangle, ArrowLeft, Loader2, Sparkles } from 'lucide-react';
+import { AIStructuredExtraction } from '@/types';
+import { requestStoneReading } from '@/lib/capture/requestStoneReading';
 
 interface AIProcessingScreenProps {
   capturedImage: string;
-  telemetry: DeviceTelemetry;
-  onProcessingFinished: (finalState: AIProcessingState) => void;
+  onProcessingFinished: (extraction: AIStructuredExtraction) => void;
   onEnterManually: () => void;
   onBack: () => void;
 }
 
+// Sends the photo to be read, then hands the details to the Confirm screen
 export const AIProcessingScreen: React.FC<AIProcessingScreenProps> = ({
   capturedImage,
-  telemetry,
   onProcessingFinished,
   onEnterManually,
   onBack,
 }) => {
-  const [state, setState] = useState<AIProcessingState>({
-    step: 'quality',
-    quality: 'processing',
-    detection: 'pending',
-    ocr: 'pending',
-    extraction: 'pending',
-    positioning: 'pending',
-    duplicates: 'pending',
-  });
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
-    const pipeline = new GravestoneProcessingPipeline({
-      stepDelayMs: 400, // Smooth human-readable cadence
-    });
+    const controller = new AbortController();
 
-    pipeline
-      .process(capturedImage, telemetry, (progress) => {
-        if (isMounted) setState({ ...progress });
-      })
-      .then((finalState) => {
-        if (isMounted) {
-          setTimeout(() => {
-            onProcessingFinished(finalState);
-          }, 500);
-        }
+    requestStoneReading(capturedImage, controller.signal)
+      .then((extraction) => {
+        if (isMounted) onProcessingFinished(extraction);
       })
       .catch((err: unknown) => {
-        console.error('AI Pipeline error:', err);
-        if (isMounted) setError(err instanceof Error ? err.message : 'The photo could not be processed.');
+        if (!isMounted) return;
+        setError(err instanceof Error ? err.message : "The photo couldn't be read. Try again or enter the details manually.");
       });
 
     return () => {
       isMounted = false;
+      controller.abort();
     };
-  }, [capturedImage, telemetry, onProcessingFinished]);
-
-  const steps = [
-    {
-      id: 'quality',
-      label: 'Image quality check',
-      status: state.quality,
-    },
-    {
-      id: 'detection',
-      label: 'Detecting gravestone',
-      status: state.detection,
-    },
-    {
-      id: 'ocr',
-      label: 'Extracting text (OCR)',
-      status: state.ocr,
-    },
-    {
-      id: 'extraction',
-      label: 'Identifying details',
-      status: state.extraction,
-    },
-    {
-      id: 'positioning',
-      label: 'Estimating location',
-      status: state.positioning,
-    },
-    {
-      id: 'duplicates',
-      label: 'Checking for duplicates',
-      status: state.duplicates,
-    },
-  ];
+  }, [capturedImage, onProcessingFinished]);
 
   return (
     <div className="flex-1 flex flex-col bg-slate-50 overflow-hidden justify-between">
@@ -110,73 +52,33 @@ export const AIProcessingScreen: React.FC<AIProcessingScreenProps> = ({
           <ArrowLeft className="w-5 h-5 stroke-[2.2]" />
         </button>
         <h1 className="text-lg font-bold text-slate-900 tracking-tight flex items-center">
-          <span>Processing Photo</span>
+          <span>Reading Photo</span>
           <Sparkles className="w-4 h-4 ml-2 text-emerald-600" />
         </h1>
       </div>
 
-      {/* Checklist matching Mockup Screen 9 */}
-      <div className="p-6 flex-1 flex flex-col justify-center max-w-sm mx-auto w-full space-y-6">
-        {steps.map((step, idx) => {
-          const isComplete = step.status === 'complete';
-          const isProcessing = step.status === 'processing';
-
-          return (
-            <div key={step.id} className="flex items-center space-x-4">
-              {/* Status Icon */}
-              <div className="shrink-0">
-                {isComplete ? (
-                  <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
-                    <CheckCircle2 className="w-5 h-5" />
-                  </div>
-                ) : isProcessing ? (
-                  <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center animate-spin">
-                    <Loader2 className="w-5 h-5" />
-                  </div>
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center">
-                    <Clock className="w-4 h-4" />
-                  </div>
-                )}
-              </div>
-
-              {/* Step Label & Status */}
-              <div className="flex-1">
-                <div
-                  className={`text-sm font-semibold transition-colors ${
-                    isComplete
-                      ? 'text-slate-900'
-                      : isProcessing
-                      ? 'text-blue-900 font-bold'
-                      : 'text-slate-400'
-                  }`}
-                >
-                  {step.label}
-                </div>
-                <div
-                  className={`text-xs capitalize transition-colors ${
-                    isComplete
-                      ? 'text-emerald-700 font-medium'
-                      : isProcessing
-                      ? 'text-blue-600 font-medium'
-                      : 'text-slate-400'
-                  }`}
-                >
-                  {isProcessing ? 'Processing...' : isComplete ? 'Complete' : 'Waiting...'}
-                </div>
-              </div>
-            </div>
-          );
-        })}
+      <div className="p-6 flex-1 flex flex-col items-center justify-center text-center max-w-sm mx-auto w-full">
+        {error ? (
+          <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center">
+            <AlertTriangle className="w-6 h-6" />
+          </div>
+        ) : (
+          <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center">
+            <Loader2 className="w-6 h-6 animate-spin" />
+          </div>
+        )}
+        <p className="mt-4 text-sm font-bold text-slate-900">
+          {error ? 'The details could not be read' : 'Reading the stone'}
+        </p>
+        <p className="mt-1 text-xs text-slate-500 leading-relaxed">
+          {error ? 'You can take the photo again, or type the details in yourself.' : 'This usually takes a few seconds.'}
+        </p>
       </div>
 
-      {error ? (
+      {error && (
         <div className="p-4 bg-white border-t border-slate-200/80 space-y-3">
-          <div role="alert" className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-start">
-            <AlertTriangle className="w-4 h-4 mr-2 shrink-0" />
-            <span>
-              <b className="font-semibold">The photo couldn&apos;t be read.</b> {error}
-            </span>
+          <div role="alert" className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700">
+            {error}
           </div>
           <div className="flex space-x-3">
             <button
@@ -192,12 +94,6 @@ export const AIProcessingScreen: React.FC<AIProcessingScreenProps> = ({
               Enter details manually
             </button>
           </div>
-        </div>
-      ) : (
-        <div className="p-6 text-center">
-          <p className="text-xs text-slate-500 leading-relaxed max-w-xs mx-auto">
-            This may take a few moments. You can continue to use the app.
-          </p>
         </div>
       )}
     </div>

@@ -43,7 +43,7 @@ export const ConfirmDetailsScreen: React.FC<ConfirmDetailsScreenProps> = ({
     firstName: initialData.firstName || '',
     middleNames: initialData.middleNames?.join(' ') || '',
     surname: initialData.surname || '',
-    nickname: '',
+    nickname: initialData.nickname || '',
     graveNumber: initialData.graveNumber || '',
     birthDate: initialData.birthDate || '',
     deathDate: initialData.deathDate || '',
@@ -215,6 +215,13 @@ export const ConfirmDetailsScreen: React.FC<ConfirmDetailsScreenProps> = ({
           <pre className="bg-white p-2 rounded-lg text-[11px] font-mono text-slate-700 whitespace-pre-wrap border border-slate-200/70 max-h-24 overflow-y-auto">
             {initialData.rawOcrText || 'No text could be read from this photo.'}
           </pre>
+          {initialData.otherText.length > 0 && (
+            <ul className="mt-2 space-y-0.5 pl-4 list-disc text-[11px] text-slate-600">
+              {initialData.otherText.map((note) => (
+                <li key={note}>{note}</li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
 

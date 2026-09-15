@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Cemetery, Grave, DeviceTelemetry, AIStructuredExtraction, AIProcessingState, SurveySession } from '@/types';
+import { Cemetery, Grave, DeviceTelemetry, AIStructuredExtraction, SurveySession } from '@/types';
 import { dataStore } from '@/lib/data/store';
 import { getGraveIdFromUrl, withGraveParam } from '@/lib/share/graveLink';
 import { syncManager } from '@/lib/offline/sync';
@@ -254,9 +254,9 @@ function QabrMapAppContent() {
     setCurrentScreen(photoTargetGrave ? 'add-photo' : 'ai-processing');
   };
 
-  // AI Pipeline Finished Handover. Stable so the processing screen doesn't restart the pipeline on every render.
-  const handleProcessingFinished = useCallback((state: AIProcessingState) => {
-    setExtractedData(state.data?.structured ?? EMPTY_EXTRACTION);
+  // The photo has been read. Stable so the processing screen doesn't read it again on every render.
+  const handleProcessingFinished = useCallback((extraction: AIStructuredExtraction) => {
+    setExtractedData(extraction);
     setCurrentScreen('confirm-details');
   }, []);
 
@@ -452,7 +452,6 @@ function QabrMapAppContent() {
         {currentScreen === 'ai-processing' && capturedTelemetry && (
           <AIProcessingScreen
             capturedImage={capturedImage}
-            telemetry={capturedTelemetry}
             onProcessingFinished={handleProcessingFinished}
             onEnterManually={handleEnterDetailsManually}
             onBack={() => setCurrentScreen('capture')}
