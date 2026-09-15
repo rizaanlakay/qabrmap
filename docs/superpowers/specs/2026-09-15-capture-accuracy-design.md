@@ -164,7 +164,7 @@ Loop over existing `grave_photos` rows with a capture position, oldest first, ca
 - `Grave.observationCount: number` from `observation_count` (default 0).
 - `dataStore.recordGraveVisit(graveId, fix: { lat, lng, accuracy })` calls the RPC, maps the result onto the cached grave (IndexedDB and in-memory list) and returns the updated `Grave`. Errors map through `mapSaveGraveError` so offline, signed-out, not-set-up and the function's own `22023` messages read well. Pure helper `applyVisitResult(grave, data)` in `src/lib/graves/visits.ts` for the mapping.
 - `page.tsx` passes `onConfirmVisit` to `NavigationScreen` and `ARGuidanceScreen` only when a user is signed in. The handler calls `recordGraveVisit`, updates `selectedGrave` and the graves list, and returns the updated grave.
-- Navigation arrival panel (`isAtGrave`): an "I found it" button under the arrival line. While saving it reads "Saving…". On success the panel shows "Thanks. Position now ± 3.2 m from 4 visits." and the button goes away for the rest of the session. On error the message shows under the button and the button stays. When `gravePhotoUrl` is set, the panel shows the thumbnail with "Look for this grave".
+- Navigation arrival panel (`isAtGrave`): an "I found it" button under the arrival line. Tapping it opens a sheet, "Stand at the gravestone", explaining that the phone's position becomes the grave's position and showing the live GPS accuracy; "Here" records the visit (enabled only with a fix of 25 m or better) and "Not yet" closes the sheet. While saving it reads "Saving…". On success the panel shows "Thanks. Position now ± 3.2 m from 4 visits." and the button goes away for the rest of the session. On error the message shows under the button and the button stays. When `gravePhotoUrl` is set, the panel shows the thumbnail with "Look for this grave".
 - AR arrived state (distance 5 m or less): the same button and messages in the bottom card.
 - Grave details accuracy row: "± 3.2 m (High Confidence)" becomes "± 3.2 m, High confidence, 4 visits" when `observationCount > 1`. The confidence label also handles `LOW` ("Low confidence") instead of showing "Medium" for it.
 
@@ -205,9 +205,10 @@ New pure `smoothAngle(prev, next, alpha)` and `smoothValue(prev, next, alpha)` i
 
 - Runs its own `watchPosition` through `smoothFixes`, because `NavigationScreen` unmounts while AR is open and its watch stops. `userLocation` from the page remains the starting point until the first fix.
 - Smoothing alpha 0.25 for heading and pitch, 0.3 for distance and bearing, and 0.1 for all of them within 5 m.
-- The marker: a map pin (`MapPin`, lucide) with a gentle CSS bounce, positioned at the projected point, scaled by `scale`. Under it a translucent ellipse `2 * accuracy * pxPerMeter` wide and 35% as tall, clamped to the viewport.
-- Caption under the marker: "± 4 m. Not the right name? Look around this spot." when the distance is 12 m or less, otherwise "Head toward the marker".
-- When `onScreen` is false, an arrow at the screen edge points along `edgeAngleDeg`, and the guidance text keeps the existing Turn Left / Turn Right wording.
+- While walking (more than 5 m) the chevron line is the guide, as before. A map pin (`MapPin`, lucide) with a gentle CSS bounce stands upright on the far end of the line as the destination, sliding toward the viewer as the walk ends. Nothing else is drawn over the camera.
+- On arrival (5 m or less) the line stops and the projected marker takes over: the pin at the projected point, scaled by `scale`, on a translucent ellipse `2 * accuracy * pxPerMeter` wide and 35% as tall, clamped to the viewport.
+- A pill above the grave card reads "Follow the line" while walking and "± 4 m. Not the right name? Look around this spot." on arrival.
+- On arrival, when `onScreen` is false, an arrow at the screen edge points along `edgeAngleDeg`. While walking the line's own turn shows the direction, and the guidance text keeps the existing Turn Left / Turn Right wording.
 - When `gravePhotoUrl` is set, the bottom card keeps the stone thumbnail and shows the whole-grave photo under it, labelled "Look for this grave".
 - The arrived radar circle goes. AR counts as arrived at 5 m or less (it was 3 m), and the chevron ground path stays until then.
 - "I found it" button and messages as in section 3, shown when the distance is 5 m or less and `onConfirmVisit` is provided.

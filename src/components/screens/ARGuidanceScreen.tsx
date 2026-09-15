@@ -37,8 +37,11 @@ const CHEVRON_CYCLE_S = 3.6;
 const MAX_PATH_TURN_DEG = 60;
 // Within this the marker is treated as reached: GPS can't place it more finely than that
 const ARRIVED_M = 5;
-// The caption switches from "head toward" to "look around" inside this
-const NEARBY_M = 12;
+// The pin on the line sits at the far end beyond this distance, and slides toward the viewer as the walk ends
+const PIN_FAR_M = 25;
+// Pin height along the 720 px ground plane, measured from its near edge
+const PIN_NEAR_PX = 260;
+const PIN_FAR_PX = 600;
 // Sensor smoothing: quick while walking, slower when close so the marker settles instead of dancing
 const ALPHA_ORIENTATION = 0.25;
 const ALPHA_POSITION = 0.3;
@@ -175,10 +178,11 @@ export const ARGuidanceScreen: React.FC<ARGuidanceScreenProps> = ({
   });
   const accuracy = Math.max(1, targetGrave.positionAccuracyMeters || 1);
   const ringWidth = Math.min(viewport.width * 1.5, 2 * accuracy * marker.pxPerMeter);
-  const caption =
-    distance <= NEARBY_M
-      ? `± ${accuracy} m. Not the right name? Look around this spot.`
-      : 'Head toward the marker';
+  // The line is the guide while walking; the marker and ring only take over once the person is at the spot
+  const caption = arrived ? `± ${accuracy} m. Not the right name? Look around this spot.` : 'Follow the line';
+  // Where the pin stands along the line: near the far end when the grave is far, closer as the walk ends
+  const pinAlong = Math.min(1, Math.max(0, (distance - ARRIVED_M) / PIN_FAR_M));
+  const pinBottom = PIN_NEAR_PX + pinAlong * (PIN_FAR_PX - PIN_NEAR_PX);
 
   // Start the rear camera. The <video> element is always mounted so the stream
   // can be attached as soon as permission is granted.
@@ -287,11 +291,22 @@ export const ARGuidanceScreen: React.FC<ARGuidanceScreenProps> = ({
           style={{
             transform: `translateX(-50%) rotateX(66deg) rotateZ(${pathTurn}deg)`,
             transformOrigin: '50% 100%',
+            // Lets the pin below counter-rotate and stand upright on the tilted plane
+            transformStyle: 'preserve-3d',
           }}
         >
           {!arrived && (
             <>
               <div className="absolute inset-x-6 inset-y-0 rounded-t-full bg-gradient-to-t from-emerald-400/35 via-emerald-400/10 to-transparent" />
+              {/* The destination pin stands on the line where the walk ends */}
+              <div
+                className="absolute left-1/2"
+                style={{ bottom: pinBottom, transform: 'translateX(-50%) rotateX(-66deg)', transformOrigin: '50% 100%' }}
+              >
+                <div className="animate-ar-marker">
+                  <MapPin className="w-20 h-20 text-emerald-400 fill-emerald-500/60 drop-shadow-[0_6px_12px_rgba(0,0,0,0.6)]" strokeWidth={1.75} />
+                </div>
+              </div>
               {Array.from({ length: CHEVRON_COUNT }, (_, i) => (
                 <svg
                   key={i}
@@ -318,39 +333,43 @@ export const ARGuidanceScreen: React.FC<ARGuidanceScreenProps> = ({
         </div>
       </div>
 
-      {/* Grave marker on the camera view. Placed from compass, tilt and distance, so it can be a few metres out. */}
-      <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden" aria-hidden="true">
-        {marker.onScreen ? (
-          <div className="absolute" style={{ left: marker.x, top: marker.y }}>
-            {/* Ring centred on the projected ground point: the grave is somewhere inside it */}
-            <div
-              className="absolute rounded-full border-2 border-emerald-300/70 bg-emerald-400/20"
-              style={{ width: ringWidth, height: ringWidth * 0.35, transform: 'translate(-50%, -50%)' }}
-            />
-            {/* The pin stands on the ground point. Scale sits on this wrapper because the bounce owns transform inside */}
-            <div
-              className="absolute left-0 bottom-0"
-              style={{ transform: `translateX(-50%) scale(${marker.scale})`, transformOrigin: '50% 100%' }}
-            >
-              <div className="animate-ar-marker">
-                <MapPin className="w-14 h-14 text-emerald-400 fill-emerald-500/60 drop-shadow-[0_4px_10px_rgba(0,0,0,0.6)]" strokeWidth={1.75} />
+      {/* At the spot the line stops and the marker takes over: placed from compass, tilt and distance, so it can be a
+          few metres out, which is what the ring shows */}
+      {arrived && (
+        <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden" aria-hidden="true">
+          {marker.onScreen ? (
+            <div className="absolute" style={{ left: marker.x, top: marker.y }}>
+              {/* Ring centred on the projected ground point: the grave is somewhere inside it */}
+              <div
+                className="absolute rounded-full border-2 border-emerald-300/70 bg-emerald-400/20"
+                style={{ width: ringWidth, height: ringWidth * 0.35, transform: 'translate(-50%, -50%)' }}
+              />
+              {/* The pin stands on the ground point. Scale sits on this wrapper because the bounce owns transform inside */}
+              <div
+                className="absolute left-0 bottom-0"
+                style={{ transform: `translateX(-50%) scale(${marker.scale})`, transformOrigin: '50% 100%' }}
+              >
+                <div className="animate-ar-marker">
+                  <MapPin className="w-14 h-14 text-emerald-400 fill-emerald-500/60 drop-shadow-[0_4px_10px_rgba(0,0,0,0.6)]" strokeWidth={1.75} />
+                </div>
               </div>
             </div>
+          ) : (
             <div
-              className="absolute left-0 w-max max-w-[240px] text-center text-[11px] font-semibold text-white bg-black/60 backdrop-blur-md rounded-full px-3 py-1"
-              style={{ top: (ringWidth * 0.35) / 2 + 8, transform: 'translateX(-50%)' }}
+              className="absolute left-1/2 top-1/2 w-36 h-36 flex items-start justify-center"
+              style={{ marginLeft: -72, marginTop: -72, transform: `rotate(${marker.edgeAngleDeg + 90}deg)` }}
             >
-              {caption}
+              <ArrowUp className="w-10 h-10 text-emerald-400 drop-shadow-[0_2px_6px_rgba(0,0,0,0.7)]" strokeWidth={2.5} />
             </div>
-          </div>
-        ) : (
-          <div
-            className="absolute left-1/2 top-1/2 w-36 h-36 flex items-start justify-center"
-            style={{ marginLeft: -72, marginTop: -72, transform: `rotate(${marker.edgeAngleDeg + 90}deg)` }}
-          >
-            <ArrowUp className="w-10 h-10 text-emerald-400 drop-shadow-[0_2px_6px_rgba(0,0,0,0.7)]" strokeWidth={2.5} />
-          </div>
-        )}
+          )}
+        </div>
+      )}
+
+      {/* What to do right now, kept out of the camera view like the destination label at the top */}
+      <div className="absolute inset-x-0 bottom-32 z-30 flex justify-center pointer-events-none px-6">
+        <div className="max-w-[300px] bg-black/60 backdrop-blur-md border border-white/20 rounded-xl px-4 py-2 text-sm font-semibold text-white text-center" role="status">
+          {caption}
+        </div>
       </div>
 
       {/* Floating Distance Badge matching Screen 7 */}
