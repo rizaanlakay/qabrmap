@@ -27,6 +27,8 @@ describe('GPS Fix Smoother Tests', () => {
     const fix = smoothFixes(fixes, NOW);
     expect(fix?.accuracy).toBe(6);
     expect(fix?.lat).toBeCloseTo(BASE.lat + 100 * ONE_METER_LAT, 7);
+    // The timestamp is the best fix's, so a consumer can pair the fix with the pose from that moment
+    expect(fix?.at).toBe(NOW - 1000);
   });
 
   it('averages fixes within the stillness radius of the best one and ignores the others', () => {

@@ -12,6 +12,8 @@ export interface SmoothedFix {
   lat: number;
   lng: number;
   accuracy: number;
+  // When the reported accuracy was measured, so a consumer can pair the fix with its own moment
+  at: number;
 }
 
 // Browser fixes jitter from one second to the next; the best one in this window is what the phone can really do
@@ -48,5 +50,5 @@ export function smoothFixes(fixes: TimedFix[], now: number): SmoothedFix | null 
     lng += fix.lng * weight;
   }
 
-  return { lat: lat / sumWeights, lng: lng / sumWeights, accuracy: best.accuracy };
+  return { lat: lat / sumWeights, lng: lng / sumWeights, accuracy: best.accuracy, at: best.at };
 }

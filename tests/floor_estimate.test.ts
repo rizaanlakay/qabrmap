@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   createFloorEstimator,
   MAX_DROP_BELOW_CAMERA_M,
+  MAX_RISE_ABOVE_FLOOR_M,
   MIN_DROP_BELOW_CAMERA_M,
   MIN_SAMPLES_FOR_FLOOR,
 } from '../src/lib/ar/floorEstimate';
@@ -31,6 +32,19 @@ describe('Floor Estimate Tests', () => {
     floor.addSample(0.3, 1.2); // a chair seat
     floor.addSample(0.2, 1.2);
     expect(floor.floorY()).toBe(-0.5);
+  });
+
+  it('does not let stone tops drag an established floor upward', () => {
+    const floor = createFloorEstimator();
+    for (let i = 0; i < 10; i++) floor.addSample(0, 1.5);
+    expect(floor.floorY()).toBe(0);
+    expect(MAX_RISE_ABOVE_FLOOR_M).toBe(0.3);
+    // A row of headstone tops, all well above the ground the tracker already found
+    for (let i = 0; i < 20; i++) expect(floor.addSample(0.6, 1.5)).toBe(false);
+    expect(floor.floorY()).toBe(0);
+    // A real step down is still followed
+    for (let i = 0; i < 20; i++) expect(floor.addSample(-0.2, 1.5)).toBe(true);
+    expect(floor.floorY()).toBe(-0.2);
   });
 
   it('keeps only the newest samples so a change of ground level is followed', () => {

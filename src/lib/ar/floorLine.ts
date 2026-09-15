@@ -96,9 +96,9 @@ export function createFloorLine(): FloorLine {
     chevrons.forEach((chevron, i) => {
       const distance = i * spacing + travelled;
       chevron.position.z = -distance;
-      // Fade in near the feet and out toward the far end, so the line has no hard edges
+      // Fade in near the feet and out toward the line's own end, so a shortened line fades instead of popping
       const fadeIn = Math.min(1, distance / 1.5);
-      const fadeOut = Math.min(1, (FLOOR_LINE_LENGTH_M - distance) / 3);
+      const fadeOut = Math.min(1, (currentLength - distance) / 3);
       chevron.material.opacity = Math.max(0, Math.min(fadeIn, fadeOut));
       chevron.visible = distance <= currentLength;
     });

@@ -7,6 +7,8 @@ export const MIN_DROP_BELOW_CAMERA_M = 0.4;
 export const MAX_DROP_BELOW_CAMERA_M = 2.5;
 // Samples kept for the median; enough to ride out a few stray points
 export const FLOOR_SAMPLE_WINDOW = 40;
+// Once the floor is known, points more than this above it are stone tops and kerbs, not ground
+export const MAX_RISE_ABOVE_FLOOR_M = 0.3;
 
 export interface FloorEstimator {
   // Feeds one candidate point height and the camera height it was seen from. Returns true if it was kept.
@@ -20,20 +22,24 @@ export const MIN_SAMPLES_FOR_FLOOR = 8;
 
 export function createFloorEstimator(windowSize: number = FLOOR_SAMPLE_WINDOW): FloorEstimator {
   const samples: number[] = [];
+  const median = (): number | null => {
+    if (samples.length < MIN_SAMPLES_FOR_FLOOR) return null;
+    const sorted = [...samples].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 === 1 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  };
   return {
     addSample(pointY, cameraY) {
       const drop = cameraY - pointY;
       if (!Number.isFinite(drop) || drop < MIN_DROP_BELOW_CAMERA_M || drop > MAX_DROP_BELOW_CAMERA_M) return false;
+      // An established floor cannot be dragged up by a row of headstone tops; a real step down still counts
+      const floor = median();
+      if (floor !== null && pointY - floor > MAX_RISE_ABOVE_FLOOR_M) return false;
       samples.push(pointY);
       if (samples.length > windowSize) samples.shift();
       return true;
     },
-    floorY() {
-      if (samples.length < MIN_SAMPLES_FOR_FLOOR) return null;
-      const sorted = [...samples].sort((a, b) => a - b);
-      const mid = Math.floor(sorted.length / 2);
-      return sorted.length % 2 === 1 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
-    },
+    floorY: median,
     sampleCount: () => samples.length,
   };
 }

@@ -111,6 +111,72 @@ describe('Scene Driver Tests', () => {
     driver.dispose();
   });
 
+  it('plants the grave from the camera pose recorded at the fix, not from where the phone is now', () => {
+    const engine = fakeEngine();
+    let wall = 0;
+    const driver = createSceneDriver(engine.XR8, () => 0, () => wall);
+    driver.pipelineModule.onStart?.({ canvasWidth: 390, canvasHeight: 780 });
+    driver.setHeading(0);
+    wall = 1000;
+    driver.pipelineModule.onUpdate?.(normal);
+    // The fix below was taken here, then the phone walked 6 m before the smoother reported it
+    engine.camera.position.z = -6;
+    wall = 7000;
+    driver.pipelineModule.onUpdate?.(normal);
+    driver.setTarget({ bearingDeg: 0, distanceM: 10, at: 1000 });
+    driver.pipelineModule.onUpdate?.(normal);
+    const pin = engine.scene.getObjectByName('grave-pin') as THREE.Group;
+    expect(pin.position.z).toBeCloseTo(-10, 6);
+    driver.dispose();
+  });
+
+  it('holds arrival until the person is clearly walking away again', () => {
+    const engine = fakeEngine();
+    const driver = createSceneDriver(engine.XR8, () => 0);
+    driver.pipelineModule.onStart?.({ canvasWidth: 390, canvasHeight: 780 });
+    driver.setHeading(0);
+    driver.setTarget({ bearingDeg: 0, distanceM: 10 });
+    driver.pipelineModule.onUpdate?.(normal);
+    const line = engine.scene.getObjectByName('floor-line') as THREE.Group;
+    expect(driver.state().arrived).toBe(false);
+    // 4 m from the grave
+    engine.camera.position.z = -6;
+    driver.pipelineModule.onUpdate?.(normal);
+    expect(driver.state().arrived).toBe(true);
+    expect(line.visible).toBe(false);
+    // 6 m: inside the exit band, so arrival holds and the line stays hidden
+    engine.camera.position.z = -4;
+    driver.pipelineModule.onUpdate?.(normal);
+    expect(driver.state().arrived).toBe(true);
+    expect(line.visible).toBe(false);
+    // 7 m: clearly walking away again
+    engine.camera.position.z = -3;
+    driver.pipelineModule.onUpdate?.(normal);
+    expect(driver.state().arrived).toBe(false);
+    expect(line.visible).toBe(true);
+    driver.dispose();
+  });
+
+  it('does not learn north while the phone is turning', () => {
+    const engine = fakeEngine();
+    const driver = createSceneDriver(engine.XR8, () => 0);
+    driver.pipelineModule.onStart?.({ canvasWidth: 390, canvasHeight: 780 });
+    driver.setHeading(0);
+    driver.setTarget({ bearingDeg: 0, distanceM: 10 });
+    driver.pipelineModule.onUpdate?.(normal);
+    const line = engine.scene.getObjectByName('floor-line') as THREE.Group;
+    expect(line.rotation.y).toBeCloseTo(0, 6);
+    // Turning 10 degrees a frame while the compass still reads 0: the offset must not follow the engine yaw,
+    // so a bearing of 0 keeps pointing along the engine's starting direction
+    for (let i = 1; i <= 5; i++) {
+      engine.camera.rotation.y = (i * 10 * Math.PI) / 180;
+      driver.setTarget({ bearingDeg: 0, distanceM: 10 });
+      driver.pipelineModule.onUpdate?.(normal);
+    }
+    expect(line.rotation.y).toBeCloseTo(0, 6);
+    driver.dispose();
+  });
+
   it('keeps the grave planted while the person walks between fixes', () => {
     const engine = fakeEngine();
     const driver = createSceneDriver(engine.XR8, () => 0);

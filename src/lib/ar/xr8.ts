@@ -29,7 +29,6 @@ export interface XR8Api {
   run: (options: { canvas: HTMLCanvasElement; allowedDevices?: unknown }) => void;
   stop: () => void;
   addCameraPipelineModules: (modules: XR8PipelineModule[]) => void;
-  removeCameraPipelineModule: (name: string) => void;
   clearCameraPipelineModules: () => void;
   GlTextureRenderer: { pipelineModule: () => XR8PipelineModule };
   Threejs: {
@@ -72,8 +71,13 @@ export function loadXR8(): Promise<XR8Api> {
 
   loading = new Promise<XR8Api>((resolve, reject) => {
     const onLoaded = () => {
-      if (window.XR8) resolve(window.XR8);
-      else reject(new Error('The AR engine loaded but did not start'));
+      if (window.XR8) {
+        resolve(window.XR8);
+        return;
+      }
+      // Not cached as a failure: a later visit to the AR screen should be free to try the download again
+      loading = null;
+      reject(new Error('The AR engine loaded but did not start'));
     };
     window.addEventListener('xrloaded', onLoaded, { once: true });
 
