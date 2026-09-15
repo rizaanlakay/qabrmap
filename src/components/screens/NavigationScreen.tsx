@@ -1128,9 +1128,13 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
     if (isNearby) snapSheet(true);
   }, [isNearby, snapSheet]);
 
-  // The AR engine is a large download, so fetch it as soon as the "Open AR" prompt appears
+  // The AR engine is a large download, so fetch it as soon as the "Open AR" prompt appears. Latched, so
+  // walking in and out of range does not ask for it again.
+  const preloadedXR8Ref = useRef(false);
   useEffect(() => {
-    if (isNearby) preloadXR8();
+    if (!isNearby || preloadedXR8Ref.current) return;
+    preloadedXR8Ref.current = true;
+    preloadXR8();
   }, [isNearby]);
 
   // External turn-by-turn navigation URL for drivers

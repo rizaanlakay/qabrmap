@@ -11,7 +11,7 @@ import { useWakeLock } from '@/lib/device/useWakeLock';
 import { useCompassHeading } from '@/lib/device/useCompassHeading';
 import type { CompassStatus } from '@/lib/device/compass';
 import { graveNumberLabel } from '@/lib/ui/graveLabels';
-import { pruneFixes, smoothFixes, TimedFix } from '@/lib/capture/gpsFixes';
+import { pruneFixes, smoothFixes, SmoothedFix, TimedFix } from '@/lib/capture/gpsFixes';
 import { smoothAngle, smoothValue } from '@/lib/ar/smoothing';
 import { loadXR8, XR8Api, XR_ENGINE_LICENSE_URL, XR_ENGINE_NOTICE } from '@/lib/ar/xr8';
 import { ARRIVED_M, createSceneDriver, DriverState } from '@/lib/ar/sceneDriver';
@@ -33,8 +33,9 @@ interface ARTrackedGuidanceScreenProps {
 // Sensor smoothing for the badge and turn text, as on the sensor screen
 const ALPHA_POSITION = 0.3;
 const ALPHA_ORIENTATION = 0.25;
-// A phone that cannot track or align within this long gets the sensor screen instead of a camera feed with no line
-const NO_TRACKING_FALLBACK_MS = 20_000;
+// One deadline for the whole start-up (engine download, camera prompt, first world lock and compass). Once the
+// scene has aligned it never fires again: limited tracking mid-walk is handled on screen, not by leaving.
+const STARTUP_FALLBACK_MS = 30_000;
 
 function describeMissingHeading(status: CompassStatus): string {
   if (status === 'needs-permission') return 'Tap the screen to start the compass';
@@ -65,7 +66,12 @@ export const ARTrackedGuidanceScreen: React.FC<ARTrackedGuidanceScreenProps> = (
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const driverRef = useRef<ReturnType<typeof createSceneDriver> | null>(null);
   const [engineStatus, setEngineStatus] = useState<'loading' | 'camera' | 'running'>('loading');
-  const [driverState, setDriverState] = useState<DriverState>({ tracking: 'initialising', floorMeasured: false, aligned: false });
+  const [driverState, setDriverState] = useState<DriverState>({
+    tracking: 'initialising',
+    floorMeasured: false,
+    aligned: false,
+    arrived: false,
+  });
   const { heading: phoneHeading, status: compassStatus } = useCompassHeading();
 
   // Callbacks read through refs so the engine and GPS effects run once
@@ -78,7 +84,8 @@ export const ARTrackedGuidanceScreen: React.FC<ARTrackedGuidanceScreenProps> = (
 
   // Own GPS watch, smoothed like the capture screen
   const fixesRef = useRef<TimedFix[]>([]);
-  const [fix, setFix] = useState<VisitFix | null>(null);
+  // Held as the smoothed fix rather than the visit shape, since the driver needs the fix's timestamp too
+  const [fix, setFix] = useState<SmoothedFix | null>(null);
   useEffect(() => {
     if (typeof navigator === 'undefined' || !navigator.geolocation) return;
     const watchId = navigator.geolocation.watchPosition(
@@ -101,9 +108,15 @@ export const ARTrackedGuidanceScreen: React.FC<ARTrackedGuidanceScreenProps> = (
   const rawDistance = here ? calculateDistanceMeters(here.lat, here.lng, targetGrave.latitude, targetGrave.longitude) : initialDistance;
   const rawBearing = here ? calculateBearing(here.lat, here.lng, targetGrave.latitude, targetGrave.longitude) : 0;
 
+  // The grave is planted only from this screen's own GPS fix, never from the page's default location, and it
+  // carries the fix's timestamp so the driver pairs it with the camera pose from that moment
+  const fixDistance = fix ? calculateDistanceMeters(fix.lat, fix.lng, targetGrave.latitude, targetGrave.longitude) : null;
+  const fixBearing = fix ? calculateBearing(fix.lat, fix.lng, targetGrave.latitude, targetGrave.longitude) : null;
+
   // Read by the engine effect when the driver is created, so the first fix and heading reach it at once
-  const targetRef = useRef<{ bearingDeg: number; distanceM: number } | null>(null);
-  targetRef.current = here ? { bearingDeg: rawBearing, distanceM: rawDistance } : null;
+  const targetRef = useRef<{ bearingDeg: number; distanceM: number; at: number } | null>(null);
+  targetRef.current =
+    fix && fixBearing !== null && fixDistance !== null ? { bearingDeg: fixBearing, distanceM: fixDistance, at: fix.at } : null;
   const headingRef = useRef<number | null>(null);
   headingRef.current = phoneHeading;
   const [driverReady, setDriverReady] = useState(false);
@@ -121,12 +134,15 @@ export const ARTrackedGuidanceScreen: React.FC<ARTrackedGuidanceScreenProps> = (
 
   const distance = liveDistance ?? rawDistance;
   const bearing = targetBearing ?? rawBearing;
-  const arrived = distance <= ARRIVED_M;
+  // The driver decides arrival once it owns the world; before that the GPS distance is all there is
+  const arrived =
+    engineStatus === 'running' && driverState.aligned ? driverState.arrived : distance <= ARRIVED_M;
 
-  // Feed the scene: the grave from each fix, the compass whenever it changes
+  // Feed the scene: the grave from each fix, the compass whenever it changes.
+  // driverReady is a dependency so both feeds run again once the driver exists.
   useEffect(() => {
-    if (here) driverRef.current?.setTarget({ bearingDeg: rawBearing, distanceM: rawDistance });
-  }, [here, rawBearing, rawDistance, driverReady]);
+    if (targetRef.current) driverRef.current?.setTarget(targetRef.current);
+  }, [fix, fixBearing, fixDistance, driverReady]);
   useEffect(() => {
     driverRef.current?.setHeading(phoneHeading);
   }, [phoneHeading, driverReady]);
@@ -222,12 +238,17 @@ export const ARTrackedGuidanceScreen: React.FC<ARTrackedGuidanceScreenProps> = (
     if (compassStatus === 'denied' || compassStatus === 'unsupported') onFallbackRef.current(`compass-${compassStatus}`);
   }, [compassStatus]);
 
+  const hasAlignedRef = useRef(false);
   useEffect(() => {
-    if (engineStatus !== 'running') return;
-    if (driverState.aligned && driverState.tracking === 'normal') return;
-    const timer = window.setTimeout(() => onFallbackRef.current('no-tracking'), NO_TRACKING_FALLBACK_MS);
+    if (driverState.aligned && driverState.tracking === 'normal') hasAlignedRef.current = true;
+  }, [driverState.aligned, driverState.tracking]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      if (!hasAlignedRef.current) onFallbackRef.current('startup-timeout');
+    }, STARTUP_FALLBACK_MS);
     return () => window.clearTimeout(timer);
-  }, [engineStatus, driverState.aligned, driverState.tracking]);
+  }, []);
 
   let guidanceText = 'Keep straight';
   const diffAngle = heading === null ? 0 : ((bearing - heading + 540) % 360) - 180;
@@ -244,7 +265,9 @@ export const ARTrackedGuidanceScreen: React.FC<ARTrackedGuidanceScreenProps> = (
       ? 'Loading the AR engine…'
       : engineStatus === 'camera'
         ? 'Starting the camera…'
-        : describeTracking(driverState, arrived, accuracy);
+        : fix === null
+          ? 'Getting your position…'
+          : describeTracking(driverState, arrived, accuracy);
 
   return (
     <div className="flex-1 flex flex-col relative bg-black overflow-hidden select-none">
