@@ -4,7 +4,6 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Cemetery, Grave, DeviceTelemetry, AIStructuredExtraction, SurveySession } from '@/types';
 import { dataStore } from '@/lib/data/store';
 import { getGraveIdFromUrl, withGraveParam } from '@/lib/share/graveLink';
-import { syncManager } from '@/lib/offline/sync';
 import { compassPermission } from '@/lib/device/compass';
 
 // Components
@@ -76,7 +75,7 @@ function QabrMapAppContent() {
   const [storeVersion, setStoreVersion] = useState(0);
   const [mounted, setMounted] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
-  const [pendingUploads, setPendingUploads] = useState(3);
+  const [pendingUploads, setPendingUploads] = useState(0);
 
   // Keep mobile screen awake when navigating to a cemetery or in AR mode
   const shouldKeepAwake = ['navigation', 'ar-guidance', 'cemetery-map'].includes(currentScreen);
@@ -169,13 +168,15 @@ function QabrMapAppContent() {
       if (defaultGrave) setSelectedGrave((prev) => prev ?? defaultGrave);
     });
 
-    // Subscribe to SyncManager
-    const unsub = syncManager.subscribe((status) => {
-      setIsOffline(!status.isOnline);
-      setPendingUploads(status.pendingCount || 3);
-    });
-
-    return () => unsub();
+    // Track the connection for the offline screen
+    const updateOnline = () => setIsOffline(!navigator.onLine);
+    updateOnline();
+    window.addEventListener('online', updateOnline);
+    window.addEventListener('offline', updateOnline);
+    return () => {
+      window.removeEventListener('online', updateOnline);
+      window.removeEventListener('offline', updateOnline);
+    };
   }, []);
 
   // Mapping a grave records who added it, so signed-out visitors are asked to sign in first
@@ -287,9 +288,8 @@ function QabrMapAppContent() {
     setCurrentScreen('grave-details');
   };
 
-  // Trigger Sync
+  // Survey captures are processed by the survey queue; Task 9 wires it in here
   const handleTriggerSync = async () => {
-    await syncManager.syncPendingUploads();
     setPendingUploads(0);
   };
 

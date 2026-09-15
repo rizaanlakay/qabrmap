@@ -1,4 +1,5 @@
 // Core TypeScript domain models for QabrMap
+import type { MatchCandidate } from '../lib/graves/matchCandidate';
 
 export type ConfidenceLevel = 'HIGH' | 'MEDIUM' | 'LOW';
 
@@ -178,18 +179,73 @@ export interface SurveySession {
   reviewCount: number;
 }
 
-export interface OfflineUploadQueueItem {
+// A survey of one cemetery on this phone. Its captures live on the phone until they become graves.
+export type SurveyStatus = 'ACTIVE' | 'COMPLETED';
+
+export interface SurveyCounts {
+  captured: number;
+  saved: number;
+  pending: number;
+  review: number;
+}
+
+export interface Survey {
   id: string;
-  graveId?: string;
-  surveySessionId?: string;
+  userId: string;
   cemeteryId: string;
-  photoBlob: Blob | string; // Base64 or Blob
-  telemetry: DeviceTelemetry;
-  extractedDraft?: Partial<AIStructuredExtraction>;
-  status: 'queued' | 'syncing' | 'completed' | 'failed';
-  retryCount: number;
+  cemeteryName: string;
+  sectionNote: string;
+  startedAt: string;
+  completedAt?: string;
+  status: SurveyStatus;
+  // Last successful write to survey_sessions, and the counts it wrote
+  cloudSyncedAt?: string;
+  cloudCounts?: SurveyCounts;
+}
+
+export type CaptureStatus = 'queued' | 'reading' | 'saving' | 'review' | 'saved' | 'failed';
+
+export type ReviewReason = 'no-name' | 'low-confidence' | 'outside-cemetery' | 'possible-duplicate' | 'unreadable';
+
+// Same shape as SaveAttempt, stored so a retried save reuses its ids and uploaded photo
+export interface CaptureSaveAttempt {
+  graveId: string;
+  personId: string;
+  upload?: { publicUrl: string; path: string };
+}
+
+export interface SurveyCapture {
+  id: string;
+  surveyId: string;
+  userId: string;
+  cemeteryId: string;
   createdAt: string;
-  error?: string;
+  // JPEG, long edge 1600 px; removed once the capture is saved
+  photo?: Blob;
+  // JPEG data URL, long edge 160 px; kept for the list
+  thumbnail: string;
+  telemetry: DeviceTelemetry;
+  insideBoundary: boolean;
+  status: CaptureStatus;
+  reviewReason?: ReviewReason;
+  reading?: AIStructuredExtraction;
+  readAttempts: number;
+  saveFailures: number;
+  manualRetries: number;
+  // Epoch milliseconds; 0 means as soon as possible
+  nextAttemptAt: number;
+  lastError?: string;
+  attempt: CaptureSaveAttempt;
+  graveId?: string;
+  outcome?: 'created' | 'added-photo';
+  matchCandidate?: MatchCandidate;
+}
+
+// Stored per surveyor, so a queue paused after repeated errors stays paused until they tap Resume
+export interface SurveyQueueState {
+  userId: string;
+  consecutiveFailures: number;
+  pausedForErrors: boolean;
 }
 
 export interface ProvenanceLog {

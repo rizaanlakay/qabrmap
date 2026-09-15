@@ -306,10 +306,6 @@ class DataStore {
       // 1. Initialize Dexie offline tables
       await offlineDb.cemeteries.bulkPut(this.memoryCemeteries);
       await offlineDb.graves.bulkDelete(SAMPLE_GRAVE_IDS);
-      const sessCount = await offlineDb.surveySessions.count();
-      if (sessCount === 0) {
-        await offlineDb.surveySessions.put(this.activeSurvey);
-      }
       this.isInitialized = true;
 
       // 2. Check if user is logged in to sync their saved graves
@@ -637,15 +633,6 @@ class DataStore {
   // --- SURVEY SESSIONS ---
   getActiveSurveySession(): SurveySession {
     return this.activeSurvey;
-  }
-
-  async updateSurveySession(session: SurveySession): Promise<void> {
-    this.activeSurvey = session;
-    if (typeof window !== 'undefined') {
-      try {
-        await offlineDb.surveySessions.put(session);
-      } catch (e) {}
-    }
   }
 
   // --- PROVENANCE ---

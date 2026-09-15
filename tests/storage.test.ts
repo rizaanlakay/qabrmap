@@ -1,12 +1,10 @@
 import 'fake-indexeddb/auto';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { dataUrlToBlob, uploadGravePhoto, GRAVE_PHOTOS_BUCKET } from '../src/lib/supabase/storage';
-import { syncManager } from '../src/lib/offline/sync';
 import { offlineDb } from '../src/lib/offline/db';
 
 describe('Supabase Storage & Gravestone Photo Management Tests', () => {
   beforeEach(async () => {
-    await offlineDb.offlineUploadQueue.clear();
     await offlineDb.graves.clear();
   });
 
@@ -50,50 +48,5 @@ describe('Supabase Storage & Gravestone Photo Management Tests', () => {
 
   it('uses grave-photos as the target storage bucket', () => {
     expect(GRAVE_PHOTOS_BUCKET).toBe('grave-photos');
-  });
-
-  it('enqueues photo into offline queue and syncPendingUploads completes successfully', async () => {
-    const graveId = 'grave_test_offline_1';
-    await offlineDb.graves.put({
-      id: graveId,
-      cemeteryId: 'cem_athlone',
-      graveNumber: 'A-101',
-      latitude: -33.9,
-      longitude: 18.5,
-      positionAccuracyMeters: 2.0,
-      positionConfidence: 'HIGH',
-      status: 'MAPPED',
-      primaryPhotoUrl: 'data:image/jpeg;base64,/9j/4AAQSkZJRg==',
-      photoCount: 1,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    });
-
-    // Enqueue an upload
-    await offlineDb.offlineUploadQueue.add({
-      id: 'queue_test_1',
-      graveId,
-      cemeteryId: 'cem_athlone',
-      photoBlob: '/sample-gravestone.svg', // will bypass storage network call
-      telemetry: {
-        latitude: -33.9,
-        longitude: 18.5,
-        gpsAccuracy: 2.0,
-        timestamp: new Date().toISOString(),
-      },
-      status: 'queued',
-      retryCount: 0,
-      createdAt: new Date().toISOString(),
-    });
-
-    const pendingBefore = await syncManager.getPendingCount();
-    expect(pendingBefore).toBe(1);
-
-    const syncResult = await syncManager.syncPendingUploads();
-    expect(syncResult.synced).toBe(1);
-    expect(syncResult.failed).toBe(0);
-
-    const pendingAfter = await syncManager.getPendingCount();
-    expect(pendingAfter).toBe(0);
   });
 });
