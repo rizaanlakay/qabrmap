@@ -543,6 +543,7 @@ function QabrMapAppContent() {
           <ARGuidanceScreen
             targetGrave={selectedGrave}
             userLocation={userLocation}
+            onConfirmVisit={handleConfirmVisit}
             onClose={() => setCurrentScreen('navigation')}
           />
         )}

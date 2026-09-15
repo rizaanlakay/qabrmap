@@ -110,6 +110,15 @@ body {
   }
 }
 
+/* AR grave marker: a slow bob so it reads as a pin standing on the ground */
+@keyframes ar-marker-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-14%); }
+}
+.animate-ar-marker {
+  animation: ar-marker-bounce 1.6s infinite ease-in-out;
+}
+
 /* Islamic Geometric Border Accent */
 .islamic-pattern {
   background-color: #143A2E;
