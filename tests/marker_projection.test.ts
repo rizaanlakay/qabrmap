@@ -49,6 +49,20 @@ describe('AR Marker Projection Tests', () => {
     const p = projectGroundTarget({ bearingDiffDeg: 0, pitchDeg: 0, distanceM: 10, ...view });
     expect(p.pxPerMeter).toBeCloseTo(200 / (Math.tan((32.5 * Math.PI) / 180) * 10), 6);
   });
+
+  it('pins straight up when only the tilt takes the target out of view', () => {
+    const p = projectGroundTarget({ bearingDiffDeg: 0, pitchDeg: -100, distanceM: 10, ...view });
+    expect(p.onScreen).toBe(false);
+    expect(p.x).toBeCloseTo(200, 6);
+    expect(p.y).toBeLessThan(0);
+    expect(p.edgeAngleDeg).toBeCloseTo(-90, 6);
+  });
+
+  it('keeps every value finite at zero distance', () => {
+    const p = projectGroundTarget({ bearingDiffDeg: 0, pitchDeg: 0, distanceM: 0, ...view });
+    expect(Number.isFinite(p.x) && Number.isFinite(p.y) && Number.isFinite(p.pxPerMeter)).toBe(true);
+    expect(p.scale).toBe(1.6);
+  });
 });
 
 describe('AR Smoothing Tests', () => {

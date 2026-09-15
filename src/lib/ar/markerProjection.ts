@@ -46,11 +46,16 @@ export function projectGroundTarget(input: ProjectionInput): MarkerProjection {
   // Angle from the view centre down to the target: the camera's tilt plus the drop to the ground
   const depression = Math.atan2(eyeHeight, distance);
   const vertical = toRad(input.pitchDeg) + depression;
-  const inFront = Math.abs(input.bearingDiffDeg) < 89 && Math.abs(toDeg(vertical)) < 89;
+  const horizontalInView = Math.abs(input.bearingDiffDeg) < 89;
+  const verticalInView = Math.abs(toDeg(vertical)) < 89;
+  const inFront = horizontalInView && verticalInView;
 
-  // Beyond the camera's half-plane the tangent flips sign, so pin those far off the matching edge instead
-  const xNorm = inFront ? Math.tan(toRad(input.bearingDiffDeg)) / tanHalfH : Math.sign(input.bearingDiffDeg || 1) * 2;
-  const yNorm = inFront ? Math.tan(vertical) / tanHalfV : 2;
+  // Past 89 degrees the tangent flips sign, so that axis pins off its own edge; the other axis keeps its true
+  // offset (clamped) so the edge arrow points the right way even when only one axis is out of view
+  const xNorm = horizontalInView
+    ? clamp(Math.tan(toRad(input.bearingDiffDeg)) / tanHalfH, -2, 2)
+    : Math.sign(input.bearingDiffDeg || 1) * 2;
+  const yNorm = verticalInView ? clamp(Math.tan(vertical) / tanHalfV, -2, 2) : Math.sign(vertical || 1) * 2;
   const onScreen = inFront && Math.abs(xNorm) <= 1 && Math.abs(yNorm) <= 1;
 
   return {
