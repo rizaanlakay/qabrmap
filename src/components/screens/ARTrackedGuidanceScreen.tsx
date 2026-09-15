@@ -33,6 +33,8 @@ interface ARTrackedGuidanceScreenProps {
 // Sensor smoothing for the badge and turn text, as on the sensor screen
 const ALPHA_POSITION = 0.3;
 const ALPHA_ORIENTATION = 0.25;
+// A phone that cannot track or align within this long gets the sensor screen instead of a camera feed with no line
+const NO_TRACKING_FALLBACK_MS = 20_000;
 
 function describeMissingHeading(status: CompassStatus): string {
   if (status === 'needs-permission') return 'Tap the screen to start the compass';
@@ -44,7 +46,7 @@ function describeMissingHeading(status: CompassStatus): string {
 // What the status pill says for each stage of tracking
 function describeTracking(state: DriverState, arrived: boolean, accuracy: number): string {
   if (state.tracking === 'initialising') return 'Move the phone slowly sideways so it can find the floor';
-  if (state.tracking === 'limited') return 'Tracking is limited. Point at the ground and move slowly';
+  if (state.tracking === 'limited') return 'Tracking is limited. Point at textured ground and move slowly';
   if (!state.aligned) return 'Waiting for the compass…';
   return arrived ? `± ${accuracy} m. Not the right name? Look around this spot.` : 'Follow the line';
 }
@@ -99,6 +101,13 @@ export const ARTrackedGuidanceScreen: React.FC<ARTrackedGuidanceScreenProps> = (
   const rawDistance = here ? calculateDistanceMeters(here.lat, here.lng, targetGrave.latitude, targetGrave.longitude) : initialDistance;
   const rawBearing = here ? calculateBearing(here.lat, here.lng, targetGrave.latitude, targetGrave.longitude) : 0;
 
+  // Read by the engine effect when the driver is created, so the first fix and heading reach it at once
+  const targetRef = useRef<{ bearingDeg: number; distanceM: number } | null>(null);
+  targetRef.current = here ? { bearingDeg: rawBearing, distanceM: rawDistance } : null;
+  const headingRef = useRef<number | null>(null);
+  headingRef.current = phoneHeading;
+  const [driverReady, setDriverReady] = useState(false);
+
   const [liveDistance, setLiveDistance] = useState<number | null>(null);
   const [targetBearing, setTargetBearing] = useState<number | null>(null);
   const [heading, setHeading] = useState<number | null>(null);
@@ -117,10 +126,10 @@ export const ARTrackedGuidanceScreen: React.FC<ARTrackedGuidanceScreenProps> = (
   // Feed the scene: the grave from each fix, the compass whenever it changes
   useEffect(() => {
     if (here) driverRef.current?.setTarget({ bearingDeg: rawBearing, distanceM: rawDistance });
-  }, [here, rawBearing, rawDistance]);
+  }, [here, rawBearing, rawDistance, driverReady]);
   useEffect(() => {
     driverRef.current?.setHeading(phoneHeading);
-  }, [phoneHeading]);
+  }, [phoneHeading, driverReady]);
 
   // Start the engine once; anything that stops it starting hands over to the sensor screen
   useEffect(() => {
@@ -133,13 +142,15 @@ export const ARTrackedGuidanceScreen: React.FC<ARTrackedGuidanceScreenProps> = (
       try {
         XR8 = await loadXR8();
       } catch (err) {
+        if (cancelled) return;
         onFallbackRef.current(err instanceof Error ? err.message : 'engine-load');
         return;
       }
       const canvas = canvasRef.current;
       if (cancelled || !canvas) return;
       engine = XR8;
-      // The engine sizes its buffer and inline style from the canvas attributes, so they must match the screen
+      // The engine sizes its drawing buffer and inline style from the canvas attributes, so they must match the
+      // screen before it starts, not the 300 by 150 default
       const fitCanvas = () => {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
@@ -154,10 +165,14 @@ export const ARTrackedGuidanceScreen: React.FC<ARTrackedGuidanceScreenProps> = (
       const driver = createSceneDriver(XR8);
       driverRef.current = driver;
       driver.onState(setDriverState);
-      driver.setHeading(phoneHeading);
+      driver.setHeading(headingRef.current);
+      if (targetRef.current) driver.setTarget(targetRef.current);
+      setDriverReady(true);
 
       try {
         XR8.XrController.configure({ scale: 'absolute', disableWorldTracking: false });
+        // The engine is a page-wide singleton, so the modules must go with the screen rather than pile up
+        XR8.clearCameraPipelineModules();
         XR8.addCameraPipelineModules([
           XR8.XrController.pipelineModule(),
           XR8.GlTextureRenderer.pipelineModule(),
@@ -165,6 +180,7 @@ export const ARTrackedGuidanceScreen: React.FC<ARTrackedGuidanceScreenProps> = (
           {
             name: 'qabrmap-screen',
             onStart: () => {
+              // The engine writes its own inline size on start; pin the canvas to the screen again
               fitCanvas();
               setEngineStatus('running');
             },
@@ -172,12 +188,13 @@ export const ARTrackedGuidanceScreen: React.FC<ARTrackedGuidanceScreenProps> = (
               if (status === 'requesting') setEngineStatus('camera');
               if (status === 'failed') onFallbackRef.current('camera');
             },
-            onException: (error) => onFallbackRef.current(error instanceof Error ? error.message : 'engine'),
+            onException: (error) => onFallbackRef.current(error instanceof Error && error.message ? error.message : 'engine'),
           },
           driver.pipelineModule,
         ]);
         XR8.run({ canvas, allowedDevices: XR8.XrConfig.device().ANY });
       } catch (err) {
+        if (cancelled) return;
         onFallbackRef.current(err instanceof Error ? err.message : 'engine-start');
       }
     };
@@ -190,6 +207,8 @@ export const ARTrackedGuidanceScreen: React.FC<ARTrackedGuidanceScreenProps> = (
       driverRef.current = null;
       try {
         engine?.stop();
+        // The engine is a page-wide singleton, so the modules must go with the screen
+        engine?.clearCameraPipelineModules();
       } catch {
         // An engine that never started has nothing to stop
       }
@@ -197,6 +216,18 @@ export const ARTrackedGuidanceScreen: React.FC<ARTrackedGuidanceScreenProps> = (
     // The heading is fed through setHeading above; the engine must not restart when it changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // The sensor screen copes without a compass; this one cannot place anything without one
+  useEffect(() => {
+    if (compassStatus === 'denied' || compassStatus === 'unsupported') onFallbackRef.current(`compass-${compassStatus}`);
+  }, [compassStatus]);
+
+  useEffect(() => {
+    if (engineStatus !== 'running') return;
+    if (driverState.aligned && driverState.tracking === 'normal') return;
+    const timer = window.setTimeout(() => onFallbackRef.current('no-tracking'), NO_TRACKING_FALLBACK_MS);
+    return () => window.clearTimeout(timer);
+  }, [engineStatus, driverState.aligned, driverState.tracking]);
 
   let guidanceText = 'Keep straight';
   const diffAngle = heading === null ? 0 : ((bearing - heading + 540) % 360) - 180;

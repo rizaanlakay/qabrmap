@@ -119,6 +119,8 @@ export function createSceneDriver(
   const pipelineModule: XR8PipelineModule = {
     name: 'qabrmap-scene',
     onStart: () => {
+      // The engine is a page-wide singleton, so a start can still reach a driver the screen has thrown away
+      if (disposed) return;
       const xr = XR8.Threejs.xrScene();
       scene = xr.scene;
       camera = xr.camera;

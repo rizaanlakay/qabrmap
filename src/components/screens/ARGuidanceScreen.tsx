@@ -8,6 +8,6 @@ import { ARTrackedGuidanceScreen } from './ARTrackedGuidanceScreen';
 // connection, the sensor-driven screen takes over with the same props
 export const ARGuidanceScreen: React.FC<ARSensorGuidanceScreenProps> = (props) => {
   const [fallbackReason, setFallbackReason] = useState<string | null>(null);
-  if (fallbackReason) return <ARSensorGuidanceScreen {...props} />;
+  if (fallbackReason !== null) return <ARSensorGuidanceScreen {...props} />;
   return <ARTrackedGuidanceScreen {...props} onFallback={setFallbackReason} />;
 };

@@ -29,6 +29,8 @@ export interface XR8Api {
   run: (options: { canvas: HTMLCanvasElement; allowedDevices?: unknown }) => void;
   stop: () => void;
   addCameraPipelineModules: (modules: XR8PipelineModule[]) => void;
+  removeCameraPipelineModule: (name: string) => void;
+  clearCameraPipelineModules: () => void;
   GlTextureRenderer: { pipelineModule: () => XR8PipelineModule };
   Threejs: {
     pipelineModule: () => XR8PipelineModule;
