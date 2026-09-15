@@ -49,4 +49,30 @@ describe('GPS Fix Smoother Tests', () => {
     const fixes = Array.from({ length: 10 }, (_, i) => ({ ...BASE, accuracy: 7, at: NOW - i * 500 }));
     expect(smoothFixes(fixes, NOW)?.accuracy).toBe(7);
   });
+  it('follows a walking person instead of clinging to an older, more accurate fix', () => {
+    // Walking north 6 m a second; the first fix happened to be the most accurate
+    const fixes = [
+      { lat: BASE.lat, lng: BASE.lng, accuracy: 3, at: NOW - 3000 },
+      { lat: BASE.lat + 6 * ONE_METER_LAT, lng: BASE.lng, accuracy: 6, at: NOW - 2000 },
+      { lat: BASE.lat + 12 * ONE_METER_LAT, lng: BASE.lng, accuracy: 6, at: NOW - 1000 },
+    ];
+    const fix = smoothFixes(fixes, NOW);
+    expect(fix?.lat).toBeCloseTo(BASE.lat + 12 * ONE_METER_LAT, 7);
+    expect(fix?.accuracy).toBe(6);
+    expect(fix?.at).toBe(NOW - 1000);
+  });
+
+  it('still averages the whole window when standing still', () => {
+    const fixes = Array.from({ length: 6 }, (_, i) => ({
+      lat: BASE.lat + (i % 2) * ONE_METER_LAT,
+      lng: BASE.lng,
+      accuracy: i === 2 ? 3 : 6,
+      at: NOW - i * 1000,
+    }));
+    const fix = smoothFixes(fixes, NOW);
+    expect(fix?.accuracy).toBe(3);
+    // Somewhere inside the 1 m spread, not pinned to any single reading
+    expect(fix?.lat).toBeGreaterThan(BASE.lat);
+    expect(fix?.lat).toBeLessThan(BASE.lat + ONE_METER_LAT);
+  });
 });

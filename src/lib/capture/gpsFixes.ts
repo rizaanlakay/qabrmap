@@ -25,20 +25,22 @@ export function pruneFixes(fixes: TimedFix[], now: number): TimedFix[] {
   return fixes.filter((fix) => now - fix.at <= FIX_WINDOW_MS);
 }
 
-// The most accurate recent fix, with its position averaged over the fixes taken standing in the same spot.
-// The accuracy is the best single reading: averaging removes jitter but not the shared GPS bias.
+// Where the phone is now: the fixes taken standing in the same spot as the newest one, averaged, reported with
+// the best single accuracy among them. Averaging removes jitter but not the shared GPS bias. Clustering around
+// the newest fix (not the most accurate one) keeps the position current while walking.
 export function smoothFixes(fixes: TimedFix[], now: number): SmoothedFix | null {
   const recent = pruneFixes(fixes, now);
   if (recent.length === 0) return null;
 
-  let best = recent[0];
-  for (const fix of recent) {
+  const latest = recent.reduce((newest, fix) => (fix.at >= newest.at ? fix : newest));
+  const still = recent.filter(
+    (fix) => calculateDistanceMeters(latest.lat, latest.lng, fix.lat, fix.lng) <= STILL_RADIUS_M
+  );
+
+  let best = still[0];
+  for (const fix of still) {
     if (fix.accuracy < best.accuracy || (fix.accuracy === best.accuracy && fix.at >= best.at)) best = fix;
   }
-
-  const still = recent.filter(
-    (fix) => calculateDistanceMeters(best.lat, best.lng, fix.lat, fix.lng) <= STILL_RADIUS_M
-  );
 
   let sumWeights = 0;
   let lat = 0;

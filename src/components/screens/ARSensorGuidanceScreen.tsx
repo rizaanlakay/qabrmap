@@ -26,6 +26,8 @@ export interface ARSensorGuidanceScreenProps {
   onClose: () => void;
   // Present only for signed-in users; records "I found it" as a position observation
   onConfirmVisit?: (grave: Grave, fix: VisitFix) => Promise<Grave>;
+  // Why the tracked AR screen handed over to this one; shown so a phone test can report it
+  fallbackNote?: string;
 }
 
 type CameraStatus = 'starting' | 'live' | 'unavailable';
@@ -73,6 +75,7 @@ export const ARSensorGuidanceScreen: React.FC<ARSensorGuidanceScreenProps> = ({
   onUpdateUserLocation,
   onClose,
   onConfirmVisit,
+  fallbackNote,
 }) => {
   // Keep mobile screen awake while using AR camera guidance
   useWakeLock(true);
@@ -277,6 +280,11 @@ export const ARSensorGuidanceScreen: React.FC<ARSensorGuidanceScreenProps> = ({
           {cameraStatus === 'unavailable' && cameraError && (
             <span className="mt-1 px-2 py-0.5 rounded-full bg-black/50 text-[10px] font-semibold text-amber-200">
               {cameraError}
+            </span>
+          )}
+          {fallbackNote && (
+            <span className="mt-1 px-2 py-0.5 rounded-full bg-black/50 text-[10px] font-semibold text-amber-200">
+              Simple AR: {fallbackNote}
             </span>
           )}
         </div>
