@@ -21,6 +21,8 @@ interface ARGuidanceScreenProps {
   targetGrave: Grave;
   userLocation?: { lat: number; lng: number };
   distanceMeters?: number;
+  // Hands the screen's own fixes back to the page, so navigation resumes where AR left off
+  onUpdateUserLocation?: (loc: { lat: number; lng: number }) => void;
   onClose: () => void;
   // Present only for signed-in users; records "I found it" as a position observation
   onConfirmVisit?: (grave: Grave, fix: VisitFix) => Promise<Grave>;
@@ -62,6 +64,7 @@ export const ARGuidanceScreen: React.FC<ARGuidanceScreenProps> = ({
   targetGrave,
   userLocation,
   distanceMeters: initialDistance = 8,
+  onUpdateUserLocation,
   onClose,
   onConfirmVisit,
 }) => {
@@ -74,6 +77,12 @@ export const ARGuidanceScreen: React.FC<ARGuidanceScreenProps> = ({
   // The same always-on, true-north compass Capture saves with every grave, so it can't be switched off or faked
   const { heading: phoneHeading, pitch: phonePitch, status: compassStatus } = useCompassHeading();
 
+  // Latest location callback, read through a ref so a new function from the parent can't restart the GPS watch
+  const onUpdateUserLocationRef = useRef(onUpdateUserLocation);
+  useEffect(() => {
+    onUpdateUserLocationRef.current = onUpdateUserLocation;
+  }, [onUpdateUserLocation]);
+
   // Own GPS watch: the navigation screen's watch stops while this screen is open
   const fixesRef = useRef<TimedFix[]>([]);
   const [fix, setFix] = useState<VisitFix | null>(null);
@@ -85,7 +94,9 @@ export const ARGuidanceScreen: React.FC<ARGuidanceScreenProps> = ({
         const now = Date.now();
         fixesRef.current = pruneFixes(fixesRef.current, now);
         fixesRef.current.push({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy, at: now });
-        setFix(smoothFixes(fixesRef.current, now));
+        const smoothed = smoothFixes(fixesRef.current, now);
+        setFix(smoothed);
+        if (smoothed) onUpdateUserLocationRef.current?.({ lat: smoothed.lat, lng: smoothed.lng });
       },
       () => {},
       { enableHighAccuracy: true, maximumAge: 2000, timeout: 15000 }
@@ -166,7 +177,7 @@ export const ARGuidanceScreen: React.FC<ARGuidanceScreenProps> = ({
   const ringWidth = Math.min(viewport.width * 1.5, 2 * accuracy * marker.pxPerMeter);
   const caption =
     distance <= NEARBY_M
-      ? `± ${targetGrave.positionAccuracyMeters} m. Not the right name? Look around this spot.`
+      ? `± ${accuracy} m. Not the right name? Look around this spot.`
       : 'Head toward the marker';
 
   // Start the rear camera. The <video> element is always mounted so the stream

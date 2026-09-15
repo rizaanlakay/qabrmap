@@ -296,6 +296,7 @@ function QabrMapAppContent() {
 
   // Open Grave Details
   const handleOpenGrave = (grave: Grave) => {
+    setDetailsNotice(null);
     setPreviousScreen(currentScreen);
     setSelectedGrave(grave);
     setCurrentScreen('grave-details');
@@ -303,6 +304,7 @@ function QabrMapAppContent() {
 
   // Navigation Trigger
   const handleStartNavigation = (grave: Grave) => {
+    setDetailsNotice(null);
     setSelectedGrave(grave);
     setCurrentScreen('navigation');
   };
@@ -543,6 +545,7 @@ function QabrMapAppContent() {
           <ARGuidanceScreen
             targetGrave={selectedGrave}
             userLocation={userLocation}
+            onUpdateUserLocation={setUserLocation}
             onConfirmVisit={handleConfirmVisit}
             onClose={() => setCurrentScreen('navigation')}
           />
@@ -621,9 +624,11 @@ function QabrMapAppContent() {
           <AddPhotoConfirmScreen
             grave={photoTargetGrave}
             capturedImage={capturedImage}
+            gravePhoto={capturedGravePhoto ?? undefined}
             telemetry={capturedTelemetry}
             onSaved={() => {
               setPhotoTargetGrave(null);
+              setCapturedGravePhoto(null);
               setGravePhotosVersion((v) => v + 1);
               setCurrentScreen('grave-details');
             }}

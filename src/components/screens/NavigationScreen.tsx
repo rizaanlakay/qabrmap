@@ -896,6 +896,11 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
     });
   }, [mapType, isMapReady, setupRouteLayers]);
 
+  // A confirmed visit can move the grave, so the pin follows the refined position
+  useEffect(() => {
+    targetMarkerRef.current?.setLngLat([targetGrave.longitude, targetGrave.latitude]);
+  }, [targetGrave.longitude, targetGrave.latitude]);
+
   // Glide the vehicle arrow between GPS fixes instead of jumping, like in-car navigation
   const markerAnimationRef = useRef<number | null>(null);
   const animateUserMarkerTo = useCallback((target: [number, number], durationMs: number) => {
