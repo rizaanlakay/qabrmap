@@ -4,6 +4,7 @@ import type { NewGraveForm } from '../src/lib/capture/newGrave';
 import {
   mapSaveGraveError,
   SaveGraveError,
+  GRAVE_MISSING_MESSAGE,
   OFFLINE_MESSAGE,
   SIGNED_OUT_MESSAGE,
   NOT_SET_UP_MESSAGE,
@@ -15,6 +16,7 @@ import {
   createSaveAttempt,
   saveMappedGrave,
   SaveMappedGraveDeps,
+  SaveMappedGraveInput,
 } from '../src/lib/capture/saveMappedGrave';
 
 const form: NewGraveForm = {
@@ -42,6 +44,16 @@ const UPLOADED = {
   path: 'cem_athlone/grave_id1.jpg',
 };
 
+const CANDIDATE_ROW = {
+  grave_id: 'grave_existing',
+  full_name: 'Abdul Wahab Narker',
+  birth_date: '1947-01-28',
+  death_date: null,
+  grave_number: '1402',
+  distance_meters: 3.1,
+  match: 'strong',
+};
+
 type RpcResult = { data: unknown; error: unknown };
 type GetUserResult = { data: { user: { id: string } | null }; error: unknown };
 
@@ -53,9 +65,16 @@ function newAttempt() {
   return createSaveAttempt(idsFrom(['id1', 'id2']));
 }
 
+function input(overrides: Partial<SaveMappedGraveInput> = {}): SaveMappedGraveInput {
+  return { form, photoDataUrl: PHOTO, telemetry, attempt: newAttempt(), matchMode: 'ask', ...overrides };
+}
+
 function makeDeps(overrides: Partial<SaveMappedGraveDeps> = {}) {
   // Loosely typed so tests can swap in failures with mockResolvedValueOnce
-  const rpc = vi.fn(async (..._args: unknown[]): Promise<RpcResult> => ({ data: 'grave_id1', error: null }));
+  const rpc = vi.fn(async (..._args: unknown[]): Promise<RpcResult> => ({
+    data: { outcome: 'created', grave_id: 'grave_id1' },
+    error: null,
+  }));
   const getUser = vi.fn(async (): Promise<GetUserResult> => ({ data: { user: { id: 'user-1' } }, error: null }));
   const deps: SaveMappedGraveDeps = {
     client: { rpc, auth: { getUser } } as unknown as SaveMappedGraveDeps['client'],
@@ -66,6 +85,8 @@ function makeDeps(overrides: Partial<SaveMappedGraveDeps> = {}) {
   };
   return { deps, rpc, getUser };
 }
+
+const rpcParams = (rpc: ReturnType<typeof makeDeps>['rpc'], call = 0) => rpc.mock.calls[call][1] as Record<string, unknown>;
 
 describe('Save Grave Error Tests', () => {
   it('treats network failures as offline', () => {
@@ -95,6 +116,13 @@ describe('Save Grave Error Tests', () => {
     });
   });
 
+  it('explains when the grave a photo was being added to is gone', () => {
+    expect(mapSaveGraveError({ code: 'P0002', message: 'That grave no longer exists.' })).toMatchObject({
+      code: 'grave-missing',
+      message: GRAVE_MISSING_MESSAGE,
+    });
+  });
+
   it('explains when the migration has not been applied yet', () => {
     expect(mapSaveGraveError({ code: 'PGRST202', message: 'Could not find the function' })).toMatchObject({
       code: 'not-set-up',
@@ -110,15 +138,17 @@ describe('Save Grave Error Tests', () => {
 });
 
 describe('Save Mapped Grave Tests', () => {
-  it('uploads the photo, then saves the grave with trimmed details', async () => {
+  it('uploads the photo, then saves the grave with trimmed details in ask mode', async () => {
     const { deps, rpc } = makeDeps();
-    const attempt = newAttempt();
-    await expect(
-      saveMappedGrave({ form, cemeteryName: 'Athlone Muslim Cemetery', photoDataUrl: PHOTO, telemetry, attempt }, deps)
-    ).resolves.toEqual({ graveId: 'grave_id1', personId: 'person_id2', photoUrl: UPLOADED.publicUrl });
+    await expect(saveMappedGrave(input({ cemeteryName: 'Athlone Muslim Cemetery' }), deps)).resolves.toEqual({
+      outcome: 'created',
+      graveId: 'grave_id1',
+      personId: 'person_id2',
+      photoUrl: UPLOADED.publicUrl,
+    });
 
     expect(deps.uploadPhoto).toHaveBeenCalledWith({ file: PHOTO, cemeteryId: 'cem_athlone', graveId: 'grave_id1', upsert: false });
-    expect(rpc).toHaveBeenCalledWith('create_mapped_grave', {
+    expect(rpc).toHaveBeenCalledWith('save_or_add_grave', {
       p_grave_id: 'grave_id1',
       p_person_id: 'person_id2',
       p_cemetery_id: 'cem_athlone',
@@ -136,37 +166,73 @@ describe('Save Mapped Grave Tests', () => {
       p_captured_at: '2026-09-15T10:00:00.000Z',
       p_photo_public_url: UPLOADED.publicUrl,
       p_photo_storage_path: UPLOADED.path,
+      p_match_mode: 'ask',
+      p_add_to_grave_id: null,
     });
     expect(deps.deletePhoto).not.toHaveBeenCalled();
   });
 
+  it('passes the survey and different-person modes through', async () => {
+    const { deps, rpc } = makeDeps();
+    await saveMappedGrave(input({ matchMode: 'auto' }), deps);
+    await saveMappedGrave(input({ matchMode: 'new' }), deps);
+    expect(rpcParams(rpc, 0).p_match_mode).toBe('auto');
+    expect(rpcParams(rpc, 1).p_match_mode).toBe('new');
+  });
+
+  it('adds the photo to the grave chosen on the duplicate card', async () => {
+    const { deps, rpc } = makeDeps();
+    rpc.mockResolvedValueOnce({ data: { outcome: 'added-photo', grave_id: 'grave_existing' }, error: null });
+    await expect(saveMappedGrave(input({ addToGraveId: 'grave_existing' }), deps)).resolves.toMatchObject({
+      outcome: 'added-photo',
+      graveId: 'grave_existing',
+      photoUrl: UPLOADED.publicUrl,
+    });
+    expect(rpcParams(rpc).p_add_to_grave_id).toBe('grave_existing');
+  });
+
+  it('returns a match without deleting the photo, so the next choice reuses it', async () => {
+    const { deps, rpc } = makeDeps();
+    const attempt = newAttempt();
+    rpc.mockResolvedValueOnce({ data: { outcome: 'match-found', grave_id: null, candidate: CANDIDATE_ROW }, error: null });
+    await expect(saveMappedGrave(input({ attempt }), deps)).resolves.toEqual({
+      outcome: 'match-found',
+      candidate: {
+        graveId: 'grave_existing',
+        fullName: 'Abdul Wahab Narker',
+        birthDate: '1947-01-28',
+        deathDate: undefined,
+        graveNumber: '1402',
+        distanceMeters: 3.1,
+        match: 'strong',
+      },
+    });
+    expect(deps.deletePhoto).not.toHaveBeenCalled();
+    expect(attempt.upload).toEqual(UPLOADED);
+
+    rpc.mockResolvedValueOnce({ data: { outcome: 'added-photo', grave_id: 'grave_existing' }, error: null });
+    await saveMappedGrave(input({ attempt, addToGraveId: 'grave_existing' }), deps);
+    expect(deps.uploadPhoto).toHaveBeenCalledTimes(1);
+  });
+
   it('stops before uploading when offline', async () => {
     const { deps } = makeDeps({ isOnline: () => false });
-    await expect(saveMappedGrave({ form, photoDataUrl: PHOTO, telemetry, attempt: newAttempt() }, deps)).rejects.toMatchObject({
-      code: 'offline',
-    });
+    await expect(saveMappedGrave(input(), deps)).rejects.toMatchObject({ code: 'offline' });
     expect(deps.uploadPhoto).not.toHaveBeenCalled();
   });
 
   it('stops when nobody is signed in', async () => {
     const { deps, getUser } = makeDeps();
     getUser.mockResolvedValueOnce({ data: { user: null }, error: null });
-    await expect(saveMappedGrave({ form, photoDataUrl: PHOTO, telemetry, attempt: newAttempt() }, deps)).rejects.toMatchObject({
-      code: 'signed-out',
-    });
+    await expect(saveMappedGrave(input(), deps)).rejects.toMatchObject({ code: 'signed-out' });
     expect(deps.uploadPhoto).not.toHaveBeenCalled();
   });
 
   it('only accepts a photo from the camera with a heading', async () => {
     const { deps } = makeDeps();
+    await expect(saveMappedGrave(input({ photoDataUrl: '/sample-gravestone.svg' }), deps)).rejects.toMatchObject({ code: 'invalid' });
     await expect(
-      saveMappedGrave({ form, photoDataUrl: '/sample-gravestone.svg', telemetry, attempt: newAttempt() }, deps)
-    ).rejects.toMatchObject({ code: 'invalid' });
-    await expect(
-      saveMappedGrave(
-        { form, photoDataUrl: PHOTO, telemetry: { ...telemetry, headingDegrees: undefined }, attempt: newAttempt() },
-        deps
-      )
+      saveMappedGrave(input({ telemetry: { ...telemetry, headingDegrees: undefined } }), deps)
     ).rejects.toMatchObject({ code: 'invalid' });
     expect(deps.uploadPhoto).not.toHaveBeenCalled();
   });
@@ -177,9 +243,7 @@ describe('Save Mapped Grave Tests', () => {
         throw new Error('storage exploded');
       }),
     });
-    await expect(
-      saveMappedGrave({ form, photoDataUrl: PHOTO, telemetry, attempt: newAttempt() }, failing.deps)
-    ).rejects.toMatchObject({ code: 'upload-failed', message: UPLOAD_FAILED_MESSAGE });
+    await expect(saveMappedGrave(input(), failing.deps)).rejects.toMatchObject({ code: 'upload-failed', message: UPLOAD_FAILED_MESSAGE });
     expect(failing.rpc).not.toHaveBeenCalled();
 
     const dropped = makeDeps({
@@ -187,20 +251,26 @@ describe('Save Mapped Grave Tests', () => {
         throw new TypeError('Failed to fetch');
       }),
     });
-    await expect(
-      saveMappedGrave({ form, photoDataUrl: PHOTO, telemetry, attempt: newAttempt() }, dropped.deps)
-    ).rejects.toMatchObject({ code: 'offline' });
+    await expect(saveMappedGrave(input(), dropped.deps)).rejects.toMatchObject({ code: 'offline' });
   });
 
   it('removes the uploaded photo when the database rejects the grave', async () => {
     const { deps, rpc } = makeDeps();
     const attempt = newAttempt();
-    rpc.mockResolvedValueOnce({ data: null, error: { code: '23505', message: 'duplicate key' } });
-    await expect(
-      saveMappedGrave({ form, cemeteryName: 'Athlone Muslim Cemetery', photoDataUrl: PHOTO, telemetry, attempt }, deps)
-    ).rejects.toMatchObject({ code: 'duplicate', message: 'Grave 1402 is already mapped at Athlone Muslim Cemetery.' });
+    rpc.mockResolvedValueOnce({ data: null, error: { code: '22023', message: 'First name and surname are required.' } });
+    await expect(saveMappedGrave(input({ attempt }), deps)).rejects.toMatchObject({
+      code: 'invalid',
+      message: 'First name and surname are required.',
+    });
     expect(deps.deletePhoto).toHaveBeenCalledWith(UPLOADED.path);
     expect(attempt.upload).toBeUndefined();
+  });
+
+  it('removes the photo when the grave it was being added to is gone', async () => {
+    const { deps, rpc } = makeDeps();
+    rpc.mockResolvedValueOnce({ data: null, error: { code: 'P0002', message: 'That grave no longer exists.' } });
+    await expect(saveMappedGrave(input({ addToGraveId: 'grave_gone' }), deps)).rejects.toMatchObject({ code: 'grave-missing' });
+    expect(deps.deletePhoto).toHaveBeenCalledWith(UPLOADED.path);
   });
 
   it('keeps the photo when the response is lost, and a retry reuses the same photo and ids', async () => {
@@ -208,15 +278,11 @@ describe('Save Mapped Grave Tests', () => {
     const attempt = newAttempt();
     // The database may have saved the grave before the connection dropped
     rpc.mockRejectedValueOnce(new TypeError('Failed to fetch'));
-    await expect(saveMappedGrave({ form, photoDataUrl: PHOTO, telemetry, attempt }, deps)).rejects.toMatchObject({
-      code: 'offline',
-    });
+    await expect(saveMappedGrave(input({ attempt }), deps)).rejects.toMatchObject({ code: 'offline' });
     expect(deps.deletePhoto).not.toHaveBeenCalled();
     expect(attempt.upload).toEqual(UPLOADED);
 
-    await expect(saveMappedGrave({ form, photoDataUrl: PHOTO, telemetry, attempt }, deps)).resolves.toMatchObject({
-      graveId: 'grave_id1',
-    });
+    await expect(saveMappedGrave(input({ attempt }), deps)).resolves.toMatchObject({ graveId: 'grave_id1' });
     expect(deps.uploadPhoto).toHaveBeenCalledTimes(1);
     expect(rpc).toHaveBeenCalledTimes(2);
     expect(rpc.mock.calls.map((call) => (call[1] as { p_grave_id: string }).p_grave_id)).toEqual(['grave_id1', 'grave_id1']);
@@ -225,10 +291,17 @@ describe('Save Mapped Grave Tests', () => {
   it('keeps the photo when the failure has no database error code', async () => {
     const { deps, rpc } = makeDeps();
     rpc.mockResolvedValueOnce({ data: null, error: { message: 'Gateway Timeout' } });
-    await expect(saveMappedGrave({ form, photoDataUrl: PHOTO, telemetry, attempt: newAttempt() }, deps)).rejects.toMatchObject({
-      code: 'unknown',
-    });
+    await expect(saveMappedGrave(input(), deps)).rejects.toMatchObject({ code: 'unknown' });
     expect(deps.deletePhoto).not.toHaveBeenCalled();
+  });
+
+  it('keeps the photo when the answer cannot be understood, because the grave may be saved', async () => {
+    const { deps, rpc } = makeDeps();
+    const attempt = newAttempt();
+    rpc.mockResolvedValueOnce({ data: { outcome: 'something-else' }, error: null });
+    await expect(saveMappedGrave(input({ attempt }), deps)).rejects.toMatchObject({ code: 'unknown' });
+    expect(deps.deletePhoto).not.toHaveBeenCalled();
+    expect(attempt.upload).toEqual(UPLOADED);
   });
 });
 
@@ -236,11 +309,7 @@ describe('Saved Grave Fallback Tests', () => {
   const result = { graveId: 'grave_id1', personId: 'person_id2', photoUrl: UPLOADED.publicUrl };
 
   it('builds the saved grave from what was sent when it cannot be read back', () => {
-    const grave = buildSavedGrave(
-      { form, cemeteryName: 'Athlone Muslim Cemetery', photoDataUrl: PHOTO, telemetry, attempt: newAttempt() },
-      result,
-      '2026-09-15T10:00:05.000Z'
-    );
+    const grave = buildSavedGrave(input({ cemeteryName: 'Athlone Muslim Cemetery' }), result, '2026-09-15T10:00:05.000Z');
     expect(grave).toEqual({
       id: 'grave_id1',
       cemeteryId: 'cem_athlone',
@@ -271,8 +340,7 @@ describe('Saved Grave Fallback Tests', () => {
   });
 
   it('uses the same accuracy thresholds as the database', () => {
-    const at = (gpsAccuracy: number) =>
-      buildSavedGrave({ form, photoDataUrl: PHOTO, telemetry: { ...telemetry, gpsAccuracy }, attempt: newAttempt() }, result, 'now');
+    const at = (gpsAccuracy: number) => buildSavedGrave(input({ telemetry: { ...telemetry, gpsAccuracy } }), result, 'now');
     expect(at(3.5)).toMatchObject({ status: 'MAPPED', positionConfidence: 'HIGH' });
     expect(at(5)).toMatchObject({ status: 'MAPPED', positionConfidence: 'MEDIUM' });
     expect(at(6)).toMatchObject({ status: 'LOW_CONFIDENCE', positionConfidence: 'MEDIUM' });

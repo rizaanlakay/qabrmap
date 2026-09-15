@@ -9,6 +9,7 @@ import { findCemeteryForLocation } from '@/lib/capture/cemeteryForLocation';
 import { NewGraveForm, validateNewGraveForm } from '@/lib/capture/newGrave';
 import { SaveGraveError, UNKNOWN_SAVE_MESSAGE } from '@/lib/supabase/saveGraveErrors';
 import { createSaveAttempt } from '@/lib/capture/saveMappedGrave';
+import { describeMatchCandidate, matchHeading } from '@/lib/graves/matchCandidate';
 
 interface ConfirmDetailsScreenProps {
   initialData: AIStructuredExtraction;
@@ -75,14 +76,21 @@ export const ConfirmDetailsScreen: React.FC<ConfirmDetailsScreenProps> = ({
     setIsSaving(true);
     setError(null);
     try {
-      const grave = await dataStore.saveNewGrave({
+      const result = await dataStore.saveNewGrave({
         form,
         cemeteryName: selectedCemetery?.name,
         photoDataUrl: capturedImage,
         telemetry,
         attempt,
+        matchMode: 'ask',
       });
-      onSaved(grave);
+      if (result.outcome === 'match-found') {
+        // Replaced by the duplicate card in the next task
+        setIsSaving(false);
+        setError(`${matchHeading(result.candidate)}: ${describeMatchCandidate(result.candidate)}`);
+        return;
+      }
+      onSaved(result.grave);
     } catch (err) {
       setIsSaving(false);
       setError(err instanceof SaveGraveError ? err.message : UNKNOWN_SAVE_MESSAGE);

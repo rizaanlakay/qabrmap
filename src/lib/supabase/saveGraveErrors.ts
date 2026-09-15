@@ -5,6 +5,7 @@ export type SaveGraveErrorCode =
   | 'invalid'
   | 'not-set-up'
   | 'upload-failed'
+  | 'grave-missing'
   | 'unknown';
 
 export const OFFLINE_MESSAGE = "You're offline. Connect to the internet and tap Save again.";
@@ -12,6 +13,7 @@ export const SIGNED_OUT_MESSAGE = 'Your session has ended. Sign in and tap Save 
 export const NOT_SET_UP_MESSAGE = "Saving graves isn't set up in the database yet.";
 export const UPLOAD_FAILED_MESSAGE = "The photo couldn't be uploaded. Please try again.";
 export const UNKNOWN_SAVE_MESSAGE = "The grave couldn't be saved. Please try again.";
+export const GRAVE_MISSING_MESSAGE = 'That grave no longer exists. Save this as a new grave instead.';
 
 export class SaveGraveError extends Error {
   readonly code: SaveGraveErrorCode;
@@ -53,6 +55,8 @@ export function mapSaveGraveError(error: unknown, context: SaveGraveErrorContext
       );
     case '22023':
       return new SaveGraveError('invalid', message || UNKNOWN_SAVE_MESSAGE);
+    case 'P0002':
+      return new SaveGraveError('grave-missing', GRAVE_MISSING_MESSAGE);
     case 'PGRST202':
       return new SaveGraveError('not-set-up', NOT_SET_UP_MESSAGE);
     default:

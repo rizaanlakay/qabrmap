@@ -14,7 +14,8 @@ import { MOCK_CEMETERIES, MOCK_GRAVES, MOCK_ACTIVE_SURVEY_SESSION } from './mock
 import { offlineDb } from '../offline/db';
 import { supabase, isSupabaseConfigured } from '../supabase/client';
 import { mapDbCemetery, mapDbGrave, mapDbGravePhoto } from '../supabase/mappers';
-import { buildSavedGrave, saveMappedGrave, SaveMappedGraveInput } from '../capture/saveMappedGrave';
+import { buildSavedGrave, MatchFoundResult, saveMappedGrave, SaveMappedGraveInput } from '../capture/saveMappedGrave';
+import { findMatchingGraves as lookUpMatchingGraves, MatchCandidate, MatchCheckParams } from '../graves/matchCandidate';
 import {
   DELETE_NOT_SET_UP_MESSAGE,
   DeleteGraveError,
@@ -36,6 +37,8 @@ export interface MyCemeteryGraveEntry {
   cemetery?: Cemetery;
   relationship?: GraveRelationship;
 }
+
+export type SaveNewGraveResult = { outcome: 'created' | 'added-photo'; grave: Grave } | MatchFoundResult;
 
 class DataStore {
   private isInitialized = false;
@@ -600,8 +603,9 @@ class DataStore {
     });
   }
 
-  // Saves a grave captured on this device. Needs a signed-in user and a connection; throws SaveGraveError.
-  async saveNewGrave(input: SaveMappedGraveInput): Promise<Grave> {
+  // Saves a grave captured on this device, or adds its photo to a grave already mapped. Needs a signed-in user
+  // and a connection; throws SaveGraveError.
+  async saveNewGrave(input: SaveMappedGraveInput): Promise<SaveNewGraveResult> {
     if (!isSupabaseConfigured || !supabase) throw new SaveGraveError('not-set-up', NOT_SET_UP_MESSAGE);
 
     const result = await saveMappedGrave(input, {
@@ -610,20 +614,24 @@ class DataStore {
       uploadPhoto: uploadGravePhoto,
       deletePhoto: deleteGravePhoto,
     });
+    if (result.outcome === 'match-found') return result;
 
     // The grave is saved at this point, so a failed read-back on a weak connection mustn't report a failure
-    const saved =
-      (await this.getGraveById(result.graveId).catch(() => undefined)) ??
-      buildSavedGrave(input, result, new Date().toISOString());
+    const fresh = await this.getGraveById(result.graveId).catch(() => undefined);
+    const saved = fresh ?? buildSavedGrave(input, result, new Date().toISOString());
 
-    if (typeof window !== 'undefined') {
+    // Another person's grave can't be rebuilt from this form, so only a grave read back from the cloud is cached for it
+    if (typeof window !== 'undefined' && (fresh || result.outcome === 'created')) {
       offlineDb.graves.put(saved).catch(() => {});
     }
+    return { outcome: result.outcome, grave: saved };
+  }
 
-    // Update active survey counts
-    this.activeSurvey.capturedCount++;
-    this.activeSurvey.processedCount++;
-    return saved;
+  // Graves already mapped that may be this person. Empty offline or on any failure, because the save checks again.
+  async findMatchingGraves(params: MatchCheckParams): Promise<MatchCandidate[]> {
+    if (!isSupabaseConfigured || !supabase) return [];
+    if (typeof navigator !== 'undefined' && !navigator.onLine) return [];
+    return lookUpMatchingGraves(supabase, params);
   }
 
   // --- SURVEY SESSIONS ---
