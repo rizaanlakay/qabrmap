@@ -47,3 +47,7 @@ end $$;
 -- One row per Google place; rows placed by hand have no place id and stay out of the index
 create unique index if not exists idx_cemeteries_google_place_id on public.cemeteries (google_place_id)
   where google_place_id is not null;
+
+-- The outlines already in the table were traced from OpenStreetMap, so they carry its licence and need its credit
+update public.cemeteries set boundary_source = 'osm'
+  where boundary is not null and boundary_source is null;

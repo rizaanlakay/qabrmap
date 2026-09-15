@@ -36,4 +36,8 @@ describe('Burial Sites Migration Tests', () => {
     const guarded = MIGRATION.match(/if not exists \(\s*select 1 from pg_constraint where conname = '/g) || [];
     expect(guarded.length).toBe(3);
   });
+
+  it('credits OpenStreetMap for the outlines already in the table', () => {
+    expect(MIGRATION).toMatch(/update public\.cemeteries set boundary_source = 'osm'\s+where boundary is not null and boundary_source is null;/);
+  });
 });
