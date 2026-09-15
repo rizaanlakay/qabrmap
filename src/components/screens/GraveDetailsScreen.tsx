@@ -19,6 +19,7 @@ import { GravePhotoCarousel } from '@/components/common/GravePhotoCarousel';
 import { GraveImage } from '@/components/common/GraveImage';
 import { dataStore } from '@/lib/data/store';
 import { buildGraveShareUrl } from '@/lib/share/graveLink';
+import { graveNumberLabel } from '@/lib/ui/graveLabels';
 
 interface GraveDetailsScreenProps {
   grave: Grave;
@@ -93,7 +94,7 @@ export const GraveDetailsScreen: React.FC<GraveDetailsScreenProps> = ({
       try {
         await navigator.share({
           title: `${name} - QabrMap`,
-          text: `Grave ${grave.graveNumber} at ${grave.cemeteryName || 'Athlone Muslim Cemetery'}`,
+          text: [graveNumberLabel(grave), grave.cemeteryName].filter(Boolean).join(' at '),
           url,
         });
         return;
@@ -195,6 +196,9 @@ export const GraveDetailsScreen: React.FC<GraveDetailsScreenProps> = ({
           <h1 className="text-xl font-bold text-slate-900 tracking-tight">
             {grave.person?.fullName || `Grave ${grave.graveNumber}`}
           </h1>
+          {grave.person?.nickname && (
+            <p className="text-xs text-slate-600 font-semibold mt-0.5">Known as {grave.person.nickname}</p>
+          )}
           {birthFormatted && deathFormatted && (
             <p className="text-xs text-slate-500 font-medium mt-1">
               {birthFormatted} — {deathFormatted}
@@ -251,7 +255,7 @@ export const GraveDetailsScreen: React.FC<GraveDetailsScreenProps> = ({
           <div className="mt-4 bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-3.5 text-xs">
             <div className="flex items-center justify-between">
               <span className="text-slate-500 font-medium">Grave Number</span>
-              <span className="font-bold text-slate-900 text-sm">{grave.graveNumber}</span>
+              <span className="font-bold text-slate-900 text-sm">{grave.graveNumber || 'Not recorded'}</span>
             </div>
 
             <div className="border-t border-slate-100 pt-3 flex items-center justify-between">
@@ -365,7 +369,9 @@ export const GraveDetailsScreen: React.FC<GraveDetailsScreenProps> = ({
       {showReportModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-sm p-5 space-y-3">
-            <h3 className="font-bold text-sm text-slate-900">Report Correction for Grave {grave.graveNumber}</h3>
+            <h3 className="font-bold text-sm text-slate-900">
+              Report Correction for {graveNumberLabel(grave) ?? grave.person?.fullName ?? 'this grave'}
+            </h3>
             <p className="text-xs text-slate-500">
               Describe any discrepancies in GPS position, deceased name, or gravestone condition.
             </p>

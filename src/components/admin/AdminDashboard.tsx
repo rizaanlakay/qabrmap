@@ -13,6 +13,7 @@ import {
   FileSpreadsheet,
 } from 'lucide-react';
 import { Cemetery, Grave } from '@/types';
+import { graveNumberLabel } from '@/lib/ui/graveLabels';
 
 interface AdminDashboardProps {
   cemetery: Cemetery;
@@ -226,7 +227,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 >
                   <div>
                     <div className="flex items-center space-x-2">
-                      <span className="text-xs font-bold text-slate-900">Grave {g.graveNumber}</span>
+                      <span className="text-xs font-bold text-slate-900">
+                        {graveNumberLabel(g) ?? g.person?.fullName ?? 'Unnumbered grave'}
+                      </span>
                       <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full">
                         ±{g.positionAccuracyMeters}m
                       </span>

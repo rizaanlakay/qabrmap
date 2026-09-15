@@ -468,7 +468,7 @@ export const CemeteryMapScreen: React.FC<CemeteryMapScreenProps> = ({
                   {selectedGrave.person?.fullName || `Grave ${selectedGrave.graveNumber}`}
                 </div>
                 <div className="text-[10px] text-emerald-200 mt-0.5 flex items-center">
-                  <span>{selectedGrave.graveNumber}</span>
+                  {selectedGrave.graveNumber && <span>{selectedGrave.graveNumber}</span>}
                   {selectedGrave.positionConfidence === 'HIGH' && (
                     <CheckCircle2 className="w-3 h-3 text-emerald-400 ml-1.5" />
                   )}

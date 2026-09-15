@@ -5,6 +5,7 @@ import { ArrowLeft, Search as SearchIcon, X, ChevronRight, Heart } from 'lucide-
 import { Grave } from '@/types';
 import { GraveImage } from '@/components/common/GraveImage';
 import { dataStore } from '@/lib/data/store';
+import { graveNumberLabel } from '@/lib/ui/graveLabels';
 
 interface SearchScreenProps {
   initialQuery?: string;
@@ -130,8 +131,12 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
                   )}
 
                   <div className="flex items-center text-[11px] text-slate-600 mt-1">
-                    <span className="font-semibold text-brand-dark">Grave {grave.graveNumber}</span>
-                    <span className="mx-1.5 text-slate-300">•</span>
+                    {graveNumberLabel(grave) && (
+                      <>
+                        <span className="font-semibold text-brand-dark">{graveNumberLabel(grave)}</span>
+                        <span className="mx-1.5 text-slate-300">•</span>
+                      </>
+                    )}
                     <span className="truncate">{grave.cemeteryName || 'Athlone Muslim Cemetery'}</span>
                   </div>
 

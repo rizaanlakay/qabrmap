@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { ArrowLeft, Camera, CheckCircle2, Loader2 } from 'lucide-react';
 import { DeviceTelemetry, Grave, GravePhoto } from '@/types';
 import { dataStore } from '@/lib/data/store';
+import { graveNumberLabel } from '@/lib/ui/graveLabels';
 
 interface AddPhotoConfirmScreenProps {
   grave: Grave;
@@ -55,7 +56,7 @@ export const AddPhotoConfirmScreen: React.FC<AddPhotoConfirmScreenProps> = ({
         <div className="min-w-0">
           <h1 className="text-lg font-bold text-slate-900 tracking-tight">Add Photo</h1>
           <p className="text-xs text-slate-500 truncate">
-            {name} • Grave {grave.graveNumber}
+            {[name, graveNumberLabel(grave)].filter(Boolean).join(' • ')}
           </p>
         </div>
       </div>

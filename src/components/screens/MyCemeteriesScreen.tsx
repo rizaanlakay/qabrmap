@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Grave } from '@/types';
 import { dataStore, MyCemeteryGraveEntry } from '@/lib/data/store';
+import { graveNumberLabel } from '@/lib/ui/graveLabels';
 
 interface MyCemeteriesScreenProps {
   onSelectGrave: (grave: Grave) => void;
@@ -77,7 +78,8 @@ export const MyCemeteriesScreen: React.FC<MyCemeteriesScreenProps> = ({
     const relMatch = entry.relationship?.specificRelation?.toLowerCase().includes(q) ?? false;
     const cemMatch = entry.cemetery?.name?.toLowerCase().includes(q) ?? false;
     const numMatch = entry.grave.graveNumber?.toLowerCase().includes(q) ?? false;
-    return nameMatch || surnameMatch || relMatch || cemMatch || numMatch;
+    const nicknameMatch = entry.grave.person?.nickname?.toLowerCase().includes(q) ?? false;
+    return nameMatch || surnameMatch || relMatch || cemMatch || numMatch || nicknameMatch;
   });
 
   // Group filtered entries by cemetery
@@ -256,7 +258,7 @@ export const MyCemeteriesScreen: React.FC<MyCemeteriesScreenProps> = ({
                       {/* Bottom Action Footer: Grave Number + Navigate CTA */}
                       <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between">
                         <span className="text-[11px] font-semibold text-slate-500">
-                          Grave {grave.graveNumber} {grave.sectionName ? `• ${grave.sectionName}` : ''}
+                          {[graveNumberLabel(grave), grave.sectionName].filter(Boolean).join(' • ')}
                         </span>
 
                         <div className="flex items-center space-x-2">

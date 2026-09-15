@@ -28,6 +28,8 @@ import {
   snapToRoute,
 } from '@/lib/geospatial';
 import { useWakeLock } from '@/lib/device/useWakeLock';
+import { graveNumberLabel } from '@/lib/ui/graveLabels';
+import { escapeHtml } from '@/lib/ui/escapeHtml';
 import {
   SHEET_CLICK_SUPPRESS_MS,
   SHEET_DRAG_THRESHOLD_PX,
@@ -762,11 +764,11 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
         targetEl.innerHTML = `
           <div class="flex flex-col items-center select-none cursor-pointer">
             <div class="bg-emerald-950/90 backdrop-blur-md text-emerald-100 border border-emerald-400/40 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg mb-1 whitespace-nowrap">
-              ${targetGrave.person?.fullName || `Grave ${targetGrave.graveNumber}`}
+              ${escapeHtml(targetGrave.person?.fullName || graveNumberLabel(targetGrave) || 'Grave')}
             </div>
             <div class="relative flex items-center justify-center">
               <div class="w-8 h-8 rounded-full bg-emerald-600 border-2 border-white text-white flex items-center justify-center shadow-lg shadow-emerald-500/50 animate-radar">
-                <span class="text-[10px] font-black">${targetGrave.graveNumber.slice(-4)}</span>
+                <span class="text-[10px] font-black">${escapeHtml(targetGrave.graveNumber.slice(-4))}</span>
               </div>
               <div class="w-2.5 h-2.5 bg-emerald-600 rotate-45 -mt-1 border-r border-b border-white"></div>
             </div>
@@ -784,7 +786,7 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
           <div class="flex flex-col items-center select-none cursor-pointer">
             <div class="bg-blue-950/90 backdrop-blur-md text-blue-100 border border-blue-400/50 text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-lg mb-1 whitespace-nowrap flex items-center space-x-1">
               <span>🚗</span>
-              <span>${entranceName}</span>
+              <span>${escapeHtml(entranceName)}</span>
             </div>
             <div class="relative flex items-center justify-center">
               <div class="w-7 h-7 rounded-full bg-blue-600 border-2 border-white text-white flex items-center justify-center shadow-lg shadow-blue-500/50">
@@ -1159,7 +1161,9 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
             <p className="text-[11px] text-emerald-300 font-medium truncate max-w-[190px]">
               {activeMode === 'driving'
                 ? `🚗 ${entranceName}`
-                : `${targetGrave.person?.fullName || 'Grave'} • Plot ${targetGrave.graveNumber}`}
+                : [targetGrave.person?.fullName || 'Grave', targetGrave.graveNumber && `Plot ${targetGrave.graveNumber}`]
+                    .filter(Boolean)
+                    .join(' • ')}
             </p>
           </div>
         </div>
@@ -1521,7 +1525,7 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
               <div className="mt-3 p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center space-x-2 text-emerald-800 text-xs font-semibold animate-pulse">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                 <span>
-                  You have arrived! Grave {targetGrave.graveNumber} is right here (±
+                  You have arrived! {graveNumberLabel(targetGrave) ?? targetGrave.person?.fullName ?? 'The grave'} is right here (±
                   {targetGrave.positionAccuracyMeters}m).
                 </span>
               </div>
