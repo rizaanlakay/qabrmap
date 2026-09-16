@@ -3,6 +3,7 @@ import type { ConfidenceLevel, DeviceTelemetry, Grave, GraveStatus } from '@/typ
 import type { NewGraveForm } from './newGrave';
 import type { UploadPhotoOptions, UploadPhotoResult } from '../supabase/storage';
 import { MatchCandidate, mapMatchCandidate } from '../graves/matchCandidate';
+import { gravePosition } from './mapPin';
 import {
   mapSaveGraveError,
   SaveGraveError,
@@ -144,6 +145,9 @@ export async function saveMappedGrave(input: SaveMappedGraveInput, deps: SaveMap
       p_photo_storage_path: upload.path,
       p_match_mode: input.matchMode,
       p_add_to_grave_id: input.addToGraveId ?? null,
+      // The spot chosen on the satellite map; the grave is saved there instead of at the phone's fix
+      p_pin_latitude: telemetry.mapPin?.latitude ?? null,
+      p_pin_longitude: telemetry.mapPin?.longitude ?? null,
     });
     answer = data;
     saveError = error;
@@ -187,7 +191,8 @@ export function buildSavedGrave(
   now: string
 ): Grave {
   const { form, telemetry } = input;
-  const accuracy = telemetry.gpsAccuracy;
+  const position = gravePosition(telemetry);
+  const accuracy = position.accuracyMeters;
   const firstName = form.firstName.trim();
   const middleNames = form.middleNames.trim();
   const surname = form.surname.trim();
@@ -200,8 +205,8 @@ export function buildSavedGrave(
     cemeteryName: input.cemeteryName,
     personId: result.personId,
     graveNumber: form.graveNumber.trim(),
-    latitude: telemetry.latitude,
-    longitude: telemetry.longitude,
+    latitude: position.latitude,
+    longitude: position.longitude,
     positionAccuracyMeters: accuracy,
     positionConfidence,
     orientationDegrees: telemetry.headingDegrees,
