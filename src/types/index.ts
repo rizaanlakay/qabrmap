@@ -53,6 +53,9 @@ export interface Cemetery {
   // Street View reference for the card thumbnail: identifiers only, never the imagery itself
   streetViewPanoId?: string;
   streetViewHeading?: number;
+  // A community photograph, cached from Google within the window their terms allow
+  photoUrl?: string;
+  photoAttribution?: string;
   // Straight-line distance from the phone, computed on the client and never stored
   distanceMeters?: number;
   thumbnailUrl?: string;

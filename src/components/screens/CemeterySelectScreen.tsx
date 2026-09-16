@@ -171,7 +171,7 @@ export const CemeterySelectScreen: React.FC<CemeterySelectScreenProps> = ({
               >
                 {/* Cemetery Thumbnail */}
                 <div className="w-14 h-14 rounded-xl overflow-hidden relative shrink-0 bg-slate-100 mr-3.5 border border-slate-200/60">
-                  <CemeteryThumbnail cemetery={cem} size={56} />
+                  <CemeteryThumbnail cemetery={cem} />
                 </div>
 
                 {/* Cemetery Details */}
@@ -187,6 +187,12 @@ export const CemeterySelectScreen: React.FC<CemeterySelectScreenProps> = ({
                   <p className="text-xs text-slate-500 truncate mt-0.5">
                     {cem.city}, {cem.province}
                   </p>
+                  {/* Google requires the photographer to be credited wherever their photo is shown */}
+                  {cem.photoUrl && cem.photoAttribution && (
+                    <p className="text-[10px] text-slate-400 truncate mt-0.5">
+                      Photo by {cem.photoAttribution}
+                    </p>
+                  )}
                   {cemeteryTags(cem).length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-1">
                       {cemeteryTags(cem).map((tag) => (

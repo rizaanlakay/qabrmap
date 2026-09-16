@@ -32,6 +32,8 @@ export function mapDbCemetery(row: any): Cemetery {
     osmId: row.osm_id || undefined,
     streetViewPanoId: row.street_view_pano_id || undefined,
     streetViewHeading: row.street_view_heading != null ? Number(row.street_view_heading) : undefined,
+    photoUrl: row.photo_url || undefined,
+    photoAttribution: row.photo_attribution || undefined,
     thumbnailUrl: row.thumbnail_url || '/sample-gravestone.svg',
   };
 }

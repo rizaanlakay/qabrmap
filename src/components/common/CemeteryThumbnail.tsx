@@ -3,29 +3,30 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { Cemetery } from '@/types';
-import { streetViewThumbnailUrl } from '@/lib/cemeteries/streetView';
-import { getGoogleMapsApiKey } from '@/lib/map/googleMapTiles';
 
 interface CemeteryThumbnailProps {
   cemetery: Cemetery;
-  /** Rendered size in CSS pixels; the request asks for twice this so it stays sharp on a phone */
-  size?: number;
 }
 
-// A Street View look at the cemetery where Google has imagery, falling back to the placeholder.
-// Each thumbnail is fetched from Google every time it is shown, because their terms allow displaying
-// the imagery but not storing it. Loading is lazy so a card that never scrolls into view costs nothing.
-export const CemeteryThumbnail: React.FC<CemeteryThumbnailProps> = ({ cemetery, size = 56 }) => {
+// The cemetery's own photograph where one has been approved, otherwise the placeholder.
+// The image is served from our storage, not fetched from Google on every render, so a list of cards
+// costs nothing to show. Google requires the photographer to be credited wherever their photo appears,
+// which the card does beneath the name and the cemetery screen does in full.
+export const CemeteryThumbnail: React.FC<CemeteryThumbnailProps> = ({ cemetery }) => {
   const [failed, setFailed] = useState(false);
-  const streetView = failed ? null : streetViewThumbnailUrl(cemetery, getGoogleMapsApiKey() || '', size * 2);
+  const photo = failed ? null : cemetery.photoUrl;
 
-  if (streetView) {
+  if (photo) {
     return (
-      // Google's endpoint is not a configured next/image host, and this must stay a live request
+      // Supabase storage is not a configured next/image host, so this stays a plain tag
       // eslint-disable-next-line @next/next/no-img-element
       <img
-        src={streetView}
-        alt={`Street View of ${cemetery.name}`}
+        src={photo}
+        alt={
+          cemetery.photoAttribution
+            ? `${cemetery.name}, photographed by ${cemetery.photoAttribution}`
+            : cemetery.name
+        }
         loading="lazy"
         decoding="async"
         onError={() => setFailed(true)}
