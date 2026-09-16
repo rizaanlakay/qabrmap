@@ -277,6 +277,14 @@ function QabrMapAppContent() {
   };
 
   // Switch Cemetery
+  // Pull to refresh on the Explore list: reload from Supabase (which also refreshes the offline copy)
+  // and keep the selected cemetery pointing at its fresh row
+  const refreshCemeteries = useCallback(async () => {
+    const cems = await dataStore.getCemeteries();
+    setCemeteries(cems);
+    setSelectedCemetery((prev) => (prev ? cems.find((c) => c.id === prev.id) ?? prev : prev));
+  }, []);
+
   const handleSelectCemetery = (cemetery: Cemetery) => {
     setSelectedCemetery(cemetery);
     setSelectedGrave(null);
@@ -458,6 +466,7 @@ function QabrMapAppContent() {
             userPosition={exploreLocation.position}
             locationMessage={exploreLocation.message}
             onRetryLocation={exploreLocation.retry}
+            onRefresh={refreshCemeteries}
             isMyCemetery={(id) => dataStore.isMyCemetery(id)}
             onToggleMyCemetery={(id) => {
               dataStore.toggleMyCemetery(id);
