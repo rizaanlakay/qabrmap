@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import Image from 'next/image';
+import { CemeteryThumbnail } from '@/components/common/CemeteryThumbnail';
 import { ArrowLeft, Search, ChevronRight, Heart, LocateFixed } from 'lucide-react';
 import { Cemetery } from '@/types';
 import { formatGravesMapped } from '@/lib/data/cemeteryStats';
@@ -171,12 +171,7 @@ export const CemeterySelectScreen: React.FC<CemeterySelectScreenProps> = ({
               >
                 {/* Cemetery Thumbnail */}
                 <div className="w-14 h-14 rounded-xl overflow-hidden relative shrink-0 bg-slate-100 mr-3.5 border border-slate-200/60">
-                  <Image
-                    src={cem.thumbnailUrl || '/sample-gravestone.svg'}
-                    alt={cem.name}
-                    fill
-                    className="object-cover"
-                  />
+                  <CemeteryThumbnail cemetery={cem} size={56} />
                 </div>
 
                 {/* Cemetery Details */}

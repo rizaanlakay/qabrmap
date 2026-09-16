@@ -30,6 +30,8 @@ export function mapDbCemetery(row: any): Cemetery {
     googlePlaceId: row.google_place_id || undefined,
     boundarySource: row.boundary_source || undefined,
     osmId: row.osm_id || undefined,
+    streetViewPanoId: row.street_view_pano_id || undefined,
+    streetViewHeading: row.street_view_heading != null ? Number(row.street_view_heading) : undefined,
     thumbnailUrl: row.thumbnail_url || '/sample-gravestone.svg',
   };
 }

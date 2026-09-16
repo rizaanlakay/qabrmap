@@ -50,6 +50,9 @@ export interface Cemetery {
   googlePlaceId?: string;
   boundarySource?: CemeteryBoundarySource;
   osmId?: string;
+  // Street View reference for the card thumbnail: identifiers only, never the imagery itself
+  streetViewPanoId?: string;
+  streetViewHeading?: number;
   // Straight-line distance from the phone, computed on the client and never stored
   distanceMeters?: number;
   thumbnailUrl?: string;
