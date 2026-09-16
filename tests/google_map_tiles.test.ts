@@ -101,7 +101,8 @@ describe('Google Map Tiles Tests', () => {
     const source = style.sources['google-tiles'] as { tileSize: number; maxzoom: number };
     expect(source.tileSize).toBe(256);
     expect(source.maxzoom).toBe(21);
-    expect(style.layers[0]).toMatchObject({ maxzoom: 22 });
+    // A layer maxzoom equal to the map's would hide the imagery at the last zoom level
+    expect(style.layers[0]).not.toHaveProperty('maxzoom');
     expect(tiles.MAX_MAP_ZOOM).toBe(22);
   });
 

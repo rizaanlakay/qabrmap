@@ -134,7 +134,9 @@ export function googleRasterStyle(mapType: GoogleMapType): StyleSpecification {
         maxzoom: MAX_TILE_ZOOM,
       },
     },
-    layers: [{ id: 'google-tiles-layer', type: 'raster', source: 'google-tiles', minzoom: 0, maxzoom: MAX_MAP_ZOOM }],
+    // No maxzoom on the layer: MapLibre hides a layer at zooms equal to or beyond its maxzoom, so a pinch that
+    // lands on the map's last zoom level would show a blank map
+    layers: [{ id: 'google-tiles-layer', type: 'raster', source: 'google-tiles', minzoom: 0 }],
   };
 }
 
