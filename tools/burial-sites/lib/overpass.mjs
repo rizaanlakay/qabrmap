@@ -12,6 +12,31 @@ export function aroundQuery(lat, lng, radiusMeters = 400) {
 out geom;`;
 }
 
+// One query for many points. Asking Overpass 56 separate questions means 56 turns in its queue, which on a
+// loaded mirror costs minutes each; unioning the same clauses into one request costs a single turn.
+export function aroundManyQuery(points, radiusMeters = 400, timeoutSeconds = 180) {
+  const clauses = [];
+  for (const p of points) {
+    const around = `(around:${radiusMeters},${p.lat},${p.lng})`;
+    clauses.push(`  way["landuse"="cemetery"]${around};`);
+    clauses.push(`  way["amenity"="grave_yard"]${around};`);
+    clauses.push(`  relation["landuse"="cemetery"]${around};`);
+    clauses.push(`  relation["amenity"="grave_yard"]${around};`);
+  }
+  return `[out:json][timeout:${timeoutSeconds}];
+(
+${clauses.join('\n')}
+);
+out geom;`;
+}
+
+// The centre of a ring, for deciding which of many returned outlines belongs to which point
+export function ringCentroid(ring) {
+  const lng = ring.reduce((s, [x]) => s + x, 0) / ring.length;
+  const lat = ring.reduce((s, [, y]) => s + y, 0) / ring.length;
+  return { lat, lng };
+}
+
 export function wayQuery(osmId) {
   const id = osmId.replace(/^way\//, '');
   return `[out:json][timeout:25];

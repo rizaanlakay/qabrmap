@@ -11,8 +11,8 @@ import { createClient } from '@supabase/supabase-js';
 import { loadEnvLocal } from './lib/env.mjs';
 import { parseCsv } from './lib/csv.mjs';
 import { cemeteryIdFor, mergeSupplements, osmWayFromUrl, placeIdFromUrl, rowSourceUrls, siteStatusFor, siteTypeFor, slugify } from './lib/sources.mjs';
-import { rankCandidates } from './lib/score.mjs';
-import { aroundQuery, chooseOutline, wayQuery } from './lib/overpass.mjs';
+import { haversineMeters, rankCandidates } from './lib/score.mjs';
+import { aroundManyQuery, aroundQuery, chooseOutline, elementToRing, ringCentroid, wayQuery } from './lib/overpass.mjs';
 import { matchExisting } from './lib/match.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -378,13 +378,37 @@ async function backfillOutlines() {
     for (const entry of pending) console.log(`  would look up ${entry.name}`);
     return;
   }
+  const wanted = only ? pending.filter((e) => e.key === only) : pending;
+  // One request per batch rather than per site: a loaded mirror charges by the turn, not by the clause
+  const BATCH = 14;
+  const elementsFor = new Map();
+  for (let i = 0; i < wanted.length; i += BATCH) {
+    const batch = wanted.slice(i, i + BATCH);
+    console.log(`Asking Overpass about ${batch.length} sites (${i + batch.length} of ${wanted.length})`);
+    let elements = [];
+    try {
+      elements = await overpass(aroundManyQuery(batch.map((e) => e.point), 400));
+    } catch (error) {
+      console.error(`  batch failed: ${error.message}`);
+    }
+    // Each returned outline belongs to whichever site it contains, or the nearest one within reach
+    for (const entry of batch) {
+      const near = elements.filter((element) => {
+        const ring = elementToRing(element);
+        if (!ring) return false;
+        const c = ringCentroid(ring);
+        return haversineMeters(entry.point.lat, entry.point.lng, c.lat, c.lng) <= 1500;
+      });
+      elementsFor.set(entry.key, near);
+    }
+  }
+
   let found = 0;
-  for (const entry of pending) {
-    if (only && entry.key !== only) continue;
+  for (const entry of wanted) {
     console.log(`Outline for ${entry.name}`);
     try {
       const namedWay = (entry.source_urls || []).map(osmWayFromUrl).find(Boolean);
-      let elements = await overpass(aroundQuery(entry.point.lat, entry.point.lng, 400));
+      let elements = elementsFor.get(entry.key) || [];
       if (namedWay && !elements.some((e) => `${e.type}/${e.id}` === namedWay)) {
         elements = elements.concat(await overpass(wayQuery(namedWay)));
       }

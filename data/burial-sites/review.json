@@ -30,7 +30,45 @@
         "distanceMeters": 151
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/227933663",
+      "area_square_meters": 69543,
+      "contains_point": true,
+      "ring": [
+        [
+          18.4587353,
+          -33.9402044
+        ],
+        [
+          18.4618266,
+          -33.9375332
+        ],
+        [
+          18.4634977,
+          -33.9390082
+        ],
+        [
+          18.4634922,
+          -33.9390557
+        ],
+        [
+          18.4630248,
+          -33.9393512
+        ],
+        [
+          18.4620809,
+          -33.9399777
+        ],
+        [
+          18.459181,
+          -33.9406329
+        ],
+        [
+          18.4587353,
+          -33.9402044
+        ]
+      ]
+    },
     "verification_status": "Verified",
     "verification_source": "MJC + OSM/Mapcarta",
     "source_urls": [
@@ -39,7 +77,6 @@
     ],
     "overrides": {},
     "notes": [
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review.",
       "Updates live row cem_mowbray (\"Mowbray Muslim Cemetery\")."
     ]
   },
@@ -95,7 +132,61 @@
         "distanceMeters": 349
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/581849289",
+      "area_square_meters": 46659,
+      "contains_point": true,
+      "ring": [
+        [
+          18.5261299,
+          -33.9669731
+        ],
+        [
+          18.5267897,
+          -33.9670666
+        ],
+        [
+          18.52731,
+          -33.9670132
+        ],
+        [
+          18.5281791,
+          -33.9672312
+        ],
+        [
+          18.5282113,
+          -33.967289
+        ],
+        [
+          18.5281362,
+          -33.9675159
+        ],
+        [
+          18.5281737,
+          -33.9675337
+        ],
+        [
+          18.5281415,
+          -33.9678896
+        ],
+        [
+          18.5276548,
+          -33.9692871
+        ],
+        [
+          18.5260166,
+          -33.9688882
+        ],
+        [
+          18.5254325,
+          -33.968746
+        ],
+        [
+          18.5261299,
+          -33.9669731
+        ]
+      ]
+    },
     "verification_status": "Verified",
     "verification_source": "MJC",
     "source_urls": [
@@ -103,7 +194,6 @@
     ],
     "overrides": {},
     "notes": [
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review.",
       "Updates live row cem_athlone (\"Athlone Muslim Cemetery\")."
     ]
   },
@@ -139,7 +229,65 @@
         "distanceMeters": 1273
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/577594385",
+      "area_square_meters": 8899,
+      "contains_point": true,
+      "ring": [
+        [
+          18.5303092,
+          -33.9810821
+        ],
+        [
+          18.5298063,
+          -33.9822397
+        ],
+        [
+          18.5306579,
+          -33.9825177
+        ],
+        [
+          18.5307236,
+          -33.9820896
+        ],
+        [
+          18.530682,
+          -33.9820751
+        ],
+        [
+          18.5306284,
+          -33.9820229
+        ],
+        [
+          18.5306217,
+          -33.9819717
+        ],
+        [
+          18.5306753,
+          -33.981667
+        ],
+        [
+          18.530796,
+          -33.9816815
+        ],
+        [
+          18.5308403,
+          -33.9816848
+        ],
+        [
+          18.530847,
+          -33.98129
+        ],
+        [
+          18.5306954,
+          -33.9812767
+        ],
+        [
+          18.5303092,
+          -33.9810821
+        ]
+      ]
+    },
     "verification_status": "Verified",
     "verification_source": "MJC",
     "source_urls": [
@@ -147,7 +295,6 @@
     ],
     "overrides": {},
     "notes": [
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review.",
       "Updates live row cem_mountview (\"Mountview Cemetery\")."
     ]
   },
@@ -192,16 +339,56 @@
         "distanceMeters": 6291
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/440485664",
+      "area_square_meters": 7879,
+      "contains_point": true,
+      "ring": [
+        [
+          18.4385627,
+          -34.0311225
+        ],
+        [
+          18.4384751,
+          -34.0311996
+        ],
+        [
+          18.43792,
+          -34.0316713
+        ],
+        [
+          18.4378696,
+          -34.0317155
+        ],
+        [
+          18.4382168,
+          -34.0323042
+        ],
+        [
+          18.4385873,
+          -34.0321517
+        ],
+        [
+          18.4390618,
+          -34.031927
+        ],
+        [
+          18.438622,
+          -34.0311335
+        ],
+        [
+          18.4385627,
+          -34.0311225
+        ]
+      ]
+    },
     "verification_status": "Verified",
     "verification_source": "MJC",
     "source_urls": [
       "https://mjc.org.za/community/cemeteries/"
     ],
     "overrides": {},
-    "notes": [
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
-    ]
+    "notes": []
   },
   {
     "key": "klip-road-north-muslim-cemetery",
@@ -234,16 +421,60 @@
         "distanceMeters": 1281
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/204947068",
+      "area_square_meters": 198377,
+      "contains_point": true,
+      "ring": [
+        [
+          18.4917891,
+          -34.0374816
+        ],
+        [
+          18.491741,
+          -34.037732
+        ],
+        [
+          18.4905798,
+          -34.0403034
+        ],
+        [
+          18.4915668,
+          -34.0420385
+        ],
+        [
+          18.4925947,
+          -34.0416099
+        ],
+        [
+          18.4936505,
+          -34.0413634
+        ],
+        [
+          18.4964873,
+          -34.0394794
+        ],
+        [
+          18.4952303,
+          -34.0374019
+        ],
+        [
+          18.4946824,
+          -34.0365409
+        ],
+        [
+          18.4917891,
+          -34.0374816
+        ]
+      ]
+    },
     "verification_status": "Verified",
     "verification_source": "MJC Cemetery Board",
     "source_urls": [
       "https://mjc.org.za/departments/muslim-cemetery-board-mancom/"
     ],
     "overrides": {},
-    "notes": [
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
-    ]
+    "notes": []
   },
   {
     "key": "mitchells-plain-khayelitsha-muslim-cemetery-swartklip",
@@ -347,7 +578,77 @@
         "distanceMeters": 2723
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/232017437",
+      "area_square_meters": 150710,
+      "contains_point": false,
+      "ring": [
+        [
+          18.5996998,
+          -33.9472525
+        ],
+        [
+          18.599489,
+          -33.9480288
+        ],
+        [
+          18.6050343,
+          -33.9497548
+        ],
+        [
+          18.6057978,
+          -33.9485062
+        ],
+        [
+          18.6059543,
+          -33.9482504
+        ],
+        [
+          18.6051964,
+          -33.9478123
+        ],
+        [
+          18.6049076,
+          -33.9475109
+        ],
+        [
+          18.6045033,
+          -33.9476017
+        ],
+        [
+          18.6042886,
+          -33.9473117
+        ],
+        [
+          18.6041285,
+          -33.9469414
+        ],
+        [
+          18.6044318,
+          -33.9468506
+        ],
+        [
+          18.6042186,
+          -33.9464202
+        ],
+        [
+          18.6040877,
+          -33.9456005
+        ],
+        [
+          18.6036722,
+          -33.9453982
+        ],
+        [
+          18.6014878,
+          -33.9462671
+        ],
+        [
+          18.5996998,
+          -33.9472525
+        ]
+      ]
+    },
     "verification_status": "Verified",
     "verification_source": "MJC + City of Cape Town",
     "source_urls": [
@@ -355,9 +656,7 @@
       "https://www.capetown.gov.za/Family%20and%20home/See-all-city-facilities/Our-service-facilities/Cemeteries/Modderdam%20Cemetery"
     ],
     "overrides": {},
-    "notes": [
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
-    ]
+    "notes": []
   },
   {
     "key": "welmoed-cemetery",
@@ -388,7 +687,141 @@
         "distanceMeters": 1934
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/430116288",
+      "area_square_meters": 89111,
+      "contains_point": true,
+      "ring": [
+        [
+          18.7202132,
+          -33.9862871
+        ],
+        [
+          18.720216,
+          -33.9863085
+        ],
+        [
+          18.7202087,
+          -33.9863319
+        ],
+        [
+          18.7201923,
+          -33.9863505
+        ],
+        [
+          18.7201732,
+          -33.9863706
+        ],
+        [
+          18.7208584,
+          -33.9869717
+        ],
+        [
+          18.7236437,
+          -33.9891849
+        ],
+        [
+          18.7244902,
+          -33.9888719
+        ],
+        [
+          18.7248489,
+          -33.9887392
+        ],
+        [
+          18.7246524,
+          -33.9883639
+        ],
+        [
+          18.7245109,
+          -33.9883178
+        ],
+        [
+          18.7244822,
+          -33.988264
+        ],
+        [
+          18.7244073,
+          -33.9881237
+        ],
+        [
+          18.7243801,
+          -33.9880726
+        ],
+        [
+          18.7244241,
+          -33.9879662
+        ],
+        [
+          18.7230563,
+          -33.985375
+        ],
+        [
+          18.7229566,
+          -33.9853428
+        ],
+        [
+          18.722961,
+          -33.9853321
+        ],
+        [
+          18.7229311,
+          -33.9853229
+        ],
+        [
+          18.7229332,
+          -33.9853111
+        ],
+        [
+          18.722929,
+          -33.9852968
+        ],
+        [
+          18.7229201,
+          -33.9852862
+        ],
+        [
+          18.7229104,
+          -33.9852799
+        ],
+        [
+          18.7228933,
+          -33.9852731
+        ],
+        [
+          18.7228749,
+          -33.98527
+        ],
+        [
+          18.722855,
+          -33.9852726
+        ],
+        [
+          18.7228362,
+          -33.985281
+        ],
+        [
+          18.7228251,
+          -33.9852931
+        ],
+        [
+          18.7227968,
+          -33.9852844
+        ],
+        [
+          18.722792,
+          -33.9852952
+        ],
+        [
+          18.7226827,
+          -33.9852625
+        ],
+        [
+          18.7202132,
+          -33.9862871
+        ]
+      ]
+    },
     "verification_status": "Verified",
     "verification_source": "MJC + City of Cape Town",
     "source_urls": [
@@ -396,9 +829,7 @@
       "https://www.capetown.gov.za/Family%20and%20home/See-all-city-facilities/Our-service-facilities/Cemeteries/Welmoed%20Cemetery"
     ],
     "overrides": {},
-    "notes": [
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
-    ]
+    "notes": []
   },
   {
     "key": "delft-cemetery",
@@ -429,7 +860,85 @@
         "distanceMeters": 1820
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/449119050",
+      "area_square_meters": 36715,
+      "contains_point": true,
+      "ring": [
+        [
+          18.6278498,
+          -33.9868178
+        ],
+        [
+          18.627749,
+          -33.98722
+        ],
+        [
+          18.6279685,
+          -33.9872215
+        ],
+        [
+          18.6302164,
+          -33.9871989
+        ],
+        [
+          18.6302707,
+          -33.9871983
+        ],
+        [
+          18.6302807,
+          -33.9872006
+        ],
+        [
+          18.6310867,
+          -33.9871934
+        ],
+        [
+          18.6310739,
+          -33.9863454
+        ],
+        [
+          18.6309861,
+          -33.9862448
+        ],
+        [
+          18.6312228,
+          -33.9861041
+        ],
+        [
+          18.6309424,
+          -33.9857825
+        ],
+        [
+          18.6306669,
+          -33.9854664
+        ],
+        [
+          18.6305341,
+          -33.9855543
+        ],
+        [
+          18.6300574,
+          -33.9858284
+        ],
+        [
+          18.6296933,
+          -33.9860029
+        ],
+        [
+          18.6295116,
+          -33.9860791
+        ],
+        [
+          18.6286734,
+          -33.9864149
+        ],
+        [
+          18.6278498,
+          -33.9868178
+        ]
+      ]
+    },
     "verification_status": "Verified",
     "verification_source": "MJC + City of Cape Town",
     "source_urls": [
@@ -437,9 +946,7 @@
       "https://www.capetown.gov.za/Family%20and%20home/See-all-city-facilities/Our-service-facilities/Cemeteries/Delft%20Cemetery"
     ],
     "overrides": {},
-    "notes": [
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
-    ]
+    "notes": []
   },
   {
     "key": "atlantis-cemetery",
@@ -511,7 +1018,53 @@
         "distanceMeters": 1334
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/56760587",
+      "area_square_meters": 80151,
+      "contains_point": true,
+      "ring": [
+        [
+          18.4801214,
+          -34.0889777
+        ],
+        [
+          18.4800683,
+          -34.0890176
+        ],
+        [
+          18.4801338,
+          -34.0903892
+        ],
+        [
+          18.4802322,
+          -34.0904619
+        ],
+        [
+          18.4802334,
+          -34.0905153
+        ],
+        [
+          18.4801432,
+          -34.0905975
+        ],
+        [
+          18.4802494,
+          -34.0923896
+        ],
+        [
+          18.4825243,
+          -34.0923183
+        ],
+        [
+          18.4823517,
+          -34.0888927
+        ],
+        [
+          18.4801214,
+          -34.0889777
+        ]
+      ]
+    },
     "verification_status": "Verified",
     "verification_source": "MJC + City of Cape Town",
     "source_urls": [
@@ -519,9 +1072,7 @@
       "https://www.capetown.gov.za/Family%20and%20home/See-all-city-facilities/Our-service-facilities/Cemeteries/Muizenberg%20Cemetery"
     ],
     "overrides": {},
-    "notes": [
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
-    ]
+    "notes": []
   },
   {
     "key": "maitland-cemetery",
@@ -552,7 +1103,241 @@
         "distanceMeters": 1750
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/5179352",
+      "area_square_meters": 1141143,
+      "contains_point": true,
+      "ring": [
+        [
+          18.5037994,
+          -33.920134
+        ],
+        [
+          18.5030442,
+          -33.9212235
+        ],
+        [
+          18.5037376,
+          -33.9214904
+        ],
+        [
+          18.5049828,
+          -33.9219548
+        ],
+        [
+          18.5053558,
+          -33.9220984
+        ],
+        [
+          18.5061159,
+          -33.9221405
+        ],
+        [
+          18.5068761,
+          -33.9220672
+        ],
+        [
+          18.5069793,
+          -33.9220157
+        ],
+        [
+          18.5139438,
+          -33.9211299
+        ],
+        [
+          18.5143753,
+          -33.9210807
+        ],
+        [
+          18.514353,
+          -33.9209381
+        ],
+        [
+          18.5149897,
+          -33.9208611
+        ],
+        [
+          18.5150141,
+          -33.9209924
+        ],
+        [
+          18.5173154,
+          -33.9206848
+        ],
+        [
+          18.5221908,
+          -33.9200614
+        ],
+        [
+          18.5266111,
+          -33.9195273
+        ],
+        [
+          18.5340629,
+          -33.9185128
+        ],
+        [
+          18.5354945,
+          -33.918309
+        ],
+        [
+          18.5374772,
+          -33.9178891
+        ],
+        [
+          18.5385844,
+          -33.9175899
+        ],
+        [
+          18.5398118,
+          -33.9172338
+        ],
+        [
+          18.5407486,
+          -33.9168753
+        ],
+        [
+          18.5404241,
+          -33.916212
+        ],
+        [
+          18.5400828,
+          -33.9151374
+        ],
+        [
+          18.5403993,
+          -33.9149699
+        ],
+        [
+          18.5403309,
+          -33.9147852
+        ],
+        [
+          18.5400439,
+          -33.9149449
+        ],
+        [
+          18.5398735,
+          -33.9142076
+        ],
+        [
+          18.5397565,
+          -33.9140952
+        ],
+        [
+          18.539498,
+          -33.9140301
+        ],
+        [
+          18.5367816,
+          -33.9144955
+        ],
+        [
+          18.5367598,
+          -33.9145281
+        ],
+        [
+          18.536679,
+          -33.9145415
+        ],
+        [
+          18.5366442,
+          -33.9145145
+        ],
+        [
+          18.534606,
+          -33.9148634
+        ],
+        [
+          18.5326963,
+          -33.9151889
+        ],
+        [
+          18.5280719,
+          -33.91596
+        ],
+        [
+          18.519303,
+          -33.9174344
+        ],
+        [
+          18.5193727,
+          -33.9176993
+        ],
+        [
+          18.5190381,
+          -33.9177516
+        ],
+        [
+          18.5189824,
+          -33.9175201
+        ],
+        [
+          18.5189536,
+          -33.9174906
+        ],
+        [
+          18.5165825,
+          -33.9178918
+        ],
+        [
+          18.516545,
+          -33.9179219
+        ],
+        [
+          18.5165028,
+          -33.9179314
+        ],
+        [
+          18.5164712,
+          -33.9179386
+        ],
+        [
+          18.5164364,
+          -33.9179174
+        ],
+        [
+          18.5145695,
+          -33.9182357
+        ],
+        [
+          18.5145226,
+          -33.9182624
+        ],
+        [
+          18.514485,
+          -33.9183136
+        ],
+        [
+          18.5142986,
+          -33.9183437
+        ],
+        [
+          18.514249,
+          -33.9183181
+        ],
+        [
+          18.5141913,
+          -33.9183058
+        ],
+        [
+          18.513726,
+          -33.9183848
+        ],
+        [
+          18.510797,
+          -33.9188845
+        ],
+        [
+          18.5072592,
+          -33.9194966
+        ],
+        [
+          18.5037994,
+          -33.920134
+        ]
+      ]
+    },
     "verification_status": "Verified",
     "verification_source": "MJC + City of Cape Town",
     "source_urls": [
@@ -560,9 +1345,7 @@
       "https://www.capetown.gov.za/Family%20and%20home/See-all-city-facilities/Our-service-facilities/Cemeteries/Maitland%20Cemetery"
     ],
     "overrides": {},
-    "notes": [
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
-    ]
+    "notes": []
   },
   {
     "key": "ocean-view-cemetery",
@@ -634,7 +1417,269 @@
         "distanceMeters": 2101
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/1431923853",
+      "area_square_meters": 97396,
+      "contains_point": true,
+      "ring": [
+        [
+          18.7458036,
+          -33.8594968
+        ],
+        [
+          18.7475286,
+          -33.8563346
+        ],
+        [
+          18.7477103,
+          -33.8564041
+        ],
+        [
+          18.7477988,
+          -33.856238
+        ],
+        [
+          18.7479474,
+          -33.8559594
+        ],
+        [
+          18.7480264,
+          -33.8559893
+        ],
+        [
+          18.7480742,
+          -33.855898
+        ],
+        [
+          18.7480585,
+          -33.8558661
+        ],
+        [
+          18.7481401,
+          -33.8557127
+        ],
+        [
+          18.7481646,
+          -33.8557092
+        ],
+        [
+          18.7482779,
+          -33.8554955
+        ],
+        [
+          18.7482693,
+          -33.8554773
+        ],
+        [
+          18.7483837,
+          -33.8552651
+        ],
+        [
+          18.7484064,
+          -33.8552573
+        ],
+        [
+          18.7485222,
+          -33.8550471
+        ],
+        [
+          18.7485137,
+          -33.8550287
+        ],
+        [
+          18.7486303,
+          -33.8548147
+        ],
+        [
+          18.7486526,
+          -33.8548083
+        ],
+        [
+          18.7486635,
+          -33.8547855
+        ],
+        [
+          18.7486919,
+          -33.8547936
+        ],
+        [
+          18.7487272,
+          -33.8547715
+        ],
+        [
+          18.7487596,
+          -33.8547851
+        ],
+        [
+          18.7487705,
+          -33.8547669
+        ],
+        [
+          18.748885,
+          -33.8548087
+        ],
+        [
+          18.748871,
+          -33.8548362
+        ],
+        [
+          18.748954,
+          -33.8548637
+        ],
+        [
+          18.7489652,
+          -33.8548405
+        ],
+        [
+          18.7490419,
+          -33.8548698
+        ],
+        [
+          18.7491057,
+          -33.8547508
+        ],
+        [
+          18.7491272,
+          -33.8547459
+        ],
+        [
+          18.7492437,
+          -33.8545333
+        ],
+        [
+          18.7492354,
+          -33.8545143
+        ],
+        [
+          18.7493504,
+          -33.8543006
+        ],
+        [
+          18.7493732,
+          -33.8542956
+        ],
+        [
+          18.7494888,
+          -33.854084
+        ],
+        [
+          18.7494787,
+          -33.8540662
+        ],
+        [
+          18.7495949,
+          -33.8538516
+        ],
+        [
+          18.7496169,
+          -33.8538458
+        ],
+        [
+          18.7497345,
+          -33.8536314
+        ],
+        [
+          18.7497254,
+          -33.8536118
+        ],
+        [
+          18.7498419,
+          -33.853399
+        ],
+        [
+          18.7498632,
+          -33.8533921
+        ],
+        [
+          18.7499797,
+          -33.8531798
+        ],
+        [
+          18.7499712,
+          -33.8531616
+        ],
+        [
+          18.7500788,
+          -33.8529495
+        ],
+        [
+          18.7501092,
+          -33.8529418
+        ],
+        [
+          18.7502227,
+          -33.852736
+        ],
+        [
+          18.7502147,
+          -33.8527159
+        ],
+        [
+          18.7503291,
+          -33.8525053
+        ],
+        [
+          18.7503524,
+          -33.852499
+        ],
+        [
+          18.7504659,
+          -33.8522871
+        ],
+        [
+          18.7504582,
+          -33.8522657
+        ],
+        [
+          18.7505752,
+          -33.8520545
+        ],
+        [
+          18.750599,
+          -33.8520466
+        ],
+        [
+          18.7507135,
+          -33.8518356
+        ],
+        [
+          18.7507046,
+          -33.8518163
+        ],
+        [
+          18.7508218,
+          -33.8516056
+        ],
+        [
+          18.7507977,
+          -33.850106
+        ],
+        [
+          18.75303,
+          -33.8500823
+        ],
+        [
+          18.7459673,
+          -33.8600352
+        ],
+        [
+          18.7454621,
+          -33.8598203
+        ],
+        [
+          18.7454985,
+          -33.8597571
+        ],
+        [
+          18.7456384,
+          -33.8598147
+        ],
+        [
+          18.7458036,
+          -33.8594968
+        ]
+      ]
+    },
     "verification_status": "Verified",
     "verification_source": "City of Cape Town",
     "source_urls": [
@@ -642,9 +1687,7 @@
       "https://www.capetown.gov.za/Family%20and%20home/See-all-city-facilities/Our-service-facilities/Cemeteries/Wallacedene%20Cemetery"
     ],
     "overrides": {},
-    "notes": [
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
-    ]
+    "notes": []
   },
   {
     "key": "kleinvlei-cemetery",
@@ -675,7 +1718,77 @@
         "distanceMeters": 654
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/1324042146",
+      "area_square_meters": 46774,
+      "contains_point": true,
+      "ring": [
+        [
+          18.7023535,
+          -33.9919946
+        ],
+        [
+          18.703879,
+          -33.9912222
+        ],
+        [
+          18.7039254,
+          -33.9911583
+        ],
+        [
+          18.7038911,
+          -33.9910014
+        ],
+        [
+          18.7039704,
+          -33.9906889
+        ],
+        [
+          18.703976,
+          -33.9906668
+        ],
+        [
+          18.7041176,
+          -33.989847
+        ],
+        [
+          18.7041206,
+          -33.9898201
+        ],
+        [
+          18.7041061,
+          -33.9897436
+        ],
+        [
+          18.7040941,
+          -33.9897147
+        ],
+        [
+          18.7037109,
+          -33.9889504
+        ],
+        [
+          18.70367,
+          -33.9888505
+        ],
+        [
+          18.7036471,
+          -33.9887743
+        ],
+        [
+          18.7032638,
+          -33.9889954
+        ],
+        [
+          18.7017655,
+          -33.990279
+        ],
+        [
+          18.7023535,
+          -33.9919946
+        ]
+      ]
+    },
     "verification_status": "Verified",
     "verification_source": "City of Cape Town / MJC",
     "source_urls": [
@@ -683,9 +1796,7 @@
       "https://www.capetown.gov.za/Family%20and%20home/See-all-city-facilities/Our-service-facilities/Cemeteries/Kleinvlei%20Cemetery"
     ],
     "overrides": {},
-    "notes": [
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
-    ]
+    "notes": []
   },
   {
     "key": "rusthof-cemetery",
@@ -716,7 +1827,37 @@
         "distanceMeters": 2674
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/43050969",
+      "area_square_meters": 90055,
+      "contains_point": true,
+      "ring": [
+        [
+          18.8652237,
+          -34.1315545
+        ],
+        [
+          18.8652001,
+          -34.1315679
+        ],
+        [
+          18.8615508,
+          -34.1336356
+        ],
+        [
+          18.8629103,
+          -34.135276
+        ],
+        [
+          18.8665555,
+          -34.1331748
+        ],
+        [
+          18.8652237,
+          -34.1315545
+        ]
+      ]
+    },
     "verification_status": "Verified",
     "verification_source": "City of Cape Town + MJC opening announcement",
     "source_urls": [
@@ -724,9 +1865,7 @@
       "https://www.capetown.gov.za/Family%20and%20home/see-all-city-facilities/our-service-facilities/cemeteries"
     ],
     "overrides": {},
-    "notes": [
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
-    ]
+    "notes": []
   },
   {
     "key": "strand-muslim-council-cemetery",
@@ -759,16 +1898,48 @@
         "distanceMeters": 1729
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/42400471",
+      "area_square_meters": 38777,
+      "contains_point": true,
+      "ring": [
+        [
+          18.8357645,
+          -34.1218956
+        ],
+        [
+          18.834856,
+          -34.1223527
+        ],
+        [
+          18.83716,
+          -34.1254297
+        ],
+        [
+          18.8372741,
+          -34.1254412
+        ],
+        [
+          18.8379108,
+          -34.1250788
+        ],
+        [
+          18.8379745,
+          -34.1249312
+        ],
+        [
+          18.8357645,
+          -34.1218956
+        ]
+      ]
+    },
     "verification_status": "Verified",
     "verification_source": "MJC",
     "source_urls": [
       "https://mjc.org.za/community/cemeteries/"
     ],
     "overrides": {},
-    "notes": [
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
-    ]
+    "notes": []
   },
   {
     "key": "paarl-muslim-maqbara-parys-cemetery",
@@ -821,16 +1992,40 @@
         "distanceMeters": 659
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/436175744",
+      "area_square_meters": 4461,
+      "contains_point": true,
+      "ring": [
+        [
+          18.9573968,
+          -33.7351033
+        ],
+        [
+          18.9574129,
+          -33.7356922
+        ],
+        [
+          18.9581049,
+          -33.7357591
+        ],
+        [
+          18.9581693,
+          -33.7351702
+        ],
+        [
+          18.9573968,
+          -33.7351033
+        ]
+      ]
+    },
     "verification_status": "Verified",
     "verification_source": "MJC",
     "source_urls": [
       "https://mjc.org.za/community/cemeteries/"
     ],
     "overrides": {},
-    "notes": [
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
-    ]
+    "notes": []
   },
   {
     "key": "malmesbury-maqbara",
@@ -883,16 +2078,60 @@
         "distanceMeters": 2408
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/177949104",
+      "area_square_meters": 71992,
+      "contains_point": true,
+      "ring": [
+        [
+          18.7177525,
+          -33.4674813
+        ],
+        [
+          18.716685,
+          -33.4674411
+        ],
+        [
+          18.7157516,
+          -33.4684076
+        ],
+        [
+          18.7146358,
+          -33.4691505
+        ],
+        [
+          18.7132893,
+          -33.4700097
+        ],
+        [
+          18.7144748,
+          -33.4711239
+        ],
+        [
+          18.7171034,
+          -33.4692713
+        ],
+        [
+          18.7174274,
+          -33.4689281
+        ],
+        [
+          18.717613,
+          -33.4685508
+        ],
+        [
+          18.7177525,
+          -33.4674813
+        ]
+      ]
+    },
     "verification_status": "Verified",
     "verification_source": "MJC",
     "source_urls": [
       "https://mjc.org.za/community/cemeteries/"
     ],
     "overrides": {},
-    "notes": [
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
-    ]
+    "notes": []
   },
   {
     "key": "wellington-muslim-cemetery",
@@ -923,16 +2162,100 @@
         "distanceMeters": 653
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/864046423",
+      "area_square_meters": 29471,
+      "contains_point": false,
+      "ring": [
+        [
+          18.9927676,
+          -33.6464915
+        ],
+        [
+          18.9931498,
+          -33.6472797
+        ],
+        [
+          18.9941369,
+          -33.6469247
+        ],
+        [
+          18.9942656,
+          -33.6471725
+        ],
+        [
+          18.9951092,
+          -33.6468934
+        ],
+        [
+          18.9952607,
+          -33.6468644
+        ],
+        [
+          18.9954291,
+          -33.6468638
+        ],
+        [
+          18.9957851,
+          -33.6467689
+        ],
+        [
+          18.9956792,
+          -33.6463815
+        ],
+        [
+          18.9954814,
+          -33.6464178
+        ],
+        [
+          18.9953989,
+          -33.6460606
+        ],
+        [
+          18.9955202,
+          -33.646041
+        ],
+        [
+          18.9954498,
+          -33.645796
+        ],
+        [
+          18.995313,
+          -33.645801
+        ],
+        [
+          18.9946539,
+          -33.6460299
+        ],
+        [
+          18.9945024,
+          -33.645672
+        ],
+        [
+          18.9943025,
+          -33.6457351
+        ],
+        [
+          18.9935314,
+          -33.6460271
+        ],
+        [
+          18.993345,
+          -33.6462878
+        ],
+        [
+          18.9927676,
+          -33.6464915
+        ]
+      ]
+    },
     "verification_status": "Verified",
     "verification_source": "MJC",
     "source_urls": [
       "https://mjc.org.za/community/cemeteries/"
     ],
     "overrides": {},
-    "notes": [
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
-    ]
+    "notes": []
   },
   {
     "key": "brodie-road-muslim-cemetery",
@@ -965,7 +2288,37 @@
         "distanceMeters": 28
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/1160852419",
+      "area_square_meters": 2780,
+      "contains_point": true,
+      "ring": [
+        [
+          18.4672311,
+          -34.0028409
+        ],
+        [
+          18.4680775,
+          -34.002872
+        ],
+        [
+          18.4680655,
+          -34.0024185
+        ],
+        [
+          18.4677544,
+          -34.0024623
+        ],
+        [
+          18.4676581,
+          -34.0024117
+        ],
+        [
+          18.4672311,
+          -34.0028409
+        ]
+      ]
+    },
     "verification_status": "Verified; MJC notes efforts to reopen it",
     "verification_source": "Mapcarta + MJC",
     "source_urls": [
@@ -974,7 +2327,6 @@
     ],
     "overrides": {},
     "notes": [
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review.",
       "Updates live row cem_wynberg (\"Wynberg Muslim Cemetery\")."
     ]
   },
@@ -1060,16 +2412,56 @@
         "distanceMeters": 1552
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/440485664",
+      "area_square_meters": 7879,
+      "contains_point": true,
+      "ring": [
+        [
+          18.4385627,
+          -34.0311225
+        ],
+        [
+          18.4384751,
+          -34.0311996
+        ],
+        [
+          18.43792,
+          -34.0316713
+        ],
+        [
+          18.4378696,
+          -34.0317155
+        ],
+        [
+          18.4382168,
+          -34.0323042
+        ],
+        [
+          18.4385873,
+          -34.0321517
+        ],
+        [
+          18.4390618,
+          -34.031927
+        ],
+        [
+          18.438622,
+          -34.0311335
+        ],
+        [
+          18.4385627,
+          -34.0311225
+        ]
+      ]
+    },
     "verification_status": "Verified by independent historical source; exact street number not published",
     "verification_source": "Solomon Family Trust",
     "source_urls": [
       "https://solomon-trust.co.za/cemetery.html"
     ],
     "overrides": {},
-    "notes": [
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
-    ]
+    "notes": []
   },
   {
     "key": "westpark-cemetery",
@@ -1100,7 +2492,137 @@
         "distanceMeters": 384
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/18906923",
+      "area_square_meters": 1225016,
+      "contains_point": true,
+      "ring": [
+        [
+          27.9978451,
+          -26.1620797
+        ],
+        [
+          27.9982348,
+          -26.1625098
+        ],
+        [
+          27.9985643,
+          -26.1629955
+        ],
+        [
+          27.9988241,
+          -26.163712
+        ],
+        [
+          27.998817,
+          -26.1651412
+        ],
+        [
+          27.9986569,
+          -26.1664916
+        ],
+        [
+          27.99706,
+          -26.168033
+        ],
+        [
+          27.9910087,
+          -26.1669517
+        ],
+        [
+          27.9847702,
+          -26.1674403
+        ],
+        [
+          27.984514,
+          -26.1675321
+        ],
+        [
+          27.9848234,
+          -26.1681949
+        ],
+        [
+          27.98281,
+          -26.1685246
+        ],
+        [
+          27.9809875,
+          -26.1643679
+        ],
+        [
+          27.9808224,
+          -26.1642579
+        ],
+        [
+          27.9810865,
+          -26.1638443
+        ],
+        [
+          27.981483,
+          -26.1633445
+        ],
+        [
+          27.98175,
+          -26.1631191
+        ],
+        [
+          27.9820212,
+          -26.1629954
+        ],
+        [
+          27.9844254,
+          -26.1621785
+        ],
+        [
+          27.9881407,
+          -26.1610009
+        ],
+        [
+          27.9892433,
+          -26.1607029
+        ],
+        [
+          27.9936247,
+          -26.1592744
+        ],
+        [
+          27.9940386,
+          -26.1589552
+        ],
+        [
+          27.9942809,
+          -26.1592879
+        ],
+        [
+          27.9946176,
+          -26.1592916
+        ],
+        [
+          27.9953581,
+          -26.1600786
+        ],
+        [
+          27.995604,
+          -26.1602554
+        ],
+        [
+          27.996428,
+          -26.160925
+        ],
+        [
+          27.9971621,
+          -26.1614652
+        ],
+        [
+          27.9975245,
+          -26.1617614
+        ],
+        [
+          27.9978451,
+          -26.1620797
+        ]
+      ]
+    },
     "verification_status": "Verified",
     "verification_source": "JCPZ + 2025 statement + OSM/Wikidata",
     "source_urls": [
@@ -1108,9 +2630,7 @@
       "https://www.jhbcityparksandzoo.com/news-events/news/prioritisation-of-westpark-cemetery-amid-seasonal-challenges"
     ],
     "overrides": {},
-    "notes": [
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
-    ]
+    "notes": []
   },
   {
     "key": "newclare-cemetery",
@@ -1131,7 +2651,117 @@
     "point_source": "csv",
     "google_place_id": null,
     "google_candidates": [],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/63521643",
+      "area_square_meters": 382506,
+      "contains_point": true,
+      "ring": [
+        [
+          27.9539255,
+          -26.1979858
+        ],
+        [
+          27.9542042,
+          -26.1987766
+        ],
+        [
+          27.9551608,
+          -26.1991754
+        ],
+        [
+          27.9576918,
+          -26.1984251
+        ],
+        [
+          27.9588774,
+          -26.1982677
+        ],
+        [
+          27.9593508,
+          -26.1982497
+        ],
+        [
+          27.9601843,
+          -26.1982719
+        ],
+        [
+          27.960816,
+          -26.1982816
+        ],
+        [
+          27.960914,
+          -26.198175
+        ],
+        [
+          27.9640551,
+          -26.192779
+        ],
+        [
+          27.9631813,
+          -26.1923734
+        ],
+        [
+          27.9619093,
+          -26.1922531
+        ],
+        [
+          27.9612213,
+          -26.1923528
+        ],
+        [
+          27.9604901,
+          -26.1924829
+        ],
+        [
+          27.9597218,
+          -26.1925687
+        ],
+        [
+          27.9592991,
+          -26.1927846
+        ],
+        [
+          27.9588921,
+          -26.1931968
+        ],
+        [
+          27.9587044,
+          -26.1935397
+        ],
+        [
+          27.9582538,
+          -26.1942545
+        ],
+        [
+          27.9572786,
+          -26.1958713
+        ],
+        [
+          27.9568737,
+          -26.1961136
+        ],
+        [
+          27.95567,
+          -26.1964952
+        ],
+        [
+          27.9554453,
+          -26.1966762
+        ],
+        [
+          27.9548188,
+          -26.1971762
+        ],
+        [
+          27.9539594,
+          -26.1978611
+        ],
+        [
+          27.9539255,
+          -26.1979858
+        ]
+      ]
+    },
     "verification_status": "Verified",
     "verification_source": "JCPZ + OSM/Mapcarta",
     "source_urls": [
@@ -1140,8 +2770,7 @@
     ],
     "overrides": {},
     "notes": [
-      "No Google Places candidate within range.",
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+      "No Google Places candidate within range."
     ]
   },
   {
@@ -1175,7 +2804,77 @@
         "distanceMeters": 406
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/832128851",
+      "area_square_meters": 93723,
+      "contains_point": true,
+      "ring": [
+        [
+          27.8509931,
+          -26.2941747
+        ],
+        [
+          27.850213,
+          -26.2943135
+        ],
+        [
+          27.8501443,
+          -26.2940507
+        ],
+        [
+          27.8487485,
+          -26.2943271
+        ],
+        [
+          27.8465584,
+          -26.2947405
+        ],
+        [
+          27.8466806,
+          -26.2950526
+        ],
+        [
+          27.8468576,
+          -26.2954025
+        ],
+        [
+          27.847276,
+          -26.2954025
+        ],
+        [
+          27.8477401,
+          -26.2954277
+        ],
+        [
+          27.8481759,
+          -26.2956201
+        ],
+        [
+          27.8485005,
+          -26.2959339
+        ],
+        [
+          27.8486647,
+          -26.296351
+        ],
+        [
+          27.8510232,
+          -26.2973407
+        ],
+        [
+          27.8511352,
+          -26.2968052
+        ],
+        [
+          27.8511325,
+          -26.2958515
+        ],
+        [
+          27.8509931,
+          -26.2941747
+        ]
+      ]
+    },
     "verification_status": "Verified",
     "verification_source": "JCPZ + OSM/Mapcarta",
     "source_urls": [
@@ -1183,9 +2882,7 @@
       "https://mapcarta.com/W832128851"
     ],
     "overrides": {},
-    "notes": [
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
-    ]
+    "notes": []
   },
   {
     "key": "braamfontein-cemetery",
@@ -1216,7 +2913,65 @@
         "distanceMeters": 306
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/26346946",
+      "area_square_meters": 209202,
+      "contains_point": true,
+      "ring": [
+        [
+          28.0230428,
+          -26.1970127
+        ],
+        [
+          28.0214286,
+          -26.1941747
+        ],
+        [
+          28.0238747,
+          -26.1935201
+        ],
+        [
+          28.0260967,
+          -26.193229
+        ],
+        [
+          28.0273436,
+          -26.1931048
+        ],
+        [
+          28.0275312,
+          -26.193194
+        ],
+        [
+          28.0277812,
+          -26.1947645
+        ],
+        [
+          28.0279046,
+          -26.1956631
+        ],
+        [
+          28.0279624,
+          -26.1961475
+        ],
+        [
+          28.0280065,
+          -26.1963105
+        ],
+        [
+          28.0279431,
+          -26.1964467
+        ],
+        [
+          28.0276513,
+          -26.1965237
+        ],
+        [
+          28.0230428,
+          -26.1970127
+        ]
+      ]
+    },
     "verification_status": "Verified",
     "verification_source": "City of Johannesburg + Mapcarta",
     "source_urls": [
@@ -1224,9 +2979,7 @@
       "https://mapcarta.com/W26346946"
     ],
     "overrides": {},
-    "notes": [
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
-    ]
+    "notes": []
   },
   {
     "key": "brixton-cemetery",
@@ -1257,7 +3010,141 @@
         "distanceMeters": 53
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/22660821",
+      "area_square_meters": 342210,
+      "contains_point": true,
+      "ring": [
+        [
+          28.0057338,
+          -26.1944889
+        ],
+        [
+          28.0065921,
+          -26.1945505
+        ],
+        [
+          28.0073817,
+          -26.1944889
+        ],
+        [
+          28.0088923,
+          -26.1943195
+        ],
+        [
+          28.0096498,
+          -26.1942255
+        ],
+        [
+          28.0108124,
+          -26.1940813
+        ],
+        [
+          28.0111128,
+          -26.1940795
+        ],
+        [
+          28.0112692,
+          -26.1940971
+        ],
+        [
+          28.0114291,
+          -26.1941723
+        ],
+        [
+          28.0115919,
+          -26.194262
+        ],
+        [
+          28.0117151,
+          -26.1944062
+        ],
+        [
+          28.0117429,
+          -26.1944924
+        ],
+        [
+          28.0118378,
+          -26.194649
+        ],
+        [
+          28.011882,
+          -26.1946963
+        ],
+        [
+          28.0119866,
+          -26.194808
+        ],
+        [
+          28.0121544,
+          -26.1949351
+        ],
+        [
+          28.0123382,
+          -26.1950247
+        ],
+        [
+          28.0125316,
+          -26.1950742
+        ],
+        [
+          28.0126834,
+          -26.1951105
+        ],
+        [
+          28.0128512,
+          -26.1951096
+        ],
+        [
+          28.0132615,
+          -26.1950723
+        ],
+        [
+          28.0138856,
+          -26.1949977
+        ],
+        [
+          28.0149292,
+          -26.1948985
+        ],
+        [
+          28.0149794,
+          -26.1949392
+        ],
+        [
+          28.0154326,
+          -26.1979392
+        ],
+        [
+          28.0152155,
+          -26.1980517
+        ],
+        [
+          28.0109265,
+          -26.1985938
+        ],
+        [
+          28.0106261,
+          -26.1985553
+        ],
+        [
+          28.0071757,
+          -26.1972846
+        ],
+        [
+          28.00715,
+          -26.1968456
+        ],
+        [
+          28.0055793,
+          -26.1946661
+        ],
+        [
+          28.0057338,
+          -26.1944889
+        ]
+      ]
+    },
     "verification_status": "Verified",
     "verification_source": "JCPZ + OSM/Mapcarta",
     "source_urls": [
@@ -1265,9 +3152,7 @@
       "https://mapcarta.com/W22660821"
     ],
     "overrides": {},
-    "notes": [
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
-    ]
+    "notes": []
   },
   {
     "key": "roshnee-muslim-cemetery",
@@ -1298,7 +3183,33 @@
         "distanceMeters": 153
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/1393201023",
+      "area_square_meters": 97965,
+      "contains_point": true,
+      "ring": [
+        [
+          27.9511068,
+          -26.567617
+        ],
+        [
+          27.950589,
+          -26.5697659
+        ],
+        [
+          27.9466589,
+          -26.5690088
+        ],
+        [
+          27.9471767,
+          -26.5668593
+        ],
+        [
+          27.9511068,
+          -26.567617
+        ]
+      ]
+    },
     "verification_status": "Verified",
     "verification_source": "Emfuleni tariff + OSM/Mapcarta",
     "source_urls": [
@@ -1306,9 +3217,7 @@
       "https://mapcarta.com/W1393201023"
     ],
     "overrides": {},
-    "notes": [
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
-    ]
+    "notes": []
   },
   {
     "key": "rynsoord-cemetery",
@@ -1829,16 +3738,132 @@
         "distanceMeters": 757
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/25636783",
+      "area_square_meters": 58458,
+      "contains_point": true,
+      "ring": [
+        [
+          31.0134776,
+          -29.8567135
+        ],
+        [
+          31.0134139,
+          -29.8568612
+        ],
+        [
+          31.0133006,
+          -29.8571589
+        ],
+        [
+          31.0130491,
+          -29.8577864
+        ],
+        [
+          31.0125684,
+          -29.8589145
+        ],
+        [
+          31.0125677,
+          -29.8589513
+        ],
+        [
+          31.0125656,
+          -29.8589896
+        ],
+        [
+          31.0125744,
+          -29.8590565
+        ],
+        [
+          31.0126065,
+          -29.8590966
+        ],
+        [
+          31.0126716,
+          -29.8591263
+        ],
+        [
+          31.0128225,
+          -29.859185
+        ],
+        [
+          31.0141676,
+          -29.8595898
+        ],
+        [
+          31.0146527,
+          -29.8597296
+        ],
+        [
+          31.0146615,
+          -29.8596945
+        ],
+        [
+          31.0146822,
+          -29.8596773
+        ],
+        [
+          31.0147024,
+          -29.8596706
+        ],
+        [
+          31.0147674,
+          -29.8596709
+        ],
+        [
+          31.0148475,
+          -29.8596945
+        ],
+        [
+          31.0150903,
+          -29.8596596
+        ],
+        [
+          31.0153364,
+          -29.8590519
+        ],
+        [
+          31.015441,
+          -29.8588077
+        ],
+        [
+          31.0154691,
+          -29.8587128
+        ],
+        [
+          31.0154973,
+          -29.8584593
+        ],
+        [
+          31.015337,
+          -29.8582447
+        ],
+        [
+          31.0149072,
+          -29.8578236
+        ],
+        [
+          31.0144371,
+          -29.8573555
+        ],
+        [
+          31.0139456,
+          -29.8568693
+        ],
+        [
+          31.0134776,
+          -29.8567135
+        ]
+      ]
+    },
     "verification_status": "Verified; bylaw reserves Blocks 17, 27, 29A and 46 for eligible Muslim burials",
     "verification_source": "eThekwini cemetery bylaws",
     "source_urls": [
       "https://dag.durban.gov.za/uploads/0000/6/2025/08/10/cemeteries.pdf"
     ],
     "overrides": {},
-    "notes": [
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
-    ]
+    "notes": []
   },
   {
     "key": "muslim-cemetery-1855",
@@ -1901,7 +3926,77 @@
     "point_source": "csv",
     "google_place_id": null,
     "google_candidates": [],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/446724749",
+      "area_square_meters": 301680,
+      "contains_point": true,
+      "ring": [
+        [
+          28.7945149,
+          -31.6071964
+        ],
+        [
+          28.7925408,
+          -31.6075025
+        ],
+        [
+          28.7921331,
+          -31.6072558
+        ],
+        [
+          28.7910334,
+          -31.6074522
+        ],
+        [
+          28.7907222,
+          -31.6073517
+        ],
+        [
+          28.7898371,
+          -31.6068537
+        ],
+        [
+          28.7880668,
+          -31.6087954
+        ],
+        [
+          28.7891364,
+          -31.6109613
+        ],
+        [
+          28.7899679,
+          -31.6121285
+        ],
+        [
+          28.7906331,
+          -31.6129874
+        ],
+        [
+          28.7912211,
+          -31.6128659
+        ],
+        [
+          28.7922028,
+          -31.6127654
+        ],
+        [
+          28.7937102,
+          -31.611267
+        ],
+        [
+          28.7948388,
+          -31.610091
+        ],
+        [
+          28.7951875,
+          -31.6097209
+        ],
+        [
+          28.7945149,
+          -31.6071964
+        ]
+      ]
+    },
     "verification_status": "Verified; eGGSA shows a Muslim section",
     "verification_source": "eGGSA",
     "source_urls": [
@@ -1909,8 +4004,7 @@
     ],
     "overrides": {},
     "notes": [
-      "No Google Places candidate within range.",
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+      "No Google Places candidate within range."
     ]
   },
   {
@@ -1944,7 +4038,45 @@
         "distanceMeters": 112
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/741345437",
+      "area_square_meters": 20754,
+      "contains_point": false,
+      "ring": [
+        [
+          30.9783534,
+          -25.4618559
+        ],
+        [
+          30.9790934,
+          -25.462789
+        ],
+        [
+          30.9801414,
+          -25.4623513
+        ],
+        [
+          30.9801541,
+          -25.4622887
+        ],
+        [
+          30.979817,
+          -25.4618329
+        ],
+        [
+          30.9803747,
+          -25.4615696
+        ],
+        [
+          30.97995,
+          -25.4610151
+        ],
+        [
+          30.9783534,
+          -25.4618559
+        ]
+      ]
+    },
     "verification_status": "Verified; municipal bylaw provides for Muslim cemetery section and local reporting identifies Muslim cemetery",
     "verification_source": "City of Mbombela bylaw + local reporting + cemetery coordinates",
     "source_urls": [
@@ -1952,9 +4084,7 @@
       "https://tng.page.co.za/showmap.php?cemeteryID=31&tree=page"
     ],
     "overrides": {},
-    "notes": [
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
-    ]
+    "notes": []
   },
   {
     "key": "zinniaville-muslim-cemetery",
@@ -1985,16 +4115,40 @@
         "distanceMeters": 2390
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/468366868",
+      "area_square_meters": 6245,
+      "contains_point": false,
+      "ring": [
+        [
+          27.2471596,
+          -25.646906
+        ],
+        [
+          27.2475491,
+          -25.6472218
+        ],
+        [
+          27.2468407,
+          -25.6479425
+        ],
+        [
+          27.2463574,
+          -25.6475894
+        ],
+        [
+          27.2471596,
+          -25.646906
+        ]
+      ]
+    },
     "verification_status": "Verified",
     "verification_source": "Local cemetery directory",
     "source_urls": [
       "https://rsa.worldorgs.com/catalog/rustenburg/cemetery/zinniaville-muslim-cemetery"
     ],
     "overrides": {},
-    "notes": [
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
-    ]
+    "notes": []
   },
   {
     "key": "zeerust-muslim-cemetery",
@@ -2025,7 +4179,37 @@
         "distanceMeters": 0
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/415646056",
+      "area_square_meters": 46445,
+      "contains_point": true,
+      "ring": [
+        [
+          26.0753792,
+          -25.5393739
+        ],
+        [
+          26.0771362,
+          -25.539072
+        ],
+        [
+          26.0770501,
+          -25.537054
+        ],
+        [
+          26.0769485,
+          -25.5369748
+        ],
+        [
+          26.0748499,
+          -25.5373998
+        ],
+        [
+          26.0753792,
+          -25.5393739
+        ]
+      ]
+    },
     "verification_status": "Verified",
     "verification_source": "Waze / local directory",
     "source_urls": [
@@ -2033,9 +4217,7 @@
       "https://rsa.worldorgs.com/catalog/zeerust/cemetery/zeerust-muslim-cemetery"
     ],
     "overrides": {},
-    "notes": [
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
-    ]
+    "notes": []
   },
   {
     "key": "new-boksburg-cemetery-boksburg-sub-regional-cemetery",
@@ -2068,7 +4250,97 @@
         "distanceMeters": 0
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/384237639",
+      "area_square_meters": 392578,
+      "contains_point": true,
+      "ring": [
+        [
+          28.2904968,
+          -26.2324606
+        ],
+        [
+          28.2903941,
+          -26.2324565
+        ],
+        [
+          28.2904128,
+          -26.2321842
+        ],
+        [
+          28.2895815,
+          -26.2317527
+        ],
+        [
+          28.2880825,
+          -26.2317443
+        ],
+        [
+          28.2880171,
+          -26.2364653
+        ],
+        [
+          28.2895115,
+          -26.2370015
+        ],
+        [
+          28.2883767,
+          -26.2388613
+        ],
+        [
+          28.2924396,
+          -26.240763
+        ],
+        [
+          28.2924676,
+          -26.2404865
+        ],
+        [
+          28.2926964,
+          -26.2402603
+        ],
+        [
+          28.293056,
+          -26.2402268
+        ],
+        [
+          28.2937939,
+          -26.2405075
+        ],
+        [
+          28.2942889,
+          -26.2397703
+        ],
+        [
+          28.2945691,
+          -26.2390456
+        ],
+        [
+          28.2932428,
+          -26.2367417
+        ],
+        [
+          28.2916363,
+          -26.2339394
+        ],
+        [
+          28.2909405,
+          -26.2327371
+        ],
+        [
+          28.2906836,
+          -26.232712
+        ],
+        [
+          28.290665,
+          -26.2324648
+        ],
+        [
+          28.2904968,
+          -26.2324606
+        ]
+      ]
+    },
     "verification_status": "Verified",
     "verification_source": "Ekurhuleni Muslim Burial + Boksburg Sub-regional Cemetery location listing",
     "source_urls": [
@@ -2076,9 +4348,7 @@
       "https://www.waze.com/af/live-map/directions/za/gp/boksburg/boksburg-sub-regional-cemetery?to=place.ChIJad8GXSsZlR4Rg70ZfKy0K4k"
     ],
     "overrides": {},
-    "notes": [
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
-    ]
+    "notes": []
   },
   {
     "key": "west-coast-islamic-society-maqbara",
@@ -2164,7 +4434,73 @@
         "distanceMeters": 3464
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/55728382",
+      "area_square_meters": 31825,
+      "contains_point": false,
+      "ring": [
+        [
+          27.8745085,
+          -26.1656383
+        ],
+        [
+          27.8740619,
+          -26.1657563
+        ],
+        [
+          27.8736413,
+          -26.1662829
+        ],
+        [
+          27.8733042,
+          -26.1666711
+        ],
+        [
+          27.8742631,
+          -26.1673283
+        ],
+        [
+          27.874416,
+          -26.1674234
+        ],
+        [
+          27.8748827,
+          -26.167356
+        ],
+        [
+          27.8752622,
+          -26.1670996
+        ],
+        [
+          27.8754754,
+          -26.1667999
+        ],
+        [
+          27.87569,
+          -26.1664857
+        ],
+        [
+          27.8757437,
+          -26.1663377
+        ],
+        [
+          27.8758013,
+          -26.1662582
+        ],
+        [
+          27.8751925,
+          -26.1657178
+        ],
+        [
+          27.8749953,
+          -26.1656817
+        ],
+        [
+          27.8745085,
+          -26.1656383
+        ]
+      ]
+    },
     "verification_status": "Confirmed shared cemetery",
     "verification_source": "JCPZ",
     "source_urls": [
@@ -2172,8 +4508,7 @@
     ],
     "overrides": {},
     "notes": [
-      "From the earlier CSV, not the production file: accept or skip.",
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+      "From the earlier CSV, not the production file: accept or skip."
     ]
   },
   {
@@ -2250,7 +4585,89 @@
         "distanceMeters": 3804
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/429027460",
+      "area_square_meters": 192690,
+      "contains_point": true,
+      "ring": [
+        [
+          31.0352183,
+          -29.6791798
+        ],
+        [
+          31.0350036,
+          -29.6790347
+        ],
+        [
+          31.0348008,
+          -29.6790797
+        ],
+        [
+          31.0337074,
+          -29.6796047
+        ],
+        [
+          31.0321688,
+          -29.6805235
+        ],
+        [
+          31.0320853,
+          -29.6806272
+        ],
+        [
+          31.0306778,
+          -29.6810658
+        ],
+        [
+          31.0331215,
+          -29.687144
+        ],
+        [
+          31.0333917,
+          -29.6868568
+        ],
+        [
+          31.0335832,
+          -29.6866016
+        ],
+        [
+          31.0336934,
+          -29.6863806
+        ],
+        [
+          31.033814,
+          -29.6860843
+        ],
+        [
+          31.0339111,
+          -29.6855579
+        ],
+        [
+          31.0341891,
+          -29.6839946
+        ],
+        [
+          31.0344252,
+          -29.6827185
+        ],
+        [
+          31.0346339,
+          -29.6818381
+        ],
+        [
+          31.034677,
+          -29.6816565
+        ],
+        [
+          31.0349393,
+          -29.6804304
+        ],
+        [
+          31.0352183,
+          -29.6791798
+        ]
+      ]
+    },
     "verification_status": "Local cemetery directory only",
     "verification_source": "cybo.com",
     "source_urls": [
@@ -2258,8 +4675,7 @@
     ],
     "overrides": {},
     "notes": [
-      "From the earlier CSV, not the production file: accept or skip.",
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+      "From the earlier CSV, not the production file: accept or skip."
     ]
   },
   {
@@ -2303,7 +4719,41 @@
         "distanceMeters": 4688
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/30116307",
+      "area_square_meters": 393285,
+      "contains_point": true,
+      "ring": [
+        [
+          24.7354282,
+          -28.7360845
+        ],
+        [
+          24.7354241,
+          -28.730771
+        ],
+        [
+          24.7421148,
+          -28.7306993
+        ],
+        [
+          24.7422154,
+          -28.7313884
+        ],
+        [
+          24.7423059,
+          -28.7359359
+        ],
+        [
+          24.7421169,
+          -28.7359976
+        ],
+        [
+          24.7354282,
+          -28.7360845
+        ]
+      ]
+    },
     "verification_status": "War graves project lists it; no street address",
     "verification_source": "South Africa War Graves Project",
     "source_urls": [
@@ -2311,8 +4761,7 @@
     ],
     "overrides": {},
     "notes": [
-      "From the earlier CSV, not the production file: accept or skip.",
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+      "From the earlier CSV, not the production file: accept or skip."
     ]
   },
   {
@@ -2344,7 +4793,105 @@
         "distanceMeters": 2780
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/1064220625",
+      "area_square_meters": 38887,
+      "contains_point": true,
+      "ring": [
+        [
+          18.4285609,
+          -34.1699796
+        ],
+        [
+          18.4283591,
+          -34.1702986
+        ],
+        [
+          18.429196,
+          -34.170738
+        ],
+        [
+          18.4293254,
+          -34.1705555
+        ],
+        [
+          18.4294467,
+          -34.1703619
+        ],
+        [
+          18.4295259,
+          -34.1702365
+        ],
+        [
+          18.4295775,
+          -34.1701366
+        ],
+        [
+          18.429717,
+          -34.1698337
+        ],
+        [
+          18.4297673,
+          -34.1697144
+        ],
+        [
+          18.4299704,
+          -34.1692662
+        ],
+        [
+          18.4300281,
+          -34.1691619
+        ],
+        [
+          18.4301495,
+          -34.1689682
+        ],
+        [
+          18.430305,
+          -34.1686575
+        ],
+        [
+          18.4304392,
+          -34.168389
+        ],
+        [
+          18.4302481,
+          -34.1680939
+        ],
+        [
+          18.4299852,
+          -34.1681782
+        ],
+        [
+          18.4294856,
+          -34.1680894
+        ],
+        [
+          18.429094,
+          -34.1679441
+        ],
+        [
+          18.4287782,
+          -34.1683824
+        ],
+        [
+          18.4284081,
+          -34.1689483
+        ],
+        [
+          18.4282055,
+          -34.1692151
+        ],
+        [
+          18.4278448,
+          -34.1696823
+        ],
+        [
+          18.4285609,
+          -34.1699796
+        ]
+      ]
+    },
     "verification_status": "Confirmed Muslim section",
     "verification_source": "City of Cape Town research report",
     "source_urls": [
@@ -2352,8 +4899,7 @@
     ],
     "overrides": {},
     "notes": [
-      "From the earlier CSV, not the production file: accept or skip.",
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+      "From the earlier CSV, not the production file: accept or skip."
     ]
   },
   {
@@ -2450,7 +4996,57 @@
         "distanceMeters": 1465
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/1000935035",
+      "area_square_meters": 14118,
+      "contains_point": true,
+      "ring": [
+        [
+          29.0831025,
+          -26.4175332
+        ],
+        [
+          29.083136,
+          -26.417813
+        ],
+        [
+          29.0832339,
+          -26.4178647
+        ],
+        [
+          29.0835249,
+          -26.4178995
+        ],
+        [
+          29.0848821,
+          -26.4180352
+        ],
+        [
+          29.0849532,
+          -26.4179776
+        ],
+        [
+          29.085208,
+          -26.417317
+        ],
+        [
+          29.0846676,
+          -26.4171452
+        ],
+        [
+          29.0846622,
+          -26.4171621
+        ],
+        [
+          29.0845804,
+          -26.417144
+        ],
+        [
+          29.0831025,
+          -26.4175332
+        ]
+      ]
+    },
     "verification_status": "Municipal annual report only; no address",
     "verification_source": "Govan Mbeki Municipality annual report 2023/24",
     "source_urls": [
@@ -2458,8 +5054,7 @@
     ],
     "overrides": {},
     "notes": [
-      "From the earlier CSV, not the production file: accept or skip.",
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+      "From the earlier CSV, not the production file: accept or skip."
     ]
   },
   {
