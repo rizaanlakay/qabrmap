@@ -28,6 +28,8 @@ const only = args.includes('--only') ? args[args.indexOf('--only') + 1] : null;
 const dryRun = args.includes('--dry-run');
 // Overpass can be down or queueing for minutes. This resolves points and names now and leaves outlines for later.
 const noOutlines = args.includes('--no-outlines');
+// Fetch only the missing outlines, leaving reviewed names and statuses untouched
+const outlinesOnly = args.includes('--outlines-only');
 
 loadEnvLocal(path.join(ROOT, '.env.local'));
 // A dedicated server key is preferred. The public maps key is accepted as a fallback, but it only works
@@ -119,6 +121,7 @@ const OVERPASS_ENDPOINTS = [
 ];
 // The mirrors queue requests under load and have answered this query in 39 s, so allow well beyond that
 const OVERPASS_TIMEOUT_MS = 90_000;
+const deadEndpoints = new Set();
 
 async function overpass(query) {
   const init = {
@@ -134,12 +137,20 @@ async function overpass(query) {
   const validate = (data) => (data.remark ? `Overpass returned a remark: ${data.remark}` : null);
   let lastError = null;
   for (const endpoint of OVERPASS_ENDPOINTS) {
+    // A host that was unreachable once is unreachable for the rest of the run: retrying it per row would
+    // spend ten seconds a time waiting on a connection that never opens
+    if (deadEndpoints.has(endpoint)) continue;
     try {
       const data = await cachedJson('overpass', endpoint, init, validate, `overpass:${query}`, OVERPASS_TIMEOUT_MS);
       await sleep(1000);
       return data?.elements || [];
     } catch (error) {
       lastError = error;
+      const cause = error && error.cause && error.cause.code;
+      if (cause === 'UND_ERR_CONNECT_TIMEOUT' || cause === 'ECONNREFUSED' || cause === 'ENOTFOUND' || cause === 'CERT_HAS_EXPIRED') {
+        deadEndpoints.add(endpoint);
+        console.warn(`  ${endpoint} is unreachable (${cause}); skipping it for the rest of this run`);
+      }
     }
   }
   throw new Error(`every Overpass endpoint failed: ${lastError ? lastError.message : 'unknown'}`);
@@ -351,7 +362,60 @@ function writeReport(entries, existing) {
   writeFileSync(REPORT, lines.join('\n'));
 }
 
+// Fill in outlines for entries that already have a point but no outline, whatever their review status.
+// Approved entries are otherwise never regenerated, so this is the only way to add outlines after a review.
+async function backfillOutlines() {
+  if (!existsSync(REVIEW)) {
+    console.error('No review.json to backfill: run the resolver first');
+    process.exit(1);
+  }
+  const entries = JSON.parse(readFileSync(REVIEW, 'utf8'));
+  const pending = entries.filter((entry) => entry.point && !entry.outline);
+  console.log(`${pending.length} of ${entries.length} entries have a point and no outline`);
+  if (dryRun) {
+    // A dry run never calls out, so every lookup would report "none" whether or not an outline exists
+    console.log('Dry run: listing what would be looked up, without calling Overpass');
+    for (const entry of pending) console.log(`  would look up ${entry.name}`);
+    return;
+  }
+  let found = 0;
+  for (const entry of pending) {
+    if (only && entry.key !== only) continue;
+    console.log(`Outline for ${entry.name}`);
+    try {
+      const namedWay = (entry.source_urls || []).map(osmWayFromUrl).find(Boolean);
+      let elements = await overpass(aroundQuery(entry.point.lat, entry.point.lng, 400));
+      if (namedWay && !elements.some((e) => `${e.type}/${e.id}` === namedWay)) {
+        elements = elements.concat(await overpass(wayQuery(namedWay)));
+      }
+      const chosen = chooseOutline(elements, entry.point, namedWay || undefined);
+      if (chosen) {
+        entry.outline = {
+          osm_id: chosen.osmId,
+          area_square_meters: chosen.areaSquareMeters,
+          contains_point: chosen.containsPoint,
+          ring: chosen.ring,
+        };
+        entry.notes = (entry.notes || []).filter((n) => !n.startsWith('Outline not looked up'));
+        found++;
+        console.log(`  ${chosen.osmId}, ${chosen.areaSquareMeters} m2${chosen.containsPoint ? '' : ', does not contain the point'}`);
+      } else {
+        console.log('  no outline within 400 m');
+      }
+    } catch (error) {
+      console.error(`  failed: ${error.message}`);
+    }
+  }
+  if (dryRun) {
+    console.log(`Dry run: ${found} outlines would be written`);
+    return;
+  }
+  writeFileSync(REVIEW, JSON.stringify(entries, null, 2) + '\n');
+  console.log(`Added ${found} outlines to ${REVIEW}`);
+}
+
 async function main() {
+  if (outlinesOnly) return backfillOutlines();
   const rows = mergeSupplements(
     parseCsv(readFileSync(path.join(DATA, 'source.csv'), 'utf8')),
     JSON.parse(readFileSync(path.join(DATA, 'supplements.json'), 'utf8'))

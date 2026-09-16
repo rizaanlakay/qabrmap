@@ -1,0 +1,2498 @@
+[
+  {
+    "key": "mowbray-muslim-cemetery-gamedia-maqbara",
+    "status": "approved",
+    "existing_id": "cem_mowbray",
+    "id": "cem_mowbray",
+    "name": "Mowbray Muslim Cemetery",
+    "aliases": [
+      "Mowbray Muslim Cemetery / Gamedia Maqbara"
+    ],
+    "site_type": "muslim_cemetery",
+    "site_status": "unknown",
+    "province": "Western Cape",
+    "city": "Mowbray",
+    "address": "10 Browning Road, Mowbray, Cape Town",
+    "point": {
+      "lat": -33.93908,
+      "lng": 18.46112
+    },
+    "point_source": "csv",
+    "google_place_id": "ChIJFehjFA9dzB0Rw_MhZ1KyIgE",
+    "google_candidates": [
+      {
+        "placeId": "ChIJFehjFA9dzB0Rw_MhZ1KyIgE",
+        "displayName": "Mowbray Muslim Cemetery",
+        "formattedAddress": "10 Browning Rd, Observatory, Cape Town, 7925",
+        "lat": -33.9377919,
+        "lng": 18.461634399999998,
+        "score": 1.85,
+        "distanceMeters": 151
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "MJC + OSM/Mapcarta",
+    "source_urls": [
+      "https://mjc.org.za/community/cemeteries/",
+      "https://mapcarta.com/W227933663"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review.",
+      "Updates live row cem_mowbray (\"Mowbray Muslim Cemetery\")."
+    ]
+  },
+  {
+    "key": "vygiekraal-johnson-road-muslim-cemetery",
+    "status": "approved",
+    "existing_id": "cem_athlone",
+    "id": "cem_athlone",
+    "name": "Johnson Road Muslim Burial Grounds",
+    "aliases": [
+      "Vygiekraal / Johnson Road Muslim Cemetery",
+      "Vygiekraal Cemetery",
+      "Athlone Muslim Cemetery",
+      "Johnston Road Muslim Cemetery"
+    ],
+    "site_type": "muslim_cemetery",
+    "site_status": "unknown",
+    "province": "Western Cape",
+    "city": "Rylands",
+    "address": "Johnson Road, Rylands, Cape Town",
+    "point": {
+      "lat": -33.96746220000001,
+      "lng": 18.5264797
+    },
+    "point_source": "places",
+    "google_place_id": "ChIJ55KHGHlFzB0RRsVKLGx4KPo",
+    "google_candidates": [
+      {
+        "placeId": "ChIJ3RVuy6tEzB0RQP7pf9cINh0",
+        "displayName": "Vygiekraal Cemetery",
+        "formattedAddress": "7th Ave, Belgravia, Cape Town, 7764",
+        "lat": -33.967812,
+        "lng": 18.5257655,
+        "score": 1.99,
+        "distanceMeters": 348
+      },
+      {
+        "placeId": "ChIJ55KHGHlFzB0RRsVKLGx4KPo",
+        "displayName": "Johnson Road Muslim Burial Grounds",
+        "formattedAddress": "Johnston Rd, Rylands, Cape Town, 7764",
+        "lat": -33.96746220000001,
+        "lng": 18.5264797,
+        "score": 1.99,
+        "distanceMeters": 370
+      },
+      {
+        "placeId": "ChIJ8ZGls6tEzB0Rnahxi6MOwS8",
+        "displayName": "Johnston Road Muslim Cemetery",
+        "formattedAddress": "Johnston Rd, Belgravia, Cape Town, 7764",
+        "lat": -33.967809599999995,
+        "lng": 18.525755099999998,
+        "score": 1.49,
+        "distanceMeters": 349
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "MJC",
+    "source_urls": [
+      "https://mjc.org.za/community/cemeteries/"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review.",
+      "Updates live row cem_athlone (\"Athlone Muslim Cemetery\")."
+    ]
+  },
+  {
+    "key": "habibia-soofie-maqbara",
+    "status": "approved",
+    "existing_id": "cem_mountview",
+    "id": "cem_mountview",
+    "name": "Pooke Road Muslim Cemetery",
+    "aliases": [
+      "Habibia Soofie Maqbara",
+      "Mountview Cemetery"
+    ],
+    "site_type": "muslim_cemetery",
+    "site_status": "unknown",
+    "province": "Western Cape",
+    "city": "Rylands Estate",
+    "address": "Pooke Road, Rylands Estate, Cape Town",
+    "point": {
+      "lat": -33.9818444,
+      "lng": 18.530475799999998
+    },
+    "point_source": "places",
+    "google_place_id": "ChIJaZgesaNEzB0RlO7jntQeJJE",
+    "google_candidates": [
+      {
+        "placeId": "ChIJaZgesaNEzB0RlO7jntQeJJE",
+        "displayName": "Pooke Road Muslim Cemetery",
+        "formattedAddress": "Pooke Rd, Gatesville, Cape Town, 7766",
+        "lat": -33.9818444,
+        "lng": 18.530475799999998,
+        "score": 1.46,
+        "distanceMeters": 1273
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "MJC",
+    "source_urls": [
+      "https://mjc.org.za/community/cemeteries/"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review.",
+      "Updates live row cem_mountview (\"Mountview Cemetery\")."
+    ]
+  },
+  {
+    "key": "spaanschemat-river-muslim-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_spaanschemat-river-muslim-cemetery",
+    "name": "Spaanchemat River Muslim Cemetry",
+    "aliases": [
+      "Spaanschemat River Muslim Cemetery",
+      "The Muslim Cemetery Society of Wynberg (Constantia - Strawberry lane)"
+    ],
+    "site_type": "muslim_cemetery",
+    "site_status": "unknown",
+    "province": "Western Cape",
+    "city": "Grassy Park",
+    "address": "118 Third Avenue, Grassy Park, Cape Town",
+    "point": {
+      "lat": -34.0317091,
+      "lng": 18.438432799999998
+    },
+    "point_source": "places",
+    "google_place_id": "ChIJnWaZCXBCzB0R8DrhJiGjVI0",
+    "google_candidates": [
+      {
+        "placeId": "ChIJnWaZCXBCzB0R8DrhJiGjVI0",
+        "displayName": "Spaanchemat River Muslim Cemetry",
+        "formattedAddress": "Belle Constantia, Cape Town, 7806",
+        "lat": -34.0317091,
+        "lng": 18.438432799999998,
+        "score": 1.79,
+        "distanceMeters": 6284
+      },
+      {
+        "placeId": "ChIJNfMVut5DzB0RG6b99qs7IZk",
+        "displayName": "The Muslim Cemetery Society of Wynberg (Constantia - Strawberry lane)",
+        "formattedAddress": "Strawberry Ln, Constantia, Cape Town, 7848",
+        "lat": -34.031498899999995,
+        "lng": 18.4384323,
+        "score": 1.29,
+        "distanceMeters": 6291
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "MJC",
+    "source_urls": [
+      "https://mjc.org.za/community/cemeteries/"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "klip-road-north-muslim-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_klip-road-north-muslim-cemetery",
+    "name": "Klip Road North Muslim Cemetery",
+    "aliases": [
+      "Klip Road Cemetery"
+    ],
+    "site_type": "muslim_cemetery",
+    "site_status": "active",
+    "province": "Western Cape",
+    "city": "Grassy Park",
+    "address": "Klip Road, Grassy Park, Cape Town",
+    "point": {
+      "lat": -34.0395404,
+      "lng": 18.4941911
+    },
+    "point_source": "places",
+    "google_place_id": "ChIJhXZqucNDzB0RUrdHSKPJ10I",
+    "google_candidates": [
+      {
+        "placeId": "ChIJhXZqucNDzB0RUrdHSKPJ10I",
+        "displayName": "Klip Road Cemetery",
+        "formattedAddress": "Klip Rd, Parkwood, Cape Town, 7941",
+        "lat": -34.0395404,
+        "lng": 18.4941911,
+        "score": 1.96,
+        "distanceMeters": 1281
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "MJC Cemetery Board",
+    "source_urls": [
+      "https://mjc.org.za/departments/muslim-cemetery-board-mancom/"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "mitchells-plain-khayelitsha-muslim-cemetery-swartklip",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_mitchells-plain-khayelitsha-muslim-cemetery-swartklip",
+    "name": "Mitchell’s Plain/Khayelitsha Muslim Cemetery (Swartklip)",
+    "aliases": [
+      "Khayelitsha Old Cemetery",
+      "Khayelitsha Cemetery",
+      "Sandvlei Muslim Jamaah Cemetery"
+    ],
+    "site_type": "muslim_section",
+    "site_status": "active",
+    "province": "Western Cape",
+    "city": "Mitchells Plain / Khayelitsha",
+    "address": "Corner of Steve Biko Road and Swartklip Road, Khayelitsha, Cape Town",
+    "point": {
+      "lat": -34.050095999999996,
+      "lng": 18.6738
+    },
+    "point_source": "places",
+    "google_place_id": "ChIJwd0g9RhJzB0Rt7k-I_8MlDs",
+    "google_candidates": [
+      {
+        "placeId": "ChIJwd0g9RhJzB0Rt7k-I_8MlDs",
+        "displayName": "Khayelitsha Old Cemetery",
+        "formattedAddress": "Cnr. New Way & Steve Biko Rd, Khayelitsha, Mandela Park, Cape Town, 7784",
+        "lat": -34.050095999999996,
+        "lng": 18.6738,
+        "score": 1.7,
+        "distanceMeters": 1475
+      },
+      {
+        "placeId": "ChIJR5dKdwBJzB0R4L0JL1r6CU0",
+        "displayName": "Khayelitsha Cemetery",
+        "formattedAddress": "Khayelitsha, Cape Town, 7784",
+        "lat": -34.0602285,
+        "lng": 18.6565394,
+        "score": 1.64,
+        "distanceMeters": 3291
+      },
+      {
+        "placeId": "ChIJDQ0m-85LzB0RDPvNHagY88A",
+        "displayName": "Sandvlei Muslim Jamaah Cemetery",
+        "formattedAddress": "Off Macassar Road, Sandvlei, Macassar, Macassar, Cape Town, 7134",
+        "lat": -34.0540717,
+        "lng": 18.7281184,
+        "score": 1.34,
+        "distanceMeters": 4797
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "MJC Cemetery Board",
+    "source_urls": [
+      "https://mjc.org.za/departments/muslim-cemetery-board-mancom/"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "modderdam-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_modderdam-cemetery",
+    "name": "Modderdam Cemetery",
+    "aliases": [
+      "Modderdam Graveyard"
+    ],
+    "site_type": "muslim_section",
+    "site_status": "active",
+    "province": "Western Cape",
+    "city": "Belhar",
+    "address": "Modderdam Road, Belhar, Cape Town",
+    "point": {
+      "lat": -33.945904999999996,
+      "lng": 18.604155
+    },
+    "point_source": "places",
+    "google_place_id": "ChIJn_nwNQBbzB0R8bxwaKuNBps",
+    "google_candidates": [
+      {
+        "placeId": "ChIJn_nwNQBbzB0R8bxwaKuNBps",
+        "displayName": "Modderdam Graveyard",
+        "formattedAddress": "54 Agapanthus Cres, Belhar 1, Cape Town, 7493",
+        "lat": -33.945904999999996,
+        "lng": 18.604155,
+        "score": 2.41,
+        "distanceMeters": 2606
+      },
+      {
+        "placeId": "ChIJ_ze43gFQzB0RobWuslEarOU",
+        "displayName": "Modderdam Cemetery",
+        "formattedAddress": "Akkerboom Ave, Belhar, Cape Town, 8001",
+        "lat": -33.9475737,
+        "lng": 18.602963199999998,
+        "score": 2.41,
+        "distanceMeters": 2723
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "MJC + City of Cape Town",
+    "source_urls": [
+      "https://mjc.org.za/departments/muslim-cemetery-board-mancom/",
+      "https://www.capetown.gov.za/Family%20and%20home/See-all-city-facilities/Our-service-facilities/Cemeteries/Modderdam%20Cemetery"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "welmoed-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_welmoed-cemetery",
+    "name": "Welmoed Cemetery",
+    "aliases": [],
+    "site_type": "muslim_section",
+    "site_status": "active",
+    "province": "Western Cape",
+    "city": "Eerste River",
+    "address": "Strand Street, Eerste River, Cape Town",
+    "point": {
+      "lat": -33.9872127,
+      "lng": 18.7229437
+    },
+    "point_source": "places",
+    "google_place_id": "ChIJG1ZaFS9MzB0Ry4TnGki8f_U",
+    "google_candidates": [
+      {
+        "placeId": "ChIJG1ZaFS9MzB0Ry4TnGki8f_U",
+        "displayName": "Welmoed Cemetery",
+        "formattedAddress": "2P8F+9M, Van Riebeeck Rd, Eerste River, Cape Town, 7579",
+        "lat": -33.9872127,
+        "lng": 18.7229437,
+        "score": 2.44,
+        "distanceMeters": 1934
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "MJC + City of Cape Town",
+    "source_urls": [
+      "https://mjc.org.za/departments/muslim-cemetery-board-mancom/",
+      "https://www.capetown.gov.za/Family%20and%20home/See-all-city-facilities/Our-service-facilities/Cemeteries/Welmoed%20Cemetery"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "delft-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_delft-cemetery",
+    "name": "Delft Cemetery",
+    "aliases": [],
+    "site_type": "muslim_section",
+    "site_status": "active",
+    "province": "Western Cape",
+    "city": "Delft",
+    "address": "Symphony Way Ext, Delft, Cape Town",
+    "point": {
+      "lat": -33.9866927,
+      "lng": 18.6298095
+    },
+    "point_source": "places",
+    "google_place_id": "ChIJg9vbQYNPzB0RiPVjYk_3Aj0",
+    "google_candidates": [
+      {
+        "placeId": "ChIJg9vbQYNPzB0RiPVjYk_3Aj0",
+        "displayName": "Delft Cemetery",
+        "formattedAddress": "Bizet Rd, Matroosfontein, Cape Town, 7490",
+        "lat": -33.9866927,
+        "lng": 18.6298095,
+        "score": 2.44,
+        "distanceMeters": 1820
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "MJC + City of Cape Town",
+    "source_urls": [
+      "https://mjc.org.za/departments/muslim-cemetery-board-mancom/",
+      "https://www.capetown.gov.za/Family%20and%20home/See-all-city-facilities/Our-service-facilities/Cemeteries/Delft%20Cemetery"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "atlantis-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_atlantis-cemetery",
+    "name": "Atlantis Cemetery",
+    "aliases": [],
+    "site_type": "muslim_section",
+    "site_status": "active",
+    "province": "Western Cape",
+    "city": "Atlantis",
+    "address": "266 Dassenberg Street, Cape Farms District B, Atlantis, Cape Town",
+    "point": {
+      "lat": -33.5398856,
+      "lng": 18.4902943
+    },
+    "point_source": "places",
+    "google_place_id": "ChIJDQxDTnbszB0RHvwb152_PCs",
+    "google_candidates": [
+      {
+        "placeId": "ChIJDQxDTnbszB0RHvwb152_PCs",
+        "displayName": "Atlantis Cemetery",
+        "formattedAddress": "Cape Farms, Cape Town",
+        "lat": -33.5398856,
+        "lng": 18.4902943,
+        "score": 2.37,
+        "distanceMeters": 3751
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "MJC + City of Cape Town",
+    "source_urls": [
+      "https://mjc.org.za/departments/muslim-cemetery-board-mancom/",
+      "https://www.capetown.gov.za/Family%20and%20home/See-all-city-facilities/Our-service-facilities/Cemeteries/Atlantis%20Cemetery"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "muizenberg-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_muizenberg-cemetery",
+    "name": "Muizenberg Cemetery",
+    "aliases": [],
+    "site_type": "muslim_section",
+    "site_status": "active",
+    "province": "Western Cape",
+    "city": "Muizenberg",
+    "address": "Prince George Drive, Muizenberg, Cape Town",
+    "point": {
+      "lat": -34.0904506,
+      "lng": 18.481391
+    },
+    "point_source": "places",
+    "google_place_id": "ChIJ5bXREQZBzB0RkEpwV35pQwE",
+    "google_candidates": [
+      {
+        "placeId": "ChIJ5bXREQZBzB0RkEpwV35pQwE",
+        "displayName": "Muizenberg Cemetery",
+        "formattedAddress": "293 Prince George Dr, Muizenberg, Cape Town, 7948",
+        "lat": -34.0904506,
+        "lng": 18.481391,
+        "score": 2.46,
+        "distanceMeters": 1334
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "MJC + City of Cape Town",
+    "source_urls": [
+      "https://mjc.org.za/departments/muslim-cemetery-board-mancom/",
+      "https://www.capetown.gov.za/Family%20and%20home/See-all-city-facilities/Our-service-facilities/Cemeteries/Muizenberg%20Cemetery"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "maitland-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_maitland-cemetery",
+    "name": "Maitland Cemetery",
+    "aliases": [],
+    "site_type": "muslim_section",
+    "site_status": "active",
+    "province": "Western Cape",
+    "city": "Maitland",
+    "address": "Voortrekker Road, Maitland, Cape Town",
+    "point": {
+      "lat": -33.919147699999996,
+      "lng": 18.5157679
+    },
+    "point_source": "places",
+    "google_place_id": "ChIJo9NUXg1dzB0RUpUDiKAzGuI",
+    "google_candidates": [
+      {
+        "placeId": "ChIJo9NUXg1dzB0RUpUDiKAzGuI",
+        "displayName": "Maitland Cemetery",
+        "formattedAddress": "Voortrekker Rd, Maitland, Cape Town, 7404",
+        "lat": -33.919147699999996,
+        "lng": 18.5157679,
+        "score": 2.44,
+        "distanceMeters": 1750
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "MJC + City of Cape Town",
+    "source_urls": [
+      "https://mjc.org.za/2017/11/08/muslims-given-additional-space-to-bury-deceased/",
+      "https://www.capetown.gov.za/Family%20and%20home/See-all-city-facilities/Our-service-facilities/Cemeteries/Maitland%20Cemetery"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "ocean-view-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_ocean-view-cemetery",
+    "name": "Ocean View Cemetery",
+    "aliases": [],
+    "site_type": "muslim_section",
+    "site_status": "active",
+    "province": "Western Cape",
+    "city": "Ocean View",
+    "address": "Jupiter Road, Ocean View, Cape Town",
+    "point": {
+      "lat": -34.1561936,
+      "lng": 18.356026399999998
+    },
+    "point_source": "places",
+    "google_place_id": "ChIJE5GU70lrzB0RHnAyzVfnL60",
+    "google_candidates": [
+      {
+        "placeId": "ChIJE5GU70lrzB0RHnAyzVfnL60",
+        "displayName": "Ocean View Cemetery",
+        "formattedAddress": "Ocean View, Cape Town, 7975",
+        "lat": -34.1561936,
+        "lng": 18.356026399999998,
+        "score": 2.47,
+        "distanceMeters": 777
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "City of Cape Town",
+    "source_urls": [
+      "https://www.capetown.gov.za/Media-and-news/There-is-no-%27after-hours%27-burial-tariff",
+      "https://www.capetown.gov.za/Family%20and%20home/See-all-city-facilities/Our-service-facilities/Cemeteries/Ocean%20View%20Cemetery"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "wallacedene-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_wallacedene-cemetery",
+    "name": "Wallacedene Cemetery",
+    "aliases": [],
+    "site_type": "muslim_section",
+    "site_status": "active",
+    "province": "Western Cape",
+    "city": "Wallacedene",
+    "address": "Corner Nkani Street and Castro Street, Scottsville, Cape Town",
+    "point": {
+      "lat": -33.8512634,
+      "lng": 18.751557599999998
+    },
+    "point_source": "places",
+    "google_place_id": "ChIJGf8HqoVTzB0RVt10uo7To70",
+    "google_candidates": [
+      {
+        "placeId": "ChIJGf8HqoVTzB0RVt10uo7To70",
+        "displayName": "Wallacedene Cemetery",
+        "formattedAddress": "Kraaifontein East, Cape Town, 7570",
+        "lat": -33.8512634,
+        "lng": 18.751557599999998,
+        "score": 2.43,
+        "distanceMeters": 2101
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "City of Cape Town",
+    "source_urls": [
+      "https://www.capetown.gov.za/Media-and-news/There-is-no-%27after-hours%27-burial-tariff",
+      "https://www.capetown.gov.za/Family%20and%20home/See-all-city-facilities/Our-service-facilities/Cemeteries/Wallacedene%20Cemetery"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "kleinvlei-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_kleinvlei-cemetery",
+    "name": "Kleinvlei Cemetery",
+    "aliases": [],
+    "site_type": "muslim_section",
+    "site_status": "active",
+    "province": "Western Cape",
+    "city": "Kleinvlei",
+    "address": "Apollo Road, Kleinvlei, Cape Town",
+    "point": {
+      "lat": -33.9904107,
+      "lng": 18.7029886
+    },
+    "point_source": "places",
+    "google_place_id": "ChIJE3YDKZtOzB0Rs9DZTtYXouI",
+    "google_candidates": [
+      {
+        "placeId": "ChIJE3YDKZtOzB0Rs9DZTtYXouI",
+        "displayName": "Kleinvlei Cemetery",
+        "formattedAddress": "Apollo St, Kleinvlei, Cape Town, 7100",
+        "lat": -33.9904107,
+        "lng": 18.7029886,
+        "score": 2.48,
+        "distanceMeters": 654
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "City of Cape Town / MJC",
+    "source_urls": [
+      "https://www.news24.com/additional-space-for-muslim-burials-available-20210125",
+      "https://www.capetown.gov.za/Family%20and%20home/See-all-city-facilities/Our-service-facilities/Cemeteries/Kleinvlei%20Cemetery"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "rusthof-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_rusthof-cemetery",
+    "name": "Rusthof Cemetery",
+    "aliases": [],
+    "site_type": "muslim_cemetery",
+    "site_status": "active",
+    "province": "Western Cape",
+    "city": "Strand",
+    "address": "Albertyn Road, Strand, Cape Town",
+    "point": {
+      "lat": -34.133161199999996,
+      "lng": 18.8636894
+    },
+    "point_source": "places",
+    "google_place_id": "ChIJ4-p60K7LzR0R2SOs1M-JwuQ",
+    "google_candidates": [
+      {
+        "placeId": "ChIJ4-p60K7LzR0R2SOs1M-JwuQ",
+        "displayName": "Rusthof Cemetery",
+        "formattedAddress": "Sercor Dr, Sercor Park, Cape Town, 7140",
+        "lat": -34.133161199999996,
+        "lng": 18.8636894,
+        "score": 2.41,
+        "distanceMeters": 2674
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "City of Cape Town + MJC opening announcement",
+    "source_urls": [
+      "https://mjc.org.za/category/muslim-cemetery/",
+      "https://www.capetown.gov.za/Family%20and%20home/see-all-city-facilities/our-service-facilities/cemeteries"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "strand-muslim-council-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_strand-muslim-council-cemetery",
+    "name": "Strand Muslim Council Cemetery",
+    "aliases": [
+      "Strand Muslim Cemetery"
+    ],
+    "site_type": "muslim_cemetery",
+    "site_status": "unknown",
+    "province": "Western Cape",
+    "city": "Strand",
+    "address": "Gordon's Bay Road, Strand, Cape Town",
+    "point": {
+      "lat": -34.122538,
+      "lng": 18.835047
+    },
+    "point_source": "places",
+    "google_place_id": "ChIJUXftV-bKzR0RXqbZABI9Sq0",
+    "google_candidates": [
+      {
+        "placeId": "ChIJUXftV-bKzR0RXqbZABI9Sq0",
+        "displayName": "Strand Muslim Cemetery",
+        "formattedAddress": "Hofmeyer St, Strand, Cape Town, 7139",
+        "lat": -34.122538,
+        "lng": 18.835047,
+        "score": 1.94,
+        "distanceMeters": 1729
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "MJC",
+    "source_urls": [
+      "https://mjc.org.za/community/cemeteries/"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "paarl-muslim-maqbara-parys-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_paarl-muslim-maqbara-parys-cemetery",
+    "name": "Paarl Muslim Maqbara (Parys Cemetery)",
+    "aliases": [
+      "NG Kerk - Noorder-Paarl Cemetery",
+      "Parys Cemetery",
+      "Islamic Cemetery"
+    ],
+    "site_type": "muslim_cemetery",
+    "site_status": "unknown",
+    "province": "Western Cape",
+    "city": "Paarl",
+    "address": "Jan Van Riebeeck Road, Paarl",
+    "point": {
+      "lat": -33.7352881,
+      "lng": 18.9577509
+    },
+    "point_source": "places",
+    "google_place_id": "ChIJlxL_vkqpzR0RYSgprQNKHJU",
+    "google_candidates": [
+      {
+        "placeId": "ChIJSZszbuqpzR0RNLjjXQFFmxA",
+        "displayName": "NG Kerk - Noorder-Paarl Cemetery",
+        "formattedAddress": "Hoog-En-Droog, Paarl, 7646",
+        "lat": -33.7413954,
+        "lng": 18.9679127,
+        "score": 1.96,
+        "distanceMeters": 1234
+      },
+      {
+        "placeId": "ChIJMRsSuxSozR0R79N5Hekyh5k",
+        "displayName": "Parys Cemetery",
+        "formattedAddress": "Jan Van Riebeeck Dr, Bella Vista, Paarl, 7680",
+        "lat": -33.7413095,
+        "lng": 18.9773955,
+        "score": 1.94,
+        "distanceMeters": 1759
+      },
+      {
+        "placeId": "ChIJlxL_vkqpzR0RYSgprQNKHJU",
+        "displayName": "Islamic Cemetery",
+        "formattedAddress": "Buitenverwagting, Paarl, 7646",
+        "lat": -33.7352881,
+        "lng": 18.9577509,
+        "score": 1.48,
+        "distanceMeters": 659
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "MJC",
+    "source_urls": [
+      "https://mjc.org.za/community/cemeteries/"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "malmesbury-maqbara",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_malmesbury-maqbara",
+    "name": "Malmesbury Maqbara",
+    "aliases": [
+      "Malmesbury Cemetery",
+      "Malmesbury Cemetery South",
+      "Malmesbury Cemetery West"
+    ],
+    "site_type": "muslim_cemetery",
+    "site_status": "unknown",
+    "province": "Western Cape",
+    "city": "Malmesbury",
+    "address": "Schoonspruit Avenue, Malmesbury",
+    "point": {
+      "lat": -33.4684908,
+      "lng": 18.716656500000003
+    },
+    "point_source": "places",
+    "google_place_id": "ChIJ4ZcqsS3hzB0RaeM-PHtuVK0",
+    "google_candidates": [
+      {
+        "placeId": "ChIJ4ZcqsS3hzB0RaeM-PHtuVK0",
+        "displayName": "Malmesbury Cemetery",
+        "formattedAddress": "Malmesbury, 7300",
+        "lat": -33.4684908,
+        "lng": 18.716656500000003,
+        "score": 2.43,
+        "distanceMeters": 1962
+      },
+      {
+        "placeId": "ChIJrxmz_5zhzB0R9deUNhKIlJc",
+        "displayName": "Malmesbury Cemetery South",
+        "formattedAddress": "Malmesbury, 7300, South Africa",
+        "lat": -33.474584,
+        "lng": 18.7236861,
+        "score": 2.42,
+        "distanceMeters": 2289
+      },
+      {
+        "placeId": "ChIJIf91TS7nzB0RLtQIQwPiX8U",
+        "displayName": "Malmesbury Cemetery West",
+        "formattedAddress": "Sipres Ave, Malmesbury, 7299",
+        "lat": -33.4530229,
+        "lng": 18.7038552,
+        "score": 2.42,
+        "distanceMeters": 2408
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "MJC",
+    "source_urls": [
+      "https://mjc.org.za/community/cemeteries/"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "wellington-muslim-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_wellington-muslim-cemetery",
+    "name": "Wellington Muslim Cemetery",
+    "aliases": [],
+    "site_type": "muslim_cemetery",
+    "site_status": "unknown",
+    "province": "Western Cape",
+    "city": "Wellington",
+    "address": "Corner Champagne and Jan Van Riebeeck Road, Wellington",
+    "point": {
+      "lat": -33.6470559,
+      "lng": 18.994075499999997
+    },
+    "point_source": "places",
+    "google_place_id": "ChIJPbH2NxwGzR0RiIqk67SZwPI",
+    "google_candidates": [
+      {
+        "placeId": "ChIJPbH2NxwGzR0RiIqk67SZwPI",
+        "displayName": "Wellington Muslim Cemetery",
+        "formattedAddress": "71 Voor St, Wellington, 7654",
+        "lat": -33.6470559,
+        "lng": 18.994075499999997,
+        "score": 2.48,
+        "distanceMeters": 653
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "MJC",
+    "source_urls": [
+      "https://mjc.org.za/community/cemeteries/"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "brodie-road-muslim-cemetery",
+    "status": "approved",
+    "existing_id": "cem_wynberg",
+    "id": "cem_wynberg",
+    "name": "Brodie Road Muslim Cemetery",
+    "aliases": [
+      "Wynberg Muslim Cemetery"
+    ],
+    "site_type": "historic_cemetery",
+    "site_status": "closed",
+    "province": "Western Cape",
+    "city": "Wynberg",
+    "address": "Brodie Road, Wynberg, Cape Town",
+    "point": {
+      "lat": -34.00264,
+      "lng": 18.46765
+    },
+    "point_source": "csv",
+    "google_place_id": "ChIJsXZJirFDzB0RTm3ngRzUBmI",
+    "google_candidates": [
+      {
+        "placeId": "ChIJsXZJirFDzB0RTm3ngRzUBmI",
+        "displayName": "Brodie Road Muslim Cemetery",
+        "formattedAddress": "Wynberg, Cape Town, 7800",
+        "lat": -34.002642099999996,
+        "lng": 18.4679508,
+        "score": 2.47,
+        "distanceMeters": 28
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified; MJC notes efforts to reopen it",
+    "verification_source": "Mapcarta + MJC",
+    "source_urls": [
+      "https://mapcarta.com/W1160852419",
+      "https://mjc.org.za/departments/muslim-cemetery-board-mancom/"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review.",
+      "Updates live row cem_wynberg (\"Wynberg Muslim Cemetery\")."
+    ]
+  },
+  {
+    "key": "tana-baru-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_tana-baru-cemetery",
+    "name": "Tana Baru Cemetery",
+    "aliases": [],
+    "site_type": "historic_cemetery",
+    "site_status": "closed",
+    "province": "Western Cape",
+    "city": "Bo-Kaap",
+    "address": "Dawes Street / top of Longmarket Street, Bo-Kaap, Cape Town",
+    "point": {
+      "lat": -33.918325,
+      "lng": 18.415158
+    },
+    "point_source": "supplement",
+    "google_place_id": "ChIJXyTlcWhnzB0RRmQJN42PpXE",
+    "google_candidates": [
+      {
+        "placeId": "ChIJXyTlcWhnzB0RRmQJN42PpXE",
+        "displayName": "Tana Baru Cemetery",
+        "formattedAddress": "Dawes St, Schotsche Kloof, Cape Town, 8001",
+        "lat": -33.9180366,
+        "lng": 18.4144236,
+        "score": 2.43,
+        "distanceMeters": 75
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified; MJC says closed by Council in 1886",
+    "verification_source": "MJC + heritage source",
+    "source_urls": [
+      "https://mjc.org.za/departments/muslim-cemetery-board-mancom/",
+      "https://sahistory.org.za/place/circle-kramats-cape-town"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "spaanschemat-river-road-muslim-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_spaanschemat-river-road-muslim-cemetery",
+    "name": "The Muslim Cemetery Society of Wynberg (Constantia - Strawberry lane)",
+    "aliases": [
+      "Spaanschemat River Road Muslim Cemetery",
+      "Spaanchemat River Muslim Cemetry"
+    ],
+    "site_type": "muslim_cemetery",
+    "site_status": "unknown",
+    "province": "Western Cape",
+    "city": "Constantia",
+    "address": "Spaanschemat River Road, Constantia, Cape Town",
+    "point": {
+      "lat": -34.031498899999995,
+      "lng": 18.4384323
+    },
+    "point_source": "places",
+    "google_place_id": "ChIJNfMVut5DzB0RG6b99qs7IZk",
+    "google_candidates": [
+      {
+        "placeId": "ChIJnWaZCXBCzB0R8DrhJiGjVI0",
+        "displayName": "Spaanchemat River Muslim Cemetry",
+        "formattedAddress": "Belle Constantia, Cape Town, 7806",
+        "lat": -34.0317091,
+        "lng": 18.438432799999998,
+        "score": 1.95,
+        "distanceMeters": 1562
+      },
+      {
+        "placeId": "ChIJNfMVut5DzB0RG6b99qs7IZk",
+        "displayName": "The Muslim Cemetery Society of Wynberg (Constantia - Strawberry lane)",
+        "formattedAddress": "Strawberry Ln, Constantia, Cape Town, 7848",
+        "lat": -34.031498899999995,
+        "lng": 18.4384323,
+        "score": 1.45,
+        "distanceMeters": 1552
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified by independent historical source; exact street number not published",
+    "verification_source": "Solomon Family Trust",
+    "source_urls": [
+      "https://solomon-trust.co.za/cemetery.html"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "westpark-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_westpark-cemetery",
+    "name": "Westpark Cemetery",
+    "aliases": [],
+    "site_type": "muslim_section",
+    "site_status": "active",
+    "province": "Gauteng",
+    "city": "Johannesburg",
+    "address": "Cnr Beyers Naude and West Park roads, Montgomery Park, Johannesburg",
+    "point": {
+      "lat": -26.16361,
+      "lng": 27.98972
+    },
+    "point_source": "csv",
+    "google_place_id": "ChIJ06P5twsLlR4R41t8tfzLTxA",
+    "google_candidates": [
+      {
+        "placeId": "ChIJ06P5twsLlR4R41t8tfzLTxA",
+        "displayName": "Westpark Cemetery",
+        "formattedAddress": "Beyers Naude Dr & West Park Road, Montgomery Park, Randburg, 2195",
+        "lat": -26.1653636,
+        "lng": 27.993036699999998,
+        "score": 2.12,
+        "distanceMeters": 384
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "JCPZ + 2025 statement + OSM/Wikidata",
+    "source_urls": [
+      "https://www.jhbcityparksandzoo.com/services-facilities/cemeteries/find-a-cemetery/westpark-cemetery",
+      "https://www.jhbcityparksandzoo.com/news-events/news/prioritisation-of-westpark-cemetery-amid-seasonal-challenges"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "newclare-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_newclare-cemetery",
+    "name": "Newclare Cemetery",
+    "aliases": [],
+    "site_type": "muslim_section",
+    "site_status": "active",
+    "province": "Gauteng",
+    "city": "Johannesburg",
+    "address": "Corner of Maraisburg and Commando roads, Bosmont, Johannesburg",
+    "point": {
+      "lat": -26.19571,
+      "lng": 27.95899
+    },
+    "point_source": "csv",
+    "google_place_id": null,
+    "google_candidates": [],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "JCPZ + OSM/Mapcarta",
+    "source_urls": [
+      "https://www.jhbcityparksandzoo.com/services-facilities/cemeteries/find-a-cemetery/newclare-cemetery",
+      "https://mapcarta.com/W63521643"
+    ],
+    "overrides": {},
+    "notes": [
+      "No Google Places candidate within range.",
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "lenasia-cemetery-avalon",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_lenasia-cemetery-avalon",
+    "name": "Lenasia Cemetery / Avalon",
+    "aliases": [
+      "Avalon Cemetery (Lenasia Entrance)"
+    ],
+    "site_type": "muslim_section",
+    "site_status": "active",
+    "province": "Gauteng",
+    "city": "Johannesburg",
+    "address": "Snake Road, Klipspruit West, Johannesburg",
+    "point": {
+      "lat": -26.2957,
+      "lng": 27.84885
+    },
+    "point_source": "csv",
+    "google_place_id": "ChIJN-jhmmmmlR4RYHAvYs4WaiA",
+    "google_candidates": [
+      {
+        "placeId": "ChIJN-jhmmmmlR4RYHAvYs4WaiA",
+        "displayName": "Avalon Cemetery (Lenasia Entrance)",
+        "formattedAddress": "Slang St, Klipriviersoog, Soweto, 1811",
+        "lat": -26.2977575,
+        "lng": 27.8522093,
+        "score": 2.09,
+        "distanceMeters": 406
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "JCPZ + OSM/Mapcarta",
+    "source_urls": [
+      "https://www.jhbcityparksandzoo.com/services-facilities/cemeteries/find-a-cemetery/lenasia-cemetery",
+      "https://mapcarta.com/W832128851"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "braamfontein-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_braamfontein-cemetery",
+    "name": "Braamfontein Cemetery",
+    "aliases": [],
+    "site_type": "muslim_section",
+    "site_status": "unknown",
+    "province": "Gauteng",
+    "city": "Johannesburg",
+    "address": "18 Graf Street, Braamfontein, Johannesburg",
+    "point": {
+      "lat": -26.19506,
+      "lng": 28.02472
+    },
+    "point_source": "csv",
+    "google_place_id": "ChIJ1el3VOUNlR4RpSbf3SIrKjk",
+    "google_candidates": [
+      {
+        "placeId": "ChIJ1el3VOUNlR4RpSbf3SIrKjk",
+        "displayName": "Braamfontein Cemetery",
+        "formattedAddress": "18 Graf St, Johannesburg, 2000",
+        "lat": -26.194452199999997,
+        "lng": 28.0277079,
+        "score": 2.19,
+        "distanceMeters": 306
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "City of Johannesburg + Mapcarta",
+    "source_urls": [
+      "https://joburg.org.za/media_/Newsroom/Pages/2013%20articles/2011%20%26%202012%20%20Articles/Martyrs-graves-at-Braamfontein-.aspx",
+      "https://mapcarta.com/W26346946"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "brixton-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_brixton-cemetery",
+    "name": "Brixton Cemetery",
+    "aliases": [],
+    "site_type": "muslim_section",
+    "site_status": "unknown",
+    "province": "Gauteng",
+    "city": "Johannesburg",
+    "address": "Between Caroline and Bartlet Streets, Brixton, Johannesburg",
+    "point": {
+      "lat": -26.19634,
+      "lng": 28.01051
+    },
+    "point_source": "csv",
+    "google_place_id": "ChIJmdBDQfoLlR4R6qax2HH1vGQ",
+    "google_candidates": [
+      {
+        "placeId": "ChIJmdBDQfoLlR4R6qax2HH1vGQ",
+        "displayName": "Brixton Cemetery",
+        "formattedAddress": "Between Caroline and Bartlet, Bartlett Rd, streets, Johannesburg, 2092",
+        "lat": -26.1968183,
+        "lng": 28.0105576,
+        "score": 2.45,
+        "distanceMeters": 53
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "JCPZ + OSM/Mapcarta",
+    "source_urls": [
+      "https://www.jhbcityparksandzoo.com/services-facilities/cemeteries/find-a-cemetery/brixton-cemetery",
+      "https://mapcarta.com/W22660821"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "roshnee-muslim-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_roshnee-muslim-cemetery",
+    "name": "Roshnee Muslim Cemetery",
+    "aliases": [],
+    "site_type": "muslim_cemetery",
+    "site_status": "active",
+    "province": "Gauteng",
+    "city": "Roshnee / Vereeniging",
+    "address": "1 Ghazali Drive, Roshnee, Vereeniging, 1939",
+    "point": {
+      "lat": -26.56831,
+      "lng": 27.94888
+    },
+    "point_source": "csv",
+    "google_place_id": "ChIJJQ542Xf5lB4Rjs-SUEZhKW0",
+    "google_candidates": [
+      {
+        "placeId": "ChIJJQ542Xf5lB4Rjs-SUEZhKW0",
+        "displayName": "Roshnee Muslim Cemetery",
+        "formattedAddress": "1 Ghazali Dr, Roshnee, Vereeniging, 1939",
+        "lat": -26.5674295,
+        "lng": 27.9500623,
+        "score": 2.35,
+        "distanceMeters": 153
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "Emfuleni tariff + OSM/Mapcarta",
+    "source_urls": [
+      "https://emfuleni.gov.za/wp-content/uploads/2025/07/Final-Tariff-Booklet-2025-26.pdf",
+      "https://mapcarta.com/W1393201023"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "rynsoord-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_rynsoord-cemetery",
+    "name": "Rynsoord Muslim Kabrastaan",
+    "aliases": [
+      "Rynsoord Cemetery",
+      "Benoni Cemetery"
+    ],
+    "site_type": "muslim_section",
+    "site_status": "active",
+    "province": "Gauteng",
+    "city": "Benoni",
+    "address": "Main Reef Road, Rynsoord, Benoni, 1501",
+    "point": {
+      "lat": -26.19716,
+      "lng": 28.35783
+    },
+    "point_source": "csv",
+    "google_place_id": "ChIJl71RcsI8lR4R06J7GxvHjiU",
+    "google_candidates": [
+      {
+        "placeId": "ChIJl71RcsI8lR4R06J7GxvHjiU",
+        "displayName": "Rynsoord Muslim Kabrastaan",
+        "formattedAddress": "Modderfontein 76-Ir, Benoni",
+        "lat": -26.1964714,
+        "lng": 28.362044899999997,
+        "score": 2.07,
+        "distanceMeters": 427
+      },
+      {
+        "placeId": "ChIJKb6szuc8lR4RSPHRnuetxZc",
+        "displayName": "Benoni Cemetery",
+        "formattedAddress": "Main Reef Rd, Rynsoord, Benoni, 1501",
+        "lat": -26.1948674,
+        "lng": 28.3561782,
+        "score": 1.2,
+        "distanceMeters": 304
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "Ekurhuleni Muslim Burial + OSM/Mapcarta",
+    "source_urls": [
+      "https://muslimburial.co.za/cemetery-databases/",
+      "https://mapcarta.com/W29059777"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "wattville-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_wattville-cemetery",
+    "name": "Wattville Cemetery",
+    "aliases": [],
+    "site_type": "muslim_section",
+    "site_status": "unknown",
+    "province": "Gauteng",
+    "city": "Benoni",
+    "address": "Wattville, Benoni, Gauteng",
+    "point": {
+      "lat": -26.22468,
+      "lng": 28.30662
+    },
+    "point_source": "csv",
+    "google_place_id": "ChIJrRSsyFM9lR4RKIw-HGYE0MA",
+    "google_candidates": [
+      {
+        "placeId": "ChIJrRSsyFM9lR4RKIw-HGYE0MA",
+        "displayName": "Wattville Cemetery",
+        "formattedAddress": "Wattville, Benoni, 1501",
+        "lat": -26.22484,
+        "lng": 28.307499999999997,
+        "score": 2.41,
+        "distanceMeters": 90
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "Ekurhuleni Muslim Burial + eGGSA",
+    "source_urls": [
+      "https://muslimburial.co.za/cemetery-databases/",
+      "https://graves.eggsa.org/gauteng/Benoni_Urban/wattville/"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "styx-road-hostel-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_styx-road-hostel-cemetery",
+    "name": "Cemetery - Styx Road",
+    "aliases": [
+      "Styx Road Hostel Cemetery"
+    ],
+    "site_type": "muslim_section",
+    "site_status": "unknown",
+    "province": "Gauteng",
+    "city": "Benoni",
+    "address": "Styx Road, Benoni, Gauteng",
+    "point": {
+      "lat": -26.20952,
+      "lng": 28.29425
+    },
+    "point_source": "csv",
+    "google_place_id": "ChIJIVkYJN4XlR4RLQcsXHFrKBg",
+    "google_candidates": [
+      {
+        "placeId": "ChIJIVkYJN4XlR4RLQcsXHFrKBg",
+        "displayName": "Cemetery - Styx Road",
+        "formattedAddress": "Benoni, 1500",
+        "lat": -26.20978,
+        "lng": 28.2954999,
+        "score": 1.87,
+        "distanceMeters": 128
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "Ekurhuleni Muslim Burial + War Graves Project",
+    "source_urls": [
+      "https://muslimburial.co.za/styx-road-hostel-cemetery/",
+      "https://www.southafricawargraves.org/lists/southafrica_gauteng.htm"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "bakerton-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_bakerton-cemetery",
+    "name": "Bakerton Cemetery",
+    "aliases": [
+      "Cemetery"
+    ],
+    "site_type": "muslim_section",
+    "site_status": "active",
+    "province": "Gauteng",
+    "city": "Springs",
+    "address": "Welgedacht Road, Springs, 1559",
+    "point": {
+      "lat": -26.22197,
+      "lng": 28.47003
+    },
+    "point_source": "csv",
+    "google_place_id": "ChIJuQEk4W4llR4RzASMdn0fdsA",
+    "google_candidates": [
+      {
+        "placeId": "ChIJuQEk4W4llR4RzASMdn0fdsA",
+        "displayName": "Bakerton Cemetery",
+        "formattedAddress": "Bakerton, Springs, 1559",
+        "lat": -26.222639899999997,
+        "lng": 28.4715,
+        "score": 2.34,
+        "distanceMeters": 164
+      },
+      {
+        "placeId": "ChIJq9B8sG4llR4RqlArh63tqZ8",
+        "displayName": "Cemetery",
+        "formattedAddress": "19 7th Ave, Bakerton, Springs, 1559",
+        "lat": -26.222105199999998,
+        "lng": 28.4697772,
+        "score": 1.47,
+        "distanceMeters": 29
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "Ekurhuleni Muslim Burial + eGGSA",
+    "source_urls": [
+      "https://muslimburial.co.za/cemetery-databases/",
+      "https://www.graves.eggsa.org/gauteng/SPRINGS-Urban/18%20Dec_001/"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "pietersfield-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_pietersfield-cemetery",
+    "name": "Springs Memorial Cemetery",
+    "aliases": [
+      "Pietersfield Cemetery",
+      "Cemetery - Payneville"
+    ],
+    "site_type": "muslim_section",
+    "site_status": "unknown",
+    "province": "Gauteng",
+    "city": "Springs",
+    "address": "Pietersfield, Springs, Gauteng",
+    "point": {
+      "lat": -26.22794,
+      "lng": 28.4562
+    },
+    "point_source": "csv",
+    "google_place_id": "ChIJb1hX0B0llR4RnzjErfOejT4",
+    "google_candidates": [
+      {
+        "placeId": "ChIJb1hX0B0llR4RnzjErfOejT4",
+        "displayName": "Springs Memorial Cemetery",
+        "formattedAddress": "Std125, Enstra Rd, East Geduld, Springs, 1559",
+        "lat": -26.229028099999997,
+        "lng": 28.4550619,
+        "score": 1.33,
+        "distanceMeters": 166
+      },
+      {
+        "placeId": "ChIJy_TlxREllR4Ru3JfWdbOjxU",
+        "displayName": "Cemetery - Payneville",
+        "formattedAddress": "Petersfield, Springs, 1559",
+        "lat": -26.22906,
+        "lng": 28.45507,
+        "score": 1.33,
+        "distanceMeters": 168
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "Ekurhuleni Muslim Burial + War Graves Project",
+    "source_urls": [
+      "https://muslimburial.co.za/cemetery-databases/",
+      "https://www.southafricawargraves.org/lists/southafrica_gauteng.htm"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "al-hilal-muslim-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_al-hilal-muslim-cemetery",
+    "name": "Al-Hilal Muslim Cemetery",
+    "aliases": [
+      "Al - Hilal Muslim Cemetery"
+    ],
+    "site_type": "muslim_cemetery",
+    "site_status": "active",
+    "province": "KwaZulu-Natal",
+    "city": "Durban",
+    "address": "10 Sheringham Road, Sydenham, Berea, Durban, 4091",
+    "point": {
+      "lat": -29.831445899999995,
+      "lng": 30.998586999999997
+    },
+    "point_source": "place_id",
+    "google_place_id": "ChIJvQH8ZE8H9x4RgMx8q9BKmyk",
+    "google_candidates": [
+      {
+        "placeId": "ChIJvQH8ZE8H9x4RgMx8q9BKmyk",
+        "displayName": "Al - Hilal Muslim Cemetery",
+        "formattedAddress": "10 Sheringham Rd, Sydenham, Berea, 4091",
+        "lat": -29.831445899999995,
+        "lng": 30.998586999999997,
+        "score": 3,
+        "distanceMeters": 0
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "Waze / local directory",
+    "source_urls": [
+      "https://www.waze.com/live-map/directions/za/kzn/berea/al-hilal-muslim-cemetery?to=place.ChIJvQH8ZE8H9x4RgMx8q9BKmyk",
+      "https://rsa.worldorgs.com/catalog/berea/cemetery/al-hilal-muslim-cemetery"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "mayville-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_mayville-cemetery",
+    "name": "Mayville Muslim Cemetery",
+    "aliases": [
+      "Mayville Cemetery"
+    ],
+    "site_type": "muslim_section",
+    "site_status": "unknown",
+    "province": "KwaZulu-Natal",
+    "city": "Durban",
+    "address": "301A Wiggins Road, Mayville, Durban",
+    "point": {
+      "lat": -29.853584999999995,
+      "lng": 30.966171499999998
+    },
+    "point_source": "places",
+    "google_place_id": "ChIJgxc2cKIA9x4RdtkBhDMebjI",
+    "google_candidates": [
+      {
+        "placeId": "ChIJgxc2cKIA9x4RdtkBhDMebjI",
+        "displayName": "Mayville Muslim Cemetery",
+        "formattedAddress": "Wiggins Rd, Mayville, Durban, 4091",
+        "lat": -29.853584999999995,
+        "lng": 30.966171499999998,
+        "score": 2.32,
+        "distanceMeters": 5398
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified cemetery address; Muslim burial context supported by Durban cemetery records",
+    "verification_source": "eThekwini cemetery contact list",
+    "source_urls": [
+      "https://www.durban.gov.za/storage/PDF%20Documents/Cemeteries%20and%20Crematoria/CONTACT%20AND%20OPERATING%20HOURS%20OF%20CEMETERIES%20AND%20CREMATORIA.pdf"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "merebank-muslim-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_merebank-muslim-cemetery",
+    "name": "Merebank Muslim Cemetery",
+    "aliases": [],
+    "site_type": "muslim_cemetery",
+    "site_status": "active",
+    "province": "KwaZulu-Natal",
+    "city": "Durban",
+    "address": "96 Rawalpindi Road, Merewent, Bluff, Durban, 4052",
+    "point": {
+      "lat": -29.9507604,
+      "lng": 30.9629796
+    },
+    "point_source": "places",
+    "google_place_id": "ChIJ76movoOt9x4RM6JEdVC8QJw",
+    "google_candidates": [
+      {
+        "placeId": "ChIJ76movoOt9x4RM6JEdVC8QJw",
+        "displayName": "Merebank Muslim Cemetery",
+        "formattedAddress": "96 Rawalpindi Rd, Merewent, Bluff, 4052",
+        "lat": -29.9507604,
+        "lng": 30.9629796,
+        "score": 2.11,
+        "distanceMeters": 11706
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "Local directory",
+    "source_urls": [
+      "https://rsa.worldorgs.com/catalog/bluff/cemetery/merebank-muslim-cemetery"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "pinetown-muslim-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_pinetown-muslim-cemetery",
+    "name": "Pinetown Muslim Cemetery",
+    "aliases": [],
+    "site_type": "muslim_cemetery",
+    "site_status": "active",
+    "province": "KwaZulu-Natal",
+    "city": "Pinetown",
+    "address": "Sunnyside Lane, Pinetown, Durban, 3600",
+    "point": {
+      "lat": -29.813132000000003,
+      "lng": 30.863397
+    },
+    "point_source": "place_id",
+    "google_place_id": "ChIJf6pyxWj-9h4RupfpyvfNirE",
+    "google_candidates": [
+      {
+        "placeId": "ChIJf6pyxWj-9h4RupfpyvfNirE",
+        "displayName": "Pinetown Muslim Cemetery",
+        "formattedAddress": "Sunnyside Ln, Pinetown, Durban, 3600",
+        "lat": -29.813132000000003,
+        "lng": 30.863397,
+        "score": 3,
+        "distanceMeters": 0
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "Waze + eThekwini planning document",
+    "source_urls": [
+      "https://www.waze.com/live-map/directions/south-africa/kwazulu-natal/pinetown/pinetown-muslim-cemetery?to=place.ChIJf6pyxWj-9h4RupfpyvfNirE",
+      "https://dag.durban.gov.za/uploads/0000/6/2025/09/19/pinetown-densification-pilot-business-plan.pdf"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "mountain-rise-muslim-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_mountain-rise-muslim-cemetery",
+    "name": "Mountain Rise Muslim Cemetery",
+    "aliases": [],
+    "site_type": "muslim_cemetery",
+    "site_status": "active",
+    "province": "KwaZulu-Natal",
+    "city": "Pietermaritzburg",
+    "address": "Northdale, Pietermaritzburg, 3201",
+    "point": {
+      "lat": -29.573280900000004,
+      "lng": 30.4027648
+    },
+    "point_source": "place_id",
+    "google_place_id": "ChIJEcH8wIe79h4RO2RtUntJdQ0",
+    "google_candidates": [
+      {
+        "placeId": "ChIJEcH8wIe79h4RO2RtUntJdQ0",
+        "displayName": "Mountain Rise Muslim Cemetery",
+        "formattedAddress": "Northdale, Pietermaritzburg, 3201",
+        "lat": -29.573280900000004,
+        "lng": 30.4027648,
+        "score": 3,
+        "distanceMeters": 0
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "Waze",
+    "source_urls": [
+      "https://www.waze.com/live-map/directions/za/kzn/pmb/mountain-rise-muslim-cemetery?to=place.ChIJEcH8wIe79h4RO2RtUntJdQ0"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "port-shepstone-muslim-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_port-shepstone-muslim-cemetery",
+    "name": "Port Shepstone Muslim Cemetery",
+    "aliases": [],
+    "site_type": "muslim_cemetery",
+    "site_status": "active",
+    "province": "KwaZulu-Natal",
+    "city": "Port Shepstone",
+    "address": "51 Bazley Street, Port Shepstone, 4240",
+    "point": {
+      "lat": -30.7385293,
+      "lng": 30.446946800000003
+    },
+    "point_source": "places",
+    "google_place_id": "ChIJqb80jDujWB4R3F3ddDJ9KPM",
+    "google_candidates": [
+      {
+        "placeId": "ChIJqb80jDujWB4R3F3ddDJ9KPM",
+        "displayName": "Port Shepstone Muslim Cemetery",
+        "formattedAddress": "51 Bazley St, Port Shepstone, 4240",
+        "lat": -30.7385293,
+        "lng": 30.446946800000003,
+        "score": 2.47,
+        "distanceMeters": 773
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "Local directory",
+    "source_urls": [
+      "https://www.cybo.com/ZA-biz/port-shepstone-muslim-cemetery"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "general-public-cemetery-west-street",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_general-public-cemetery-west-street",
+    "name": "West Street Cemetery",
+    "aliases": [
+      "General Public Cemetery, West Street"
+    ],
+    "site_type": "muslim_section",
+    "site_status": "unknown",
+    "province": "KwaZulu-Natal",
+    "city": "Durban",
+    "address": "West Street, Durban, KwaZulu-Natal",
+    "point": {
+      "lat": -29.858481899999997,
+      "lng": 31.013992199999997
+    },
+    "point_source": "places",
+    "google_place_id": "ChIJUVI1E8ip9x4R3LqwsL46m-8",
+    "google_candidates": [
+      {
+        "placeId": "ChIJUVI1E8ip9x4R3LqwsL46m-8",
+        "displayName": "West Street Cemetery",
+        "formattedAddress": "Brook St, Durban Central, Durban, 4001",
+        "lat": -29.858481899999997,
+        "lng": 31.013992199999997,
+        "score": 1.97,
+        "distanceMeters": 757
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified; bylaw reserves Blocks 17, 27, 29A and 46 for eligible Muslim burials",
+    "verification_source": "eThekwini cemetery bylaws",
+    "source_urls": [
+      "https://dag.durban.gov.za/uploads/0000/6/2025/08/10/cemeteries.pdf"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "muslim-cemetery-1855",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_muslim-cemetery-1855",
+    "name": "Saint Mary's Cemetery",
+    "aliases": [
+      "Muslim Cemetery 1855"
+    ],
+    "site_type": "muslim_cemetery",
+    "site_status": "unknown",
+    "province": "Eastern Cape",
+    "city": "Gqeberha",
+    "address": "Near Saint Mary’s Cemetery / Masjid Aziz, central Gqeberha",
+    "point": {
+      "lat": -33.96562,
+      "lng": 25.62517
+    },
+    "point_source": "csv",
+    "google_place_id": "ChIJCbTRlI3Seh4RYxzyz8uMaX8",
+    "google_candidates": [
+      {
+        "placeId": "ChIJCbTRlI3Seh4RYxzyz8uMaX8",
+        "displayName": "Saint Mary's Cemetery",
+        "formattedAddress": "16 Lower Valley Rd, South End, Gqeberha, 6001",
+        "lat": -33.9656594,
+        "lng": 25.626057199999998,
+        "score": 1.42,
+        "distanceMeters": 82
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "OSM/Mapcarta",
+    "source_urls": [
+      "https://mapcarta.com/W1550160496"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "mthatha-old-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_mthatha-old-cemetery",
+    "name": "Mthatha Old Cemetery",
+    "aliases": [],
+    "site_type": "muslim_section",
+    "site_status": "unknown",
+    "province": "Eastern Cape",
+    "city": "Mthatha",
+    "address": "Mthatha Old Cemetery, Mthatha, Eastern Cape",
+    "point": {
+      "lat": -31.60835,
+      "lng": 28.78997
+    },
+    "point_source": "csv",
+    "google_place_id": null,
+    "google_candidates": [],
+    "outline": null,
+    "verification_status": "Verified; eGGSA shows a Muslim section",
+    "verification_source": "eGGSA",
+    "source_urls": [
+      "https://graveseastcape.eggsa.org/Umtata_Urban/Mthatha_Old%20cem/"
+    ],
+    "overrides": {},
+    "notes": [
+      "No Google Places candidate within range.",
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "mbombela-old-cemetery-nelspruit-old-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_mbombela-old-cemetery-nelspruit-old-cemetery",
+    "name": "Mbombela Old Cemetery / Nelspruit Old Cemetery",
+    "aliases": [
+      "Nelspruit Old Cemetery"
+    ],
+    "site_type": "muslim_section",
+    "site_status": "unknown",
+    "province": "Mpumalanga",
+    "city": "Mbombela",
+    "address": "Old Cemetery, Mbombela (Nelspruit), Mpumalanga",
+    "point": {
+      "lat": -25.46237,
+      "lng": 30.98016
+    },
+    "point_source": "csv",
+    "google_place_id": "ChIJAYo0S5lL6B4R8O0j4BV1LQg",
+    "google_candidates": [
+      {
+        "placeId": "ChIJAYo0S5lL6B4R8O0j4BV1LQg",
+        "displayName": "Nelspruit Old Cemetery",
+        "formattedAddress": "Mbombela, 1200",
+        "lat": -25.4619187,
+        "lng": 30.979159600000003,
+        "score": 1.89,
+        "distanceMeters": 112
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified; municipal bylaw provides for Muslim cemetery section and local reporting identifies Muslim cemetery",
+    "verification_source": "City of Mbombela bylaw + local reporting + cemetery coordinates",
+    "source_urls": [
+      "https://archive.opengazettes.org.za/archive/ZA-MP/2020/provincial-gazette-ZA-MP-vol-27-no-3220-dated-2020-12-18.pdf",
+      "https://tng.page.co.za/showmap.php?cemeteryID=31&tree=page"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "zinniaville-muslim-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_zinniaville-muslim-cemetery",
+    "name": "Zinniaville Muslim Cemetery",
+    "aliases": [],
+    "site_type": "muslim_cemetery",
+    "site_status": "active",
+    "province": "North West",
+    "city": "Rustenburg",
+    "address": "36 Hollis Street, Zinniaville, Rustenburg, 2999",
+    "point": {
+      "lat": -25.6477978,
+      "lng": 27.2460968
+    },
+    "point_source": "places",
+    "google_place_id": "ChIJ5Tkf8eoLvh4RTIIgGiF3KW0",
+    "google_candidates": [
+      {
+        "placeId": "ChIJ5Tkf8eoLvh4RTIIgGiF3KW0",
+        "displayName": "Zinniaville Muslim Cemetery",
+        "formattedAddress": "36 Hollis St, Zinniaville, Rustenburg, 0302",
+        "lat": -25.6477978,
+        "lng": 27.2460968,
+        "score": 2.42,
+        "distanceMeters": 2390
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "Local cemetery directory",
+    "source_urls": [
+      "https://rsa.worldorgs.com/catalog/rustenburg/cemetery/zinniaville-muslim-cemetery"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "zeerust-muslim-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_zeerust-muslim-cemetery",
+    "name": "Zeerust Muslim Cemetery",
+    "aliases": [],
+    "site_type": "muslim_cemetery",
+    "site_status": "active",
+    "province": "North West",
+    "city": "Zeerust",
+    "address": "Pache Street, Zeerust, 2865",
+    "point": {
+      "lat": -25.5384457,
+      "lng": 26.0751626
+    },
+    "point_source": "place_id",
+    "google_place_id": "ChIJKzD8tjEfvR4RapCFwmH8E7k",
+    "google_candidates": [
+      {
+        "placeId": "ChIJKzD8tjEfvR4RapCFwmH8E7k",
+        "displayName": "Zeerust Muslim Cemetery",
+        "formattedAddress": "Forsman Street, Zeerust, 2865",
+        "lat": -25.5384457,
+        "lng": 26.0751626,
+        "score": 3,
+        "distanceMeters": 0
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "Waze / local directory",
+    "source_urls": [
+      "https://www.waze.com/live-map/directions/za/nw/zeerust/zeerust-muslim-cemetery?to=place.ChIJKzD8tjEfvR4RapCFwmH8E7k",
+      "https://rsa.worldorgs.com/catalog/zeerust/cemetery/zeerust-muslim-cemetery"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "new-boksburg-cemetery-boksburg-sub-regional-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_new-boksburg-cemetery-boksburg-sub-regional-cemetery",
+    "name": "Boksburg Sub-regional Cemetery",
+    "aliases": [
+      "New Boksburg Cemetery / Boksburg Sub-regional Cemetery"
+    ],
+    "site_type": "muslim_section",
+    "site_status": "unknown",
+    "province": "Gauteng",
+    "city": "Boksburg",
+    "address": "Barry Marais Road, Leeuwpoort 113-Ir, Boksburg, 1459",
+    "point": {
+      "lat": -26.239425999999998,
+      "lng": 28.293715
+    },
+    "point_source": "place_id",
+    "google_place_id": "ChIJad8GXSsZlR4Rg70ZfKy0K4k",
+    "google_candidates": [
+      {
+        "placeId": "ChIJad8GXSsZlR4Rg70ZfKy0K4k",
+        "displayName": "Boksburg Sub-regional Cemetery",
+        "formattedAddress": "Barry Marais Rd, Leeuwpoort 113-Ir, Boksburg, 1459",
+        "lat": -26.239425999999998,
+        "lng": 28.293715,
+        "score": 3,
+        "distanceMeters": 0
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "Ekurhuleni Muslim Burial + Boksburg Sub-regional Cemetery location listing",
+    "source_urls": [
+      "https://muslimburial.co.za/new-boksburg-cemetery/",
+      "https://www.waze.com/af/live-map/directions/za/gp/boksburg/boksburg-sub-regional-cemetery?to=place.ChIJad8GXSsZlR4Rg70ZfKy0K4k"
+    ],
+    "overrides": {},
+    "notes": [
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "west-coast-islamic-society-maqbara",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_west-coast-islamic-society-maqbara",
+    "name": "West Coast Islamic Society Maqbara",
+    "aliases": [
+      "Vredenburg Mosque",
+      "Saldanha Mosque"
+    ],
+    "site_type": "muslim_cemetery",
+    "site_status": "unknown",
+    "province": "Western Cape",
+    "city": "Saldanha / Vredenburg",
+    "address": "Saldanha Road, between Saldanha and Vredenburg",
+    "point": {
+      "lat": -32.9110039,
+      "lng": 17.9995802
+    },
+    "point_source": "places",
+    "google_place_id": "ChIJ2WPm6ymhNBwRNGexlS1FsV0",
+    "google_candidates": [
+      {
+        "placeId": "ChIJ2WPm6ymhNBwRNGexlS1FsV0",
+        "displayName": "Vredenburg Mosque",
+        "formattedAddress": "24 Noordhoek St, Louwville, Vredenburg, 7379",
+        "lat": -32.9110039,
+        "lng": 17.9995802,
+        "score": 0.98,
+        "distanceMeters": 568
+      },
+      {
+        "placeId": "ChIJ62rwh4KlNBwRmlnDemNugZE",
+        "displayName": "Saldanha Mosque",
+        "formattedAddress": "Vraagom St, Diazville, Saldanha, 7394",
+        "lat": -33.0102038,
+        "lng": 17.9064294,
+        "score": 0.53,
+        "distanceMeters": 14214
+      }
+    ],
+    "outline": null,
+    "verification_status": "Verified",
+    "verification_source": "MJC directory (listed on the same page the production CSV cites)",
+    "source_urls": [
+      "https://mjc.org.za/community/cemeteries/"
+    ],
+    "overrides": {},
+    "notes": [
+      "From the earlier CSV, not the production file: accept or skip.",
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "roodepoort-muslim-and-hindu-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_roodepoort-muslim-and-hindu-cemetery",
+    "name": "Roodepoort Muslim Graveyard",
+    "aliases": [
+      "Roodepoort Muslim and Hindu Cemetery"
+    ],
+    "site_type": "shared_cemetery",
+    "site_status": "active",
+    "province": "Gauteng",
+    "city": "Roodepoort",
+    "address": "Tornado Crescent, Georginia, Roodepoort",
+    "point": {
+      "lat": -26.1679915,
+      "lng": 27.875113700000004
+    },
+    "point_source": "places",
+    "google_place_id": "ChIJy0yP7tihlR4RLapv6Iw3edM",
+    "google_candidates": [
+      {
+        "placeId": "ChIJy0yP7tihlR4RLapv6Iw3edM",
+        "displayName": "Roodepoort Muslim Graveyard",
+        "formattedAddress": "Creswell Park, Roodepoort, 1724",
+        "lat": -26.1679915,
+        "lng": 27.875113700000004,
+        "score": 1.88,
+        "distanceMeters": 3464
+      }
+    ],
+    "outline": null,
+    "verification_status": "Confirmed shared cemetery",
+    "verification_source": "JCPZ",
+    "source_urls": [
+      "https://www.jhbcityparksandzoo.com/services-facilities/cemeteries/find-a-cemetery/roodepoort-muslim-and-hindu-cemetery"
+    ],
+    "overrides": {},
+    "notes": [
+      "From the earlier CSV, not the production file: accept or skip.",
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "verulam-district-muslim-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_verulam-district-muslim-cemetery",
+    "name": "Verulam & District Muslim Cemetery",
+    "aliases": [
+      "Verulam Muslim Graveyard"
+    ],
+    "site_type": "muslim_cemetery",
+    "site_status": "unknown",
+    "province": "KwaZulu-Natal",
+    "city": "Verulam",
+    "address": "Townview Road, Canelands, Verulam, 4339",
+    "point": {
+      "lat": -29.637487,
+      "lng": 31.051183400000003
+    },
+    "point_source": "places",
+    "google_place_id": "ChIJ-zIaGewa9x4RLp8zDBMevk4",
+    "google_candidates": [
+      {
+        "placeId": "ChIJ-zIaGewa9x4RLp8zDBMevk4",
+        "displayName": "Verulam Muslim Graveyard",
+        "formattedAddress": "24 Townview Rd, Barrs Flats, Verulam",
+        "lat": -29.637487,
+        "lng": 31.051183400000003,
+        "score": 1.95,
+        "distanceMeters": 1462
+      }
+    ],
+    "outline": null,
+    "verification_status": "Local cemetery directory only",
+    "verification_source": "cybo.com",
+    "source_urls": [
+      "https://www.cybo.com/ZA-postal-code/4339_verulam-kwazulu-natal/cemeteries-and-crematoriums/"
+    ],
+    "overrides": {},
+    "notes": [
+      "From the earlier CSV, not the production file: accept or skip.",
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "phoenix-muslim-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_phoenix-muslim-cemetery",
+    "name": "Phoenix Muslim Cemetery",
+    "aliases": [
+      "Phoenix Cemetery"
+    ],
+    "site_type": "muslim_cemetery",
+    "site_status": "unknown",
+    "province": "KwaZulu-Natal",
+    "city": "Verulam",
+    "address": "Ottawa South, Blackburn, Verulam, 4339",
+    "point": {
+      "lat": -29.6817596,
+      "lng": 31.034395900000003
+    },
+    "point_source": "places",
+    "google_place_id": "ChIJ8bV_mycF9x4RoEDWSqKuQCU",
+    "google_candidates": [
+      {
+        "placeId": "ChIJ8bV_mycF9x4RoEDWSqKuQCU",
+        "displayName": "Phoenix Cemetery",
+        "formattedAddress": "8041 Chris Hani Rd, Ottawa South, Blackburn, 4339",
+        "lat": -29.6817596,
+        "lng": 31.034395900000003,
+        "score": 2.37,
+        "distanceMeters": 3804
+      }
+    ],
+    "outline": null,
+    "verification_status": "Local cemetery directory only",
+    "verification_source": "cybo.com",
+    "source_urls": [
+      "https://www.cybo.com/ZA/verulam-kwazulu-natal/cemeteries-and-crematoriums/"
+    ],
+    "overrides": {},
+    "notes": [
+      "From the earlier CSV, not the production file: accept or skip.",
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "kimberley-muslim-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_kimberley-muslim-cemetery",
+    "name": "Kimberley Muslim Cemetery",
+    "aliases": [
+      "West End Cemetery",
+      "Galeshewe Cemetery"
+    ],
+    "site_type": "muslim_cemetery",
+    "site_status": "unknown",
+    "province": "Northern Cape",
+    "city": "Kimberley",
+    "address": "Kimberley, Northern Cape",
+    "point": {
+      "lat": -28.734019999999997,
+      "lng": 24.7409787
+    },
+    "point_source": "places",
+    "google_place_id": "ChIJ3-m3PgAbmx4R0yPFWFJpWI0",
+    "google_candidates": [
+      {
+        "placeId": "ChIJ3-m3PgAbmx4R0yPFWFJpWI0",
+        "displayName": "West End Cemetery",
+        "formattedAddress": "7P8R+99, Kirstenhof, Kimberley, 8301",
+        "lat": -28.734019999999997,
+        "lng": 24.7409787,
+        "score": 1.42,
+        "distanceMeters": 2359
+      },
+      {
+        "placeId": "ChIJ5eJlB6Mamx4RLIVPgj6QU8I",
+        "displayName": "Galeshewe Cemetery",
+        "formattedAddress": "Vergenoeg, Kimberley, 8345",
+        "lat": -28.719320000000003,
+        "lng": 24.72324,
+        "score": 1.34,
+        "distanceMeters": 4688
+      }
+    ],
+    "outline": null,
+    "verification_status": "War graves project lists it; no street address",
+    "verification_source": "South Africa War Graves Project",
+    "source_urls": [
+      "https://www.southafricawargraves.org/search/view-paginated.php?Regiment=49&ipp=All&locality=167&page=1"
+    ],
+    "overrides": {},
+    "notes": [
+      "From the earlier CSV, not the production file: accept or skip.",
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "dido-valley-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_dido-valley-cemetery",
+    "name": "Dido Valley Cemetery",
+    "aliases": [],
+    "site_type": "muslim_section",
+    "site_status": "active",
+    "province": "Western Cape",
+    "city": "Simon's Town",
+    "address": "Kemps Road, Dido Valley, Simon's Town",
+    "point": {
+      "lat": -34.1690255,
+      "lng": 18.4294592
+    },
+    "point_source": "places",
+    "google_place_id": "ChIJx0z0S-A_zB0RZFWc451igzA",
+    "google_candidates": [
+      {
+        "placeId": "ChIJx0z0S-A_zB0RZFWc451igzA",
+        "displayName": "Dido Valley Cemetery",
+        "formattedAddress": "Main Rd, Simon's Town, Cape Town, 7975",
+        "lat": -34.1690255,
+        "lng": 18.4294592,
+        "score": 2.41,
+        "distanceMeters": 2780
+      }
+    ],
+    "outline": null,
+    "verification_status": "Confirmed Muslim section",
+    "verification_source": "City of Cape Town research report",
+    "source_urls": [
+      "https://resource.capetown.gov.za/documentcentre/Documents/City%20research%20reports%20and%20review/Stories_of_the_South_Peninsula_full_doc_2014-06.pdf"
+    ],
+    "overrides": {},
+    "notes": [
+      "From the earlier CSV, not the production file: accept or skip.",
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "mangaung-municipal-cemetery-muslim-burial-area",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_mangaung-municipal-cemetery-muslim-burial-area",
+    "name": "Mangaung Municipal Cemetery (Muslim burial area)",
+    "aliases": [
+      "Bloemfontein (President Brand) cemetery",
+      "Memorium Grave Yard",
+      "Phahameng Cemetery"
+    ],
+    "site_type": "muslim_section",
+    "site_status": "active",
+    "province": "Free State",
+    "city": "Bloemfontein",
+    "address": "Bloemfontein, Mangaung",
+    "point": {
+      "lat": -29.125840000000004,
+      "lng": 26.21771
+    },
+    "point_source": "places",
+    "google_place_id": "ChIJ74CaZgDFjx4RVDd8yUWvpzM",
+    "google_candidates": [
+      {
+        "placeId": "ChIJ74CaZgDFjx4RVDd8yUWvpzM",
+        "displayName": "Bloemfontein (President Brand) cemetery",
+        "formattedAddress": "57 President Ave, Oranjesig, Bloemfontein, 9301",
+        "lat": -29.125840000000004,
+        "lng": 26.21771,
+        "score": 1.45,
+        "distanceMeters": 1461
+      },
+      {
+        "placeId": "ChIJDY39rJjFjx4RsBo1orBt3k4",
+        "displayName": "Memorium Grave Yard",
+        "formattedAddress": "79 De La Rey Ave, Generaal De Wet, Bloemfontein, 9301",
+        "lat": -29.145598200000002,
+        "lng": 26.207386699999997,
+        "score": 1.38,
+        "distanceMeters": 3707
+      },
+      {
+        "placeId": "ChIJezCrimDPjx4RwWX0tFaa3UA",
+        "displayName": "Phahameng Cemetery",
+        "formattedAddress": "26583 Magegenene Ln, Mangaung, 9323",
+        "lat": -29.154853599999996,
+        "lng": 26.233429800000003,
+        "score": 1.33,
+        "distanceMeters": 4996
+      }
+    ],
+    "outline": null,
+    "verification_status": "News report only; no address",
+    "verification_source": "SABC News",
+    "source_urls": [
+      "https://www.sabcnews.com/sabcnews/burial-space-dispute-brews-in-mangaung-as-community-clashes-over-grave-sites/"
+    ],
+    "overrides": {},
+    "notes": [
+      "From the earlier CSV, not the production file: accept or skip.",
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "kinross-thistle-grove-muslim-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_kinross-thistle-grove-muslim-cemetery",
+    "name": "Kinross / Thistle Grove Muslim Cemetery",
+    "aliases": [
+      "Kinross Qabrastan"
+    ],
+    "site_type": "muslim_cemetery",
+    "site_status": "unknown",
+    "province": "Mpumalanga",
+    "city": "Kinross",
+    "address": "Kinross / Thistle Grove, Govan Mbeki Municipality",
+    "point": {
+      "lat": -26.4172487,
+      "lng": 29.084480300000003
+    },
+    "point_source": "places",
+    "google_place_id": "ChIJAWC4IpsX6x4Rf88gACPr3ro",
+    "google_candidates": [
+      {
+        "placeId": "ChIJAWC4IpsX6x4Rf88gACPr3ro",
+        "displayName": "Kinross Qabrastan",
+        "formattedAddress": "14 Insdustria St, Evander, 2270",
+        "lat": -26.4172487,
+        "lng": 29.084480300000003,
+        "score": 1.78,
+        "distanceMeters": 1465
+      }
+    ],
+    "outline": null,
+    "verification_status": "Municipal annual report only; no address",
+    "verification_source": "Govan Mbeki Municipality annual report 2023/24",
+    "source_urls": [
+      "https://www.govanmbeki.gov.za/wp-content/reports/annual_report_2023_2024.pdf"
+    ],
+    "overrides": {},
+    "notes": [
+      "From the earlier CSV, not the production file: accept or skip.",
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  },
+  {
+    "key": "lebohang-ext-14-muslim-cemetery",
+    "status": "approved",
+    "existing_id": null,
+    "id": "cem_lebohang-ext-14-muslim-cemetery",
+    "name": "Lebohang Ext. 14 Muslim Cemetery",
+    "aliases": [],
+    "site_type": "muslim_cemetery",
+    "site_status": "unknown",
+    "province": "Mpumalanga",
+    "city": "Leslie / Lebohang",
+    "address": "Lebohang Ext. 14, Govan Mbeki Municipality",
+    "point": {
+      "lat": -26.3794964,
+      "lng": 28.92083879999999
+    },
+    "point_source": "geocoded",
+    "google_place_id": null,
+    "google_candidates": [],
+    "outline": null,
+    "verification_status": "Municipal annual report only; no address",
+    "verification_source": "Govan Mbeki Municipality annual report 2023/24",
+    "source_urls": [
+      "https://www.govanmbeki.gov.za/wp-content/reports/annual_report_2023_2024.pdf"
+    ],
+    "overrides": {},
+    "notes": [
+      "From the earlier CSV, not the production file: accept or skip.",
+      "No Google Places candidate within range.",
+      "Point is the geocoded address: Lebohang, Thuli Fakude, 2265, South Africa",
+      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+    ]
+  }
+]
