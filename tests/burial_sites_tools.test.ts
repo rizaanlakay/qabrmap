@@ -13,7 +13,7 @@ import {
   slugify,
 } from '../tools/burial-sites/lib/sources.mjs';
 import { loadEnvLocal } from '../tools/burial-sites/lib/env.mjs';
-import { ANCHOR_LIMITS, haversineMeters, nameTokens, rankCandidates, scoreCandidate } from '../tools/burial-sites/lib/score.mjs';
+import { ANCHOR_LIMITS, displayNameText, haversineMeters, nameTokens, rankCandidates, scoreCandidate } from '../tools/burial-sites/lib/score.mjs';
 import { aroundQuery, chooseOutline, elementToRing, ringAreaSquareMeters, wayQuery } from '../tools/burial-sites/lib/overpass.mjs';
 import { MATCH_RADIUS_METERS, matchExisting } from '../tools/burial-sites/lib/match.mjs';
 
@@ -177,6 +177,28 @@ describe('score', () => {
     const ranked = rankCandidates({ cemetery_name: 'Mowbray Muslim Cemetery' }, anchor, 'row', [broken, good]);
     expect(ranked).toHaveLength(1);
     expect(ranked[0].candidate.displayName).toBe('Mowbray Muslim Cemetery');
+  });
+
+  // Places API (New) really returns displayName as an object; a string fixture hid this and every live row failed
+  it('reads the name when Places returns displayName as an object', () => {
+    expect(displayNameText({ text: 'Vygiekraal Cemetery', languageCode: 'en' })).toBe('Vygiekraal Cemetery');
+    expect(displayNameText('Vygiekraal Cemetery')).toBe('Vygiekraal Cemetery');
+    expect(displayNameText(undefined)).toBe('');
+
+    const real = {
+      displayName: { text: 'Mowbray Muslim Cemetery', languageCode: 'en' },
+      location: { latitude: -33.93908, longitude: 18.46112 },
+      types: ['cemetery'],
+    };
+    const vague = {
+      displayName: { text: 'Mowbray Park', languageCode: 'en' },
+      location: { latitude: -33.9392, longitude: 18.4612 },
+      types: ['park'],
+    };
+    const score = scoreCandidate({ csvName: 'Mowbray Muslim Cemetery', anchor, anchorKind: 'row', candidate: real });
+    expect(score).toBeCloseTo(2.5, 5);
+    const ranked = rankCandidates({ cemetery_name: 'Mowbray Muslim Cemetery' }, anchor, 'row', [vague, real]);
+    expect(ranked[0].candidate.displayName.text).toBe('Mowbray Muslim Cemetery');
   });
 });
 

@@ -99,7 +99,12 @@ async function overpass(query) {
     'https://overpass-api.de/api/interpreter',
     {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      // Overpass answers 406 to a request with no User-Agent, so identify the tool as their usage policy asks
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'User-Agent': 'QabrMap burial-sites import (https://qabrmap.vercel.app)',
+        Accept: 'application/json',
+      },
       body: `data=${encodeURIComponent(query)}`,
     },
     (data) => (data.remark ? `Overpass returned a remark: ${data.remark}` : null)

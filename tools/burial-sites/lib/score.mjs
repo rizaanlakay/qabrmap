@@ -21,6 +21,12 @@ export function nameTokens(name) {
     .filter((token) => token && !FILLER.has(token));
 }
 
+// Places API (New) returns displayName as { text, languageCode }; older shapes and our fixtures use a string
+export function displayNameText(displayName) {
+  if (typeof displayName === 'string') return displayName;
+  return displayName && typeof displayName.text === 'string' ? displayName.text : '';
+}
+
 // Score: up to 1 for closeness, up to 1 for shared name words, 0.5 for being a cemetery. Null when too far.
 export function scoreCandidate({ csvName, anchor, anchorKind, candidate }) {
   if (!candidate.location) return null;
@@ -28,7 +34,7 @@ export function scoreCandidate({ csvName, anchor, anchorKind, candidate }) {
   const distance = haversineMeters(anchor.lat, anchor.lng, candidate.location.latitude, candidate.location.longitude);
   if (distance > limit) return null;
   const wanted = nameTokens(csvName);
-  const got = new Set(nameTokens(candidate.displayName || ''));
+  const got = new Set(nameTokens(displayNameText(candidate.displayName)));
   const overlap = wanted.length ? wanted.filter((t) => got.has(t)).length / wanted.length : 0;
   const isCemetery = (candidate.types || []).includes('cemetery') ? 0.5 : 0;
   return 1 - distance / limit + overlap + isCemetery;
