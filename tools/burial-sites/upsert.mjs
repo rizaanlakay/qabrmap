@@ -92,10 +92,16 @@ async function main() {
       console.log(`${action} ${entry.id}: ${entry.name} (outline: ${outline})`);
       continue;
     }
-    // One row per call: PostgREST needs every object in a batch to carry the same keys, and these differ
-    const { error: upsertError } = await supabase.from('cemeteries').upsert(payload, { onConflict: 'id' });
-    if (upsertError) {
-      console.error(`Failed on ${entry.id}: ${upsertError.message}`);
+    // One row per call: PostgREST needs every object in a batch to carry the same keys, and these differ.
+    // An existing row is updated, never upserted: an upsert is sent as an insert, so the NOT NULL columns
+    // this payload deliberately leaves alone (slug, description, country) would fail the insert before
+    // the conflict turned it into an update, and filling them in would overwrite the row's own values.
+    const table = supabase.from('cemeteries');
+    const { error: writeError } = isNew
+      ? await table.insert(payload)
+      : await table.update(payload).eq('id', entry.id);
+    if (writeError) {
+      console.error(`Failed on ${entry.id}: ${writeError.message}`);
       console.error(JSON.stringify(payload, null, 2));
       process.exit(1);
     }
