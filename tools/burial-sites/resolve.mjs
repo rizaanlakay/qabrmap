@@ -28,9 +28,11 @@ const only = args.includes('--only') ? args[args.indexOf('--only') + 1] : null;
 const dryRun = args.includes('--dry-run');
 
 loadEnvLocal(path.join(ROOT, '.env.local'));
-const GOOGLE_KEY = process.env.GOOGLE_PLACES_API_KEY;
+// A dedicated server key is preferred. The public maps key is accepted as a fallback, but it only works
+// once Places API (New) and Geocoding are enabled on the project and its HTTP referrer lock is lifted.
+const GOOGLE_KEY = process.env.GOOGLE_PLACES_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 if (!GOOGLE_KEY) {
-  console.error('GOOGLE_PLACES_API_KEY is not set in .env.local');
+  console.error('Set GOOGLE_PLACES_API_KEY in .env.local, or NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to reuse the maps key');
   process.exit(1);
 }
 
