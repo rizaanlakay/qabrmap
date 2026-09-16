@@ -14,7 +14,7 @@ import {
 import { Cemetery, Grave } from '@/types';
 import { formatGravesMapped } from '@/lib/data/cemeteryStats';
 import { useWakeLock } from '@/lib/device/useWakeLock';
-import { googleRasterStyle, MAX_TILE_ZOOM, registerGoogleTilesProtocol } from '@/lib/map/googleMapTiles';
+import { googleRasterStyle, MAX_MAP_ZOOM, registerGoogleTilesProtocol } from '@/lib/map/googleMapTiles';
 import { GoogleMapsAttribution } from '@/components/common/GoogleMapsAttribution';
 
 interface CemeteryMapScreenProps {
@@ -221,7 +221,7 @@ export const CemeteryMapScreen: React.FC<CemeteryMapScreenProps> = ({
           center: [bounds.centerLng, bounds.centerLat],
           zoom: 18.0,
           minZoom: 13,
-          maxZoom: MAX_TILE_ZOOM,
+          maxZoom: MAX_MAP_ZOOM,
           attributionControl: false,
         });
 

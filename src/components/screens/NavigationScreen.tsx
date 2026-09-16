@@ -45,7 +45,7 @@ import {
   mapPaddingForSheet,
   shouldCollapseSheet,
 } from '@/lib/ui/bottomSheet';
-import { googleRasterStyle, MAX_TILE_ZOOM, registerGoogleTilesProtocol } from '@/lib/map/googleMapTiles';
+import { googleRasterStyle, MAX_MAP_ZOOM, registerGoogleTilesProtocol } from '@/lib/map/googleMapTiles';
 import {
   REROUTE_OFF_ROUTE_METERS,
   computeRouteProgress,
@@ -749,7 +749,7 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
           pitch: activeMode === 'driving' ? 58 : 0,
           bearing: activeMode === 'driving' ? directEntranceBearing : 0,
           minZoom: 10,
-          maxZoom: MAX_TILE_ZOOM,
+          maxZoom: MAX_MAP_ZOOM,
           attributionControl: false,
         });
 

@@ -61,11 +61,15 @@ export function localeFromLanguageTag(tag: string | undefined): MapLocale {
   return { language: tag, region: region ? region.toUpperCase() : 'US' };
 }
 
-// Google's imagery over Cape Town cemeteries is about 7 cm per pixel, and the deepest tiles it serves are
-// zoom 22. Requesting them at twice the pixel size keeps that detail sharp on phone screens; a plain 256 px
-// tile stretched three-fold on a modern phone is what made kerbs and headstones blur into one another.
+// Google's imagery over Cape Town cemeteries is about 7 cm per pixel. Requesting tiles at twice the pixel
+// size keeps that detail sharp on phone screens; a plain 256 px tile stretched three-fold on a modern phone
+// is what made kerbs and headstones blur into one another.
 export const TILE_SCALE = 'scaleFactor2x';
-export const MAX_TILE_ZOOM = 22;
+// The deepest tile requested. A double-size zoom 21 tile already holds zoom 22 detail, and zoom 22 tiles are
+// missing over parts of a cemetery, which left the map blank there. The map may zoom one level further by
+// enlarging the zoom 21 tile.
+export const MAX_TILE_ZOOM = 21;
+export const MAX_MAP_ZOOM = 22;
 
 export function buildSessionRequest(mapType: GoogleMapType, locale: MapLocale) {
   return {
@@ -130,7 +134,7 @@ export function googleRasterStyle(mapType: GoogleMapType): StyleSpecification {
         maxzoom: MAX_TILE_ZOOM,
       },
     },
-    layers: [{ id: 'google-tiles-layer', type: 'raster', source: 'google-tiles', minzoom: 0, maxzoom: MAX_TILE_ZOOM }],
+    layers: [{ id: 'google-tiles-layer', type: 'raster', source: 'google-tiles', minzoom: 0, maxzoom: MAX_MAP_ZOOM }],
   };
 }
 

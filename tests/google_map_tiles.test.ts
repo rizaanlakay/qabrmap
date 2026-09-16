@@ -95,13 +95,14 @@ describe('Google Map Tiles Tests', () => {
     expect(Array.from(items.keys())).toEqual(['qabrmap_gmaps_tile_session_satellite_scaleFactor2x_en-ZA_ZA', 'qabrmap_other']);
   });
 
-  it('lets the map zoom to the deepest tiles Google serves, drawn at 256 css px each', async () => {
+  it('requests tiles no deeper than zoom 21 and enlarges them for the last map zoom level', async () => {
     const tiles = await loadModule();
     const style = tiles.googleRasterStyle('satellite');
     const source = style.sources['google-tiles'] as { tileSize: number; maxzoom: number };
     expect(source.tileSize).toBe(256);
-    expect(source.maxzoom).toBe(22);
+    expect(source.maxzoom).toBe(21);
     expect(style.layers[0]).toMatchObject({ maxzoom: 22 });
+    expect(tiles.MAX_MAP_ZOOM).toBe(22);
   });
 
   it('parses sessions and treats nearly expired ones as unusable', async () => {
