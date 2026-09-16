@@ -1,6 +1,6 @@
 # Cemetery outlines to draw in OpenStreetMap
 
-These 20 sites are live in QabrMap but have no boundary. Drawing them in OpenStreetMap
+These 11 sites are live in QabrMap but have no boundary. Drawing them in OpenStreetMap
 rather than in a private file means the outline is ODbL licensed, the whole map benefits, and our
 importer picks it up automatically: run `node tools/burial-sites/resolve.mjs --outlines-only`
 then `node tools/burial-sites/upsert.mjs` and the boundary appears in the app.
@@ -64,87 +64,25 @@ check the point is actually on the right ground before drawing. Add a changeset 
 - Look first: https://www.openstreetmap.org/#map=18/-33.918325/18.415158
 - [ ] drawn
 
-### 5. Rynsoord Muslim Kabrastaan
-
-- Where: Benoni, Gauteng (Main Reef Road, Rynsoord, Benoni, 1501)
-- Our point: `-26.197160, 28.357830`
-- Edit: https://www.openstreetmap.org/edit#map=18/-26.197160/28.357830
-- Look first: https://www.openstreetmap.org/#map=18/-26.197160/28.357830
-- [ ] drawn
-
-### 6. Wattville Cemetery
-
-- Where: Benoni, Gauteng (Wattville, Benoni, Gauteng)
-- Our point: `-26.224680, 28.306620`
-- Edit: https://www.openstreetmap.org/edit#map=18/-26.224680/28.306620
-- Look first: https://www.openstreetmap.org/#map=18/-26.224680/28.306620
-- [ ] drawn
-
-### 7. Cemetery - Styx Road
-
-- Where: Benoni, Gauteng (Styx Road, Benoni, Gauteng)
-- Our point: `-26.209520, 28.294250`
-- Edit: https://www.openstreetmap.org/edit#map=18/-26.209520/28.294250
-- Look first: https://www.openstreetmap.org/#map=18/-26.209520/28.294250
-- [ ] drawn
-
-### 8. Bakerton Cemetery
-
-- Where: Springs, Gauteng (Welgedacht Road, Springs, 1559)
-- Our point: `-26.221970, 28.470030`
-- Edit: https://www.openstreetmap.org/edit#map=18/-26.221970/28.470030
-- Look first: https://www.openstreetmap.org/#map=18/-26.221970/28.470030
-- [ ] drawn
-
-### 9. Springs Memorial Cemetery
+### 5. Springs Memorial Cemetery
 
 - Where: Springs, Gauteng (Pietersfield, Springs, Gauteng)
 - Our point: `-26.227940, 28.456200`
+- Note: OSM way/423952945 is Payneville, a differently named cemetery, and it does not contain our point.
 - Edit: https://www.openstreetmap.org/edit#map=18/-26.227940/28.456200
 - Look first: https://www.openstreetmap.org/#map=18/-26.227940/28.456200
 - [ ] drawn
 
-### 10. Al-Hilal Muslim Cemetery
+### 6. Al-Hilal Muslim Cemetery
 
 - Where: Durban, KwaZulu-Natal (10 Sheringham Road, Sydenham, Berea, Durban, 4091)
 - Our point: `-29.831446, 30.998587`
+- Note: OSM way/436673425 is The Hartley Estate Tamil and Telugu Cemetery, a different community entirely. Draw the Muslim ground beside it.
 - Edit: https://www.openstreetmap.org/edit#map=18/-29.831446/30.998587
 - Look first: https://www.openstreetmap.org/#map=18/-29.831446/30.998587
 - [ ] drawn
 
-### 11. Mayville Muslim Cemetery
-
-- Where: Durban, KwaZulu-Natal (301A Wiggins Road, Mayville, Durban)
-- Our point: `-29.853585, 30.966171`
-- Edit: https://www.openstreetmap.org/edit#map=18/-29.853585/30.966171
-- Look first: https://www.openstreetmap.org/#map=18/-29.853585/30.966171
-- [ ] drawn
-
-### 12. Merebank Muslim Cemetery
-
-- Where: Durban, KwaZulu-Natal (96 Rawalpindi Road, Merewent, Bluff, Durban, 4052)
-- Our point: `-29.950760, 30.962980`
-- Edit: https://www.openstreetmap.org/edit#map=18/-29.950760/30.962980
-- Look first: https://www.openstreetmap.org/#map=18/-29.950760/30.962980
-- [ ] drawn
-
-### 13. Pinetown Muslim Cemetery
-
-- Where: Pinetown, KwaZulu-Natal (Sunnyside Lane, Pinetown, Durban, 3600)
-- Our point: `-29.813132, 30.863397`
-- Edit: https://www.openstreetmap.org/edit#map=18/-29.813132/30.863397
-- Look first: https://www.openstreetmap.org/#map=18/-29.813132/30.863397
-- [ ] drawn
-
-### 14. Mountain Rise Muslim Cemetery
-
-- Where: Pietermaritzburg, KwaZulu-Natal (Northdale, Pietermaritzburg, 3201)
-- Our point: `-29.573281, 30.402765`
-- Edit: https://www.openstreetmap.org/edit#map=18/-29.573281/30.402765
-- Look first: https://www.openstreetmap.org/#map=18/-29.573281/30.402765
-- [ ] drawn
-
-### 15. Port Shepstone Muslim Cemetery
+### 7. Port Shepstone Muslim Cemetery
 
 - Where: Port Shepstone, KwaZulu-Natal (51 Bazley Street, Port Shepstone, 4240)
 - Our point: `-30.738529, 30.446947`
@@ -152,15 +90,7 @@ check the point is actually on the right ground before drawing. Add a changeset 
 - Look first: https://www.openstreetmap.org/#map=18/-30.738529/30.446947
 - [ ] drawn
 
-### 16. Saint Mary's Cemetery
-
-- Where: Gqeberha, Eastern Cape (Near Saint Mary’s Cemetery / Masjid Aziz, central Gqeberha)
-- Our point: `-33.965620, 25.625170`
-- Edit: https://www.openstreetmap.org/edit#map=18/-33.965620/25.625170
-- Look first: https://www.openstreetmap.org/#map=18/-33.965620/25.625170
-- [ ] drawn
-
-### 17. West Coast Islamic Society Maqbara
+### 8. West Coast Islamic Society Maqbara
 
 - Where: Saldanha / Vredenburg, Western Cape (Saldanha Road, between Saldanha and Vredenburg)
 - Our point: `-32.911004, 17.999580`
@@ -168,7 +98,7 @@ check the point is actually on the right ground before drawing. Add a changeset 
 - Look first: https://www.openstreetmap.org/#map=18/-32.911004/17.999580
 - [ ] drawn
 
-### 18. Verulam & District Muslim Cemetery
+### 9. Verulam & District Muslim Cemetery
 
 - Where: Verulam, KwaZulu-Natal (Townview Road, Canelands, Verulam, 4339)
 - Our point: `-29.637487, 31.051183`
@@ -176,7 +106,7 @@ check the point is actually on the right ground before drawing. Add a changeset 
 - Look first: https://www.openstreetmap.org/#map=18/-29.637487/31.051183
 - [ ] drawn
 
-### 19. Mangaung Municipal Cemetery (Muslim burial area)
+### 10. Mangaung Municipal Cemetery (Muslim burial area)
 
 - Where: Bloemfontein, Free State (Bloemfontein, Mangaung)
 - Our point: `-29.125840, 26.217710`
@@ -184,7 +114,7 @@ check the point is actually on the right ground before drawing. Add a changeset 
 - Look first: https://www.openstreetmap.org/#map=18/-29.125840/26.217710
 - [ ] drawn
 
-### 20. Lebohang Ext. 14 Muslim Cemetery
+### 11. Lebohang Ext. 14 Muslim Cemetery
 
 - Where: Leslie / Lebohang, Mpumalanga (Lebohang Ext. 14, Govan Mbeki Municipality)
 - Our point: `-26.379496, 28.920839`

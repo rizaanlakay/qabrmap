@@ -281,3 +281,78 @@ Generated 2026-09-16T04:24:47.082Z
 - cem_verulam-district-muslim-cemetery: Verulam & District Muslim Cemetery
 - cem_mangaung-municipal-cemetery-muslim-burial-area: Mangaung Municipal Cemetery (Muslim burial area)
 - cem_lebohang-ext-14-muslim-cemetery: Lebohang Ext. 14 Muslim Cemetery
+
+## Upsert 2026-09-16T07:36:24.903Z
+
+| Id | Name | Action | Outline |
+|---|---|---|---|
+| cem_mowbray | Mowbray Muslim Cemetery | update | osm |
+| cem_athlone | Johnson Road Muslim Burial Grounds | update | osm |
+| cem_mountview | Pooke Road Muslim Cemetery | update | osm |
+| cem_spaanschemat-river-muslim-cemetery | Spaanchemat River Muslim Cemetry | update | osm |
+| cem_klip-road-north-muslim-cemetery | Klip Road North Muslim Cemetery | update | osm |
+| cem_mitchells-plain-khayelitsha-muslim-cemetery-swartklip | Mitchell’s Plain/Khayelitsha Muslim Cemetery (Swartklip) | update | none |
+| cem_modderdam-cemetery | Modderdam Cemetery | update | osm |
+| cem_welmoed-cemetery | Welmoed Cemetery | update | osm |
+| cem_delft-cemetery | Delft Cemetery | update | osm |
+| cem_atlantis-cemetery | Atlantis Cemetery | update | none |
+| cem_muizenberg-cemetery | Muizenberg Cemetery | update | osm |
+| cem_maitland-cemetery | Maitland Cemetery | update | osm |
+| cem_ocean-view-cemetery | Ocean View Cemetery | update | none |
+| cem_wallacedene-cemetery | Wallacedene Cemetery | update | osm |
+| cem_kleinvlei-cemetery | Kleinvlei Cemetery | update | osm |
+| cem_rusthof-cemetery | Rusthof Cemetery | update | osm |
+| cem_strand-muslim-council-cemetery | Strand Muslim Council Cemetery | update | osm |
+| cem_paarl-muslim-maqbara-parys-cemetery | Paarl Muslim Maqbara (Parys Cemetery) | update | osm |
+| cem_malmesbury-maqbara | Malmesbury Maqbara | update | osm |
+| cem_wellington-muslim-cemetery | Wellington Muslim Cemetery | update | osm |
+| cem_wynberg | Brodie Road Muslim Cemetery | update | osm |
+| cem_tana-baru-cemetery | Tana Baru Cemetery | update | none |
+| cem_spaanschemat-river-road-muslim-cemetery | The Muslim Cemetery Society of Wynberg (Constantia - Strawberry lane) | update | osm |
+| cem_westpark-cemetery | Westpark Cemetery | update | osm |
+| cem_newclare-cemetery | Newclare Cemetery | update | osm |
+| cem_lenasia-cemetery-avalon | Lenasia Cemetery / Avalon | update | osm |
+| cem_braamfontein-cemetery | Braamfontein Cemetery | update | osm |
+| cem_brixton-cemetery | Brixton Cemetery | update | osm |
+| cem_roshnee-muslim-cemetery | Roshnee Muslim Cemetery | update | osm |
+| cem_rynsoord-cemetery | Rynsoord Muslim Kabrastaan | update | osm |
+| cem_wattville-cemetery | Wattville Cemetery | update | osm |
+| cem_styx-road-hostel-cemetery | Cemetery - Styx Road | update | osm |
+| cem_bakerton-cemetery | Bakerton Cemetery | update | osm |
+| cem_pietersfield-cemetery | Springs Memorial Cemetery | update | none |
+| cem_al-hilal-muslim-cemetery | Al-Hilal Muslim Cemetery | update | none |
+| cem_mayville-cemetery | Mayville Muslim Cemetery | update | osm |
+| cem_merebank-muslim-cemetery | Merebank Muslim Cemetery | update | osm |
+| cem_pinetown-muslim-cemetery | Pinetown Muslim Cemetery | update | osm |
+| cem_mountain-rise-muslim-cemetery | Mountain Rise Muslim Cemetery | update | osm |
+| cem_port-shepstone-muslim-cemetery | Port Shepstone Muslim Cemetery | update | none |
+| cem_general-public-cemetery-west-street | West Street Cemetery | update | osm |
+| cem_muslim-cemetery-1855 | Saint Mary's Cemetery | update | osm |
+| cem_mthatha-old-cemetery | Mthatha Old Cemetery | update | osm |
+| cem_mbombela-old-cemetery-nelspruit-old-cemetery | Mbombela Old Cemetery / Nelspruit Old Cemetery | update | osm |
+| cem_zinniaville-muslim-cemetery | Zinniaville Muslim Cemetery | update | osm |
+| cem_zeerust-muslim-cemetery | Zeerust Muslim Cemetery | update | osm |
+| cem_new-boksburg-cemetery-boksburg-sub-regional-cemetery | Boksburg Sub-regional Cemetery | update | osm |
+| cem_west-coast-islamic-society-maqbara | West Coast Islamic Society Maqbara | update | none |
+| cem_roodepoort-muslim-and-hindu-cemetery | Roodepoort Muslim Graveyard | update | osm |
+| cem_verulam-district-muslim-cemetery | Verulam & District Muslim Cemetery | update | none |
+| cem_phoenix-muslim-cemetery | Phoenix Muslim Cemetery | update | osm |
+| cem_kimberley-muslim-cemetery | Kimberley Muslim Cemetery | update | osm |
+| cem_dido-valley-cemetery | Dido Valley Cemetery | update | osm |
+| cem_mangaung-municipal-cemetery-muslim-burial-area | Mangaung Municipal Cemetery (Muslim burial area) | update | none |
+| cem_kinross-thistle-grove-muslim-cemetery | Kinross / Thistle Grove Muslim Cemetery | update | osm |
+| cem_lebohang-ext-14-muslim-cemetery | Lebohang Ext. 14 Muslim Cemetery | update | none |
+
+### Outlines still to draw
+
+- cem_mitchells-plain-khayelitsha-muslim-cemetery-swartklip: Mitchell’s Plain/Khayelitsha Muslim Cemetery (Swartklip)
+- cem_atlantis-cemetery: Atlantis Cemetery
+- cem_ocean-view-cemetery: Ocean View Cemetery
+- cem_tana-baru-cemetery: Tana Baru Cemetery
+- cem_pietersfield-cemetery: Springs Memorial Cemetery
+- cem_al-hilal-muslim-cemetery: Al-Hilal Muslim Cemetery
+- cem_port-shepstone-muslim-cemetery: Port Shepstone Muslim Cemetery
+- cem_west-coast-islamic-society-maqbara: West Coast Islamic Society Maqbara
+- cem_verulam-district-muslim-cemetery: Verulam & District Muslim Cemetery
+- cem_mangaung-municipal-cemetery-muslim-burial-area: Mangaung Municipal Cemetery (Muslim burial area)
+- cem_lebohang-ext-14-muslim-cemetery: Lebohang Ext. 14 Muslim Cemetery

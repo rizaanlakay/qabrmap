@@ -380,17 +380,29 @@ async function backfillOutlines() {
   }
   const wanted = only ? pending.filter((e) => e.key === only) : pending;
   // One request per batch rather than per site: a loaded mirror charges by the turn, not by the clause
-  const BATCH = 14;
+  const BATCH = 6;
   const elementsFor = new Map();
+  const unchecked = new Set();
   for (let i = 0; i < wanted.length; i += BATCH) {
     const batch = wanted.slice(i, i + BATCH);
     console.log(`Asking Overpass about ${batch.length} sites (${i + batch.length} of ${wanted.length})`);
-    let elements = [];
-    try {
-      elements = await overpass(aroundManyQuery(batch.map((e) => e.point), 400));
-    } catch (error) {
-      console.error(`  batch failed: ${error.message}`);
+    let elements = null;
+    // A mirror under load answers 504 to a heavy query. Without retries a failed batch would leave every
+    // site in it with no elements, which reads as "this cemetery has no outline" when it was never asked.
+    for (let attempt = 1; attempt <= 4 && elements === null; attempt++) {
+      try {
+        elements = await overpass(aroundManyQuery(batch.map((e) => e.point), 400));
+      } catch (error) {
+        if (attempt === 4) {
+          console.error(`  batch failed after ${attempt} attempts: ${error.message.slice(0, 80)}`);
+          for (const entry of batch) unchecked.add(entry.key);
+        } else {
+          console.log(`  ${error.message.slice(0, 60)}, retrying in ${attempt * 15}s`);
+          await sleep(attempt * 15000);
+        }
+      }
     }
+    if (elements === null) continue;
     // Each returned outline belongs to whichever site it contains, or the nearest one within reach
     for (const entry of batch) {
       const near = elements.filter((element) => {
@@ -423,6 +435,9 @@ async function backfillOutlines() {
         entry.notes = (entry.notes || []).filter((n) => !n.startsWith('Outline not looked up'));
         found++;
         console.log(`  ${chosen.osmId}, ${chosen.areaSquareMeters} m2${chosen.containsPoint ? '' : ', does not contain the point'}`);
+      } else if (unchecked.has(entry.key)) {
+        // Never asked, because its batch failed. Saying "none" here is how a false negative gets recorded.
+        console.log('  NOT CHECKED: its batch failed, so nothing is known about this one');
       } else {
         console.log('  no outline within 400 m');
       }

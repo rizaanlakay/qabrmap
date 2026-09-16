@@ -3260,7 +3260,73 @@
         "distanceMeters": 304
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/29059777",
+      "area_square_meters": 269710,
+      "contains_point": true,
+      "ring": [
+        [
+          28.3532519,
+          -26.1939285
+        ],
+        [
+          28.356827,
+          -26.2003972
+        ],
+        [
+          28.3580751,
+          -26.1996583
+        ],
+        [
+          28.3579214,
+          -26.1993519
+        ],
+        [
+          28.3585286,
+          -26.1989215
+        ],
+        [
+          28.3586362,
+          -26.1988672
+        ],
+        [
+          28.3597484,
+          -26.1979538
+        ],
+        [
+          28.3600351,
+          -26.1975306
+        ],
+        [
+          28.3612862,
+          -26.1973943
+        ],
+        [
+          28.3620702,
+          -26.1971172
+        ],
+        [
+          28.3619001,
+          -26.1966968
+        ],
+        [
+          28.3623977,
+          -26.196493
+        ],
+        [
+          28.358037,
+          -26.1951948
+        ],
+        [
+          28.3570751,
+          -26.1950678
+        ],
+        [
+          28.3532519,
+          -26.1939285
+        ]
+      ]
+    },
     "verification_status": "Verified",
     "verification_source": "Ekurhuleni Muslim Burial + OSM/Mapcarta",
     "source_urls": [
@@ -3268,9 +3334,7 @@
       "https://mapcarta.com/W29059777"
     ],
     "overrides": {},
-    "notes": [
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
-    ]
+    "notes": []
   },
   {
     "key": "wattville-cemetery",
@@ -3301,7 +3365,97 @@
         "distanceMeters": 90
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/801896827",
+      "area_square_meters": 123889,
+      "contains_point": true,
+      "ring": [
+        [
+          28.3044384,
+          -26.225419
+        ],
+        [
+          28.3045632,
+          -26.2261914
+        ],
+        [
+          28.3046088,
+          -26.2263333
+        ],
+        [
+          28.3074827,
+          -26.2260566
+        ],
+        [
+          28.3080165,
+          -26.2258882
+        ],
+        [
+          28.308219,
+          -26.2257908
+        ],
+        [
+          28.308671,
+          -26.2254756
+        ],
+        [
+          28.3090076,
+          -26.2250389
+        ],
+        [
+          28.3092047,
+          -26.2247537
+        ],
+        [
+          28.3096352,
+          -26.2240511
+        ],
+        [
+          28.3095776,
+          -26.2240187
+        ],
+        [
+          28.3094528,
+          -26.2239128
+        ],
+        [
+          28.3093469,
+          -26.223701
+        ],
+        [
+          28.3092651,
+          -26.2234857
+        ],
+        [
+          28.3058788,
+          -26.2235254
+        ],
+        [
+          28.3056696,
+          -26.2235049
+        ],
+        [
+          28.3054563,
+          -26.2234749
+        ],
+        [
+          28.3053169,
+          -26.2235892
+        ],
+        [
+          28.3050795,
+          -26.2240584
+        ],
+        [
+          28.3045994,
+          -26.2250858
+        ],
+        [
+          28.3044384,
+          -26.225419
+        ]
+      ]
+    },
     "verification_status": "Verified",
     "verification_source": "Ekurhuleni Muslim Burial + eGGSA",
     "source_urls": [
@@ -3309,9 +3463,7 @@
       "https://graves.eggsa.org/gauteng/Benoni_Urban/wattville/"
     ],
     "overrides": {},
-    "notes": [
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
-    ]
+    "notes": []
   },
   {
     "key": "styx-road-hostel-cemetery",
@@ -3344,7 +3496,41 @@
         "distanceMeters": 128
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/801896825",
+      "area_square_meters": 49410,
+      "contains_point": true,
+      "ring": [
+        [
+          28.2938585,
+          -26.2085582
+        ],
+        [
+          28.2937404,
+          -26.2086857
+        ],
+        [
+          28.2937417,
+          -26.2087639
+        ],
+        [
+          28.2953833,
+          -26.211275
+        ],
+        [
+          28.2967861,
+          -26.2105255
+        ],
+        [
+          28.2954182,
+          -26.2084812
+        ],
+        [
+          28.2938585,
+          -26.2085582
+        ]
+      ]
+    },
     "verification_status": "Verified",
     "verification_source": "Ekurhuleni Muslim Burial + War Graves Project",
     "source_urls": [
@@ -3352,9 +3538,7 @@
       "https://www.southafricawargraves.org/lists/southafrica_gauteng.htm"
     ],
     "overrides": {},
-    "notes": [
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
-    ]
+    "notes": []
   },
   {
     "key": "bakerton-cemetery",
@@ -3396,7 +3580,65 @@
         "distanceMeters": 29
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/274463593",
+      "area_square_meters": 86596,
+      "contains_point": true,
+      "ring": [
+        [
+          28.4729167,
+          -26.224596
+        ],
+        [
+          28.4738618,
+          -26.2233324
+        ],
+        [
+          28.4712208,
+          -26.2218432
+        ],
+        [
+          28.4720712,
+          -26.2207011
+        ],
+        [
+          28.4712975,
+          -26.2202252
+        ],
+        [
+          28.4698758,
+          -26.2212868
+        ],
+        [
+          28.4699721,
+          -26.2213381
+        ],
+        [
+          28.4693307,
+          -26.2221229
+        ],
+        [
+          28.4697926,
+          -26.2224436
+        ],
+        [
+          28.4698709,
+          -26.2223396
+        ],
+        [
+          28.4704863,
+          -26.2226867
+        ],
+        [
+          28.4703361,
+          -26.223041
+        ],
+        [
+          28.4729167,
+          -26.224596
+        ]
+      ]
+    },
     "verification_status": "Verified",
     "verification_source": "Ekurhuleni Muslim Burial + eGGSA",
     "source_urls": [
@@ -3404,9 +3646,7 @@
       "https://www.graves.eggsa.org/gauteng/SPRINGS-Urban/18%20Dec_001/"
     ],
     "overrides": {},
-    "notes": [
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
-    ]
+    "notes": []
   },
   {
     "key": "pietersfield-cemetery",
@@ -3458,7 +3698,7 @@
     ],
     "overrides": {},
     "notes": [
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+      "Outline rejected: OSM way/423952945 is Payneville, a differently named cemetery, and it does not contain our point."
     ]
   },
   {
@@ -3501,7 +3741,7 @@
     ],
     "overrides": {},
     "notes": [
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
+      "Outline rejected: OSM way/436673425 is The Hartley Estate Tamil and Telugu Cemetery, a different community entirely. Draw the Muslim ground beside it."
     ]
   },
   {
@@ -3535,16 +3775,64 @@
         "distanceMeters": 5398
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/436675722",
+      "area_square_meters": 6591,
+      "contains_point": false,
+      "ring": [
+        [
+          30.9661746,
+          -29.8535736
+        ],
+        [
+          30.9664208,
+          -29.8532073
+        ],
+        [
+          30.9665359,
+          -29.8529633
+        ],
+        [
+          30.967518,
+          -29.853413
+        ],
+        [
+          30.9674562,
+          -29.8535257
+        ],
+        [
+          30.9667994,
+          -29.8538036
+        ],
+        [
+          30.9666388,
+          -29.8538762
+        ],
+        [
+          30.9665854,
+          -29.8536386
+        ],
+        [
+          30.9663283,
+          -29.853685
+        ],
+        [
+          30.9663162,
+          -29.8536274
+        ],
+        [
+          30.9661746,
+          -29.8535736
+        ]
+      ]
+    },
     "verification_status": "Verified cemetery address; Muslim burial context supported by Durban cemetery records",
     "verification_source": "eThekwini cemetery contact list",
     "source_urls": [
       "https://www.durban.gov.za/storage/PDF%20Documents/Cemeteries%20and%20Crematoria/CONTACT%20AND%20OPERATING%20HOURS%20OF%20CEMETERIES%20AND%20CREMATORIA.pdf"
     ],
     "overrides": {},
-    "notes": [
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
-    ]
+    "notes": []
   },
   {
     "key": "merebank-muslim-cemetery",
@@ -3575,16 +3863,64 @@
         "distanceMeters": 11706
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/1201943862",
+      "area_square_meters": 3552,
+      "contains_point": true,
+      "ring": [
+        [
+          30.9625961,
+          -29.9510503
+        ],
+        [
+          30.9630789,
+          -29.9514451
+        ],
+        [
+          30.963384,
+          -29.9512151
+        ],
+        [
+          30.9634403,
+          -29.9511064
+        ],
+        [
+          30.9634611,
+          -29.9509867
+        ],
+        [
+          30.9634316,
+          -29.9509327
+        ],
+        [
+          30.9632968,
+          -29.950924
+        ],
+        [
+          30.9631305,
+          -29.9508554
+        ],
+        [
+          30.9630246,
+          -29.9507479
+        ],
+        [
+          30.9629763,
+          -29.9507491
+        ],
+        [
+          30.9625961,
+          -29.9510503
+        ]
+      ]
+    },
     "verification_status": "Verified",
     "verification_source": "Local directory",
     "source_urls": [
       "https://rsa.worldorgs.com/catalog/bluff/cemetery/merebank-muslim-cemetery"
     ],
     "overrides": {},
-    "notes": [
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
-    ]
+    "notes": []
   },
   {
     "key": "pinetown-muslim-cemetery",
@@ -3615,7 +3951,41 @@
         "distanceMeters": 0
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/1147937919",
+      "area_square_meters": 3153,
+      "contains_point": true,
+      "ring": [
+        [
+          30.8629391,
+          -29.8137399
+        ],
+        [
+          30.8632251,
+          -29.8130718
+        ],
+        [
+          30.8632314,
+          -29.8130573
+        ],
+        [
+          30.8636124,
+          -29.8131822
+        ],
+        [
+          30.8636019,
+          -29.8132119
+        ],
+        [
+          30.8633147,
+          -29.8138567
+        ],
+        [
+          30.8629391,
+          -29.8137399
+        ]
+      ]
+    },
     "verification_status": "Verified",
     "verification_source": "Waze + eThekwini planning document",
     "source_urls": [
@@ -3623,9 +3993,7 @@
       "https://dag.durban.gov.za/uploads/0000/6/2025/09/19/pinetown-densification-pilot-business-plan.pdf"
     ],
     "overrides": {},
-    "notes": [
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
-    ]
+    "notes": []
   },
   {
     "key": "mountain-rise-muslim-cemetery",
@@ -3656,16 +4024,172 @@
         "distanceMeters": 0
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/98473231",
+      "area_square_meters": 655133,
+      "contains_point": true,
+      "ring": [
+        [
+          30.4040623,
+          -29.5713813
+        ],
+        [
+          30.4036886,
+          -29.571265
+        ],
+        [
+          30.3972633,
+          -29.5704681
+        ],
+        [
+          30.3940593,
+          -29.5731746
+        ],
+        [
+          30.3945721,
+          -29.5734753
+        ],
+        [
+          30.3947565,
+          -29.5736356
+        ],
+        [
+          30.3948833,
+          -29.573791
+        ],
+        [
+          30.3949813,
+          -29.5739564
+        ],
+        [
+          30.3950389,
+          -29.5741569
+        ],
+        [
+          30.3950158,
+          -29.5744726
+        ],
+        [
+          30.3949294,
+          -29.5747683
+        ],
+        [
+          30.3947969,
+          -29.5749437
+        ],
+        [
+          30.3944684,
+          -29.5752344
+        ],
+        [
+          30.3938921,
+          -29.5756253
+        ],
+        [
+          30.3936674,
+          -29.5758809
+        ],
+        [
+          30.3934542,
+          -29.5764222
+        ],
+        [
+          30.3933505,
+          -29.5769735
+        ],
+        [
+          30.3933159,
+          -29.5774847
+        ],
+        [
+          30.3934081,
+          -29.5778004
+        ],
+        [
+          30.3935464,
+          -29.5779858
+        ],
+        [
+          30.3937999,
+          -29.5782264
+        ],
+        [
+          30.3941111,
+          -29.5784068
+        ],
+        [
+          30.3943186,
+          -29.5784569
+        ],
+        [
+          30.3985368,
+          -29.5789681
+        ],
+        [
+          30.3988883,
+          -29.5790333
+        ],
+        [
+          30.3991246,
+          -29.5791535
+        ],
+        [
+          30.3992802,
+          -29.5792638
+        ],
+        [
+          30.3994069,
+          -29.5794091
+        ],
+        [
+          30.3995049,
+          -29.5795946
+        ],
+        [
+          30.3995683,
+          -29.5797399
+        ],
+        [
+          30.4000063,
+          -29.5798451
+        ],
+        [
+          30.4002137,
+          -29.5790984
+        ],
+        [
+          30.4007612,
+          -29.5773243
+        ],
+        [
+          30.4012798,
+          -29.5758358
+        ],
+        [
+          30.401395,
+          -29.5755301
+        ],
+        [
+          30.402536,
+          -29.5737309
+        ],
+        [
+          30.4035272,
+          -29.5726232
+        ],
+        [
+          30.4040623,
+          -29.5713813
+        ]
+      ]
+    },
     "verification_status": "Verified",
     "verification_source": "Waze",
     "source_urls": [
       "https://www.waze.com/live-map/directions/za/kzn/pmb/mountain-rise-muslim-cemetery?to=place.ChIJEcH8wIe79h4RO2RtUntJdQ0"
     ],
     "overrides": {},
-    "notes": [
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
-    ]
+    "notes": []
   },
   {
     "key": "port-shepstone-muslim-cemetery",
@@ -3896,16 +4420,48 @@
         "distanceMeters": 82
       }
     ],
-    "outline": null,
+    "outline": {
+      "osm_id": "way/1550160496",
+      "area_square_meters": 1004,
+      "contains_point": true,
+      "ring": [
+        [
+          25.6254801,
+          -33.9655983
+        ],
+        [
+          25.6254368,
+          -33.9654848
+        ],
+        [
+          25.6250925,
+          -33.9655072
+        ],
+        [
+          25.6248836,
+          -33.96553
+        ],
+        [
+          25.6248634,
+          -33.9655382
+        ],
+        [
+          25.6249776,
+          -33.9657458
+        ],
+        [
+          25.6254801,
+          -33.9655983
+        ]
+      ]
+    },
     "verification_status": "Verified",
     "verification_source": "OSM/Mapcarta",
     "source_urls": [
       "https://mapcarta.com/W1550160496"
     ],
     "overrides": {},
-    "notes": [
-      "Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review."
-    ]
+    "notes": []
   },
   {
     "key": "mthatha-old-cemetery",
