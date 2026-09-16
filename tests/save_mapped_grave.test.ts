@@ -168,23 +168,8 @@ describe('Save Mapped Grave Tests', () => {
       p_photo_storage_path: UPLOADED.path,
       p_match_mode: 'ask',
       p_add_to_grave_id: null,
-      p_pin_latitude: null,
-      p_pin_longitude: null,
     });
     expect(deps.deletePhoto).not.toHaveBeenCalled();
-  });
-
-  it('sends the map pin next to the phone fix when the user placed one', async () => {
-    const { deps, rpc } = makeDeps();
-    const mapPin = { latitude: -33.96752, longitude: 18.50331 };
-    await saveMappedGrave(input({ telemetry: { ...telemetry, mapPin } }), deps);
-    expect(rpcParams(rpc, 0)).toMatchObject({
-      p_latitude: -33.9675,
-      p_longitude: 18.5033,
-      p_accuracy_meters: 4.2,
-      p_pin_latitude: -33.96752,
-      p_pin_longitude: 18.50331,
-    });
   });
 
   it('passes the survey and different-person modes through', async () => {
@@ -383,17 +368,5 @@ describe('Saved Grave Fallback Tests', () => {
     expect(at(5)).toMatchObject({ status: 'MAPPED', positionConfidence: 'MEDIUM' });
     expect(at(6)).toMatchObject({ status: 'LOW_CONFIDENCE', positionConfidence: 'MEDIUM' });
     expect(at(8)).toMatchObject({ status: 'LOW_CONFIDENCE', positionConfidence: 'LOW' });
-  });
-
-  it('places a pinned grave at the pin with the pin accuracy, whatever the GPS said', () => {
-    const mapPin = { latitude: -33.96752, longitude: 18.50331 };
-    const grave = buildSavedGrave(input({ telemetry: { ...telemetry, gpsAccuracy: 18, mapPin } }), result, 'now');
-    expect(grave).toMatchObject({
-      latitude: -33.96752,
-      longitude: 18.50331,
-      positionAccuracyMeters: 1.5,
-      positionConfidence: 'HIGH',
-      status: 'MAPPED',
-    });
   });
 });

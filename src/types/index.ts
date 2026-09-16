@@ -147,20 +147,11 @@ export interface GraveRelationship {
   savedAt: string;
 }
 
-// A spot the user chose on satellite imagery
-export interface MapPin {
-  latitude: number;
-  longitude: number;
-}
-
 export interface DeviceTelemetry {
   latitude: number;
   longitude: number;
   altitude?: number;
   gpsAccuracy: number;
-  // Where the user placed the grave on the satellite map after the photo. The grave is saved here rather than
-  // at the phone's fix; latitude and longitude above stay the fix itself.
-  mapPin?: MapPin;
   headingDegrees?: number;
   headingAccuracy?: number;
   pitch?: number;

@@ -1,7 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { MAP_PIN_ACCURACY_M, MAX_PIN_DISTANCE_M } from '../src/lib/capture/mapPin';
+
+// The map pin step was removed from the app (pinning a grave on zoomed-in imagery did not work in the field),
+// but this migration is live in production. The function keeps its two optional pin parameters, which the
+// app no longer sends, so the values below only need to match the migration itself.
+const MAP_PIN_ACCURACY_M = 1.5;
+const MAX_PIN_DISTANCE_M = 50;
 
 const MIGRATION = readFileSync(
   path.resolve(__dirname, '../supabase/migrations/20260916150000_map_pinned_position.sql'),
@@ -16,7 +21,7 @@ describe('Map Pinned Position Migration Tests', () => {
     expect(MIGRATION).toMatch(/check \(source in \('photo', 'visit', 'map'\)\)/);
   });
 
-  it('uses the same pin accuracy and distance limit as the app', () => {
+  it('uses one pin accuracy and distance limit throughout', () => {
     const pinAccuracy = MIGRATION.match(/v_pin_accuracy constant double precision := [\d.]+;/g) ?? [];
     expect(pinAccuracy).toHaveLength(2);
     for (const line of pinAccuracy) expect(line).toContain(`:= ${MAP_PIN_ACCURACY_M};`);

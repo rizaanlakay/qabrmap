@@ -33,7 +33,6 @@ import { GraveDetailsScreen } from '@/components/screens/GraveDetailsScreen';
 import { NavigationScreen } from '@/components/screens/NavigationScreen';
 import { ARGuidanceScreen } from '@/components/screens/ARGuidanceScreen';
 import { CaptureScreen } from '@/components/screens/CaptureScreen';
-import { PinGraveScreen } from '@/components/screens/PinGraveScreen';
 import { AIProcessingScreen } from '@/components/screens/AIProcessingScreen';
 import { ConfirmDetailsScreen } from '@/components/screens/ConfirmDetailsScreen';
 import { AddPhotoConfirmScreen } from '@/components/screens/AddPhotoConfirmScreen';
@@ -61,7 +60,6 @@ export type ScreenId =
   | 'navigation'
   | 'ar-guidance'
   | 'capture'
-  | 'pin-grave'
   | 'ai-processing'
   | 'confirm-details'
   | 'add-photo'
@@ -326,8 +324,8 @@ function QabrMapAppContent() {
     setCapturedImage(dataUrl);
     setCapturedTelemetry(telemetry);
     setCapturedGravePhoto(gravePhotoDataUrl ?? null);
-    // A photo for an existing grave skips the map pin, the AI read and the new-grave form
-    setCurrentScreen(photoTargetGrave ? 'add-photo' : 'pin-grave');
+    // A photo for an existing grave skips the AI read and the new-grave form
+    setCurrentScreen(photoTargetGrave ? 'add-photo' : 'ai-processing');
   };
 
   // A survey photo that needs a person opens on the Confirm screen with its own photo, reading and save ids
@@ -403,7 +401,6 @@ function QabrMapAppContent() {
     'navigation',
     'ar-guidance',
     'capture',
-    'pin-grave',
     'ai-processing',
     'confirm-details',
     'add-photo',
@@ -583,27 +580,12 @@ function QabrMapAppContent() {
           />
         )}
 
-        {currentScreen === 'pin-grave' && capturedTelemetry && (
-          <PinGraveScreen
-            telemetry={capturedTelemetry}
-            onPinned={(pin) => {
-              setCapturedTelemetry({ ...capturedTelemetry, mapPin: pin });
-              setCurrentScreen('ai-processing');
-            }}
-            onKeepGps={() => {
-              setCapturedTelemetry({ ...capturedTelemetry, mapPin: undefined });
-              setCurrentScreen('ai-processing');
-            }}
-            onBack={() => setCurrentScreen('capture')}
-          />
-        )}
-
         {currentScreen === 'ai-processing' && capturedTelemetry && (
           <AIProcessingScreen
             capturedImage={capturedImage}
             onProcessingFinished={handleProcessingFinished}
             onEnterManually={handleEnterDetailsManually}
-            onBack={() => setCurrentScreen('pin-grave')}
+            onBack={() => setCurrentScreen('capture')}
           />
         )}
 
