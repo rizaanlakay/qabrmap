@@ -26,6 +26,8 @@ const PLACE_FIELDS = 'id,displayName,formattedAddress,location,viewport,types';
 const args = process.argv.slice(2);
 const only = args.includes('--only') ? args[args.indexOf('--only') + 1] : null;
 const dryRun = args.includes('--dry-run');
+// Overpass can be down or queueing for minutes. This resolves points and names now and leaves outlines for later.
+const noOutlines = args.includes('--no-outlines');
 
 loadEnvLocal(path.join(ROOT, '.env.local'));
 // A dedicated server key is preferred. The public maps key is accepted as a fallback, but it only works
@@ -38,14 +40,28 @@ if (!GOOGLE_KEY) {
 
 mkdirSync(CACHE, { recursive: true });
 
-// Every request is cached by a hash of its url and body, so the review file is regenerated without new calls
-async function cachedJson(name, url, init, validate) {
-  const hash = createHash('sha1').update(url + (init?.body || '')).digest('hex').slice(0, 16);
+// No request may hang: undici only bounds the connect, so a server that accepts and stalls would block the run
+const REQUEST_TIMEOUT_MS = 30_000;
+
+async function fetchJsonText(url, init, timeoutMs = REQUEST_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { ...init, signal: controller.signal });
+    return { response, text: await response.text() };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// Every request is cached by a hash of its url and body, so the review file is regenerated without new calls.
+// cacheKey overrides that when the same logical request may go to more than one host, as Overpass mirrors do.
+async function cachedJson(name, url, init, validate, cacheKey, timeoutMs) {
+  const hash = createHash('sha1').update(cacheKey ?? url + (init?.body || '')).digest('hex').slice(0, 16);
   const file = path.join(CACHE, `${name}-${hash}.json`);
   if (existsSync(file)) return JSON.parse(readFileSync(file, 'utf8'));
   if (dryRun) return null;
-  const response = await fetch(url, init);
-  const text = await response.text();
+  const { response, text } = await fetchJsonText(url, init, timeoutMs);
   if (!response.ok) throw new Error(`${name} ${response.status}: ${text.slice(0, 300)}`);
   const data = JSON.parse(text);
   if (validate) {
@@ -93,24 +109,40 @@ async function geocode(address) {
   return { lat: first.geometry.location.lat, lng: first.geometry.location.lng, formatted: first.formatted_address };
 }
 
+// The main Overpass host goes down for hours at a time, so fall through to a mirror before giving up.
+// The cache key is the query alone, so a later run reads an outline whichever mirror first answered for it.
+// Only worldwide mirrors belong here: a regional one (overpass.osm.ch, Switzerland) answers 200 with zero
+// elements outside its extract, which reads as "this cemetery has no outline" instead of as a failure.
+const OVERPASS_ENDPOINTS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+];
+// The mirrors queue requests under load and have answered this query in 39 s, so allow well beyond that
+const OVERPASS_TIMEOUT_MS = 90_000;
+
 async function overpass(query) {
-  const data = await cachedJson(
-    'overpass',
-    'https://overpass-api.de/api/interpreter',
-    {
-      method: 'POST',
-      // Overpass answers 406 to a request with no User-Agent, so identify the tool as their usage policy asks
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'User-Agent': 'QabrMap burial-sites import (https://qabrmap.vercel.app)',
-        Accept: 'application/json',
-      },
-      body: `data=${encodeURIComponent(query)}`,
+  const init = {
+    method: 'POST',
+    // Overpass answers 406 to a request with no User-Agent, so identify the tool as their usage policy asks
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'User-Agent': 'QabrMap burial-sites import (https://qabrmap.vercel.app)',
+      Accept: 'application/json',
     },
-    (data) => (data.remark ? `Overpass returned a remark: ${data.remark}` : null)
-  );
-  await sleep(1000);
-  return data?.elements || [];
+    body: `data=${encodeURIComponent(query)}`,
+  };
+  const validate = (data) => (data.remark ? `Overpass returned a remark: ${data.remark}` : null);
+  let lastError = null;
+  for (const endpoint of OVERPASS_ENDPOINTS) {
+    try {
+      const data = await cachedJson('overpass', endpoint, init, validate, `overpass:${query}`, OVERPASS_TIMEOUT_MS);
+      await sleep(1000);
+      return data?.elements || [];
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw new Error(`every Overpass endpoint failed: ${lastError ? lastError.message : 'unknown'}`);
 }
 
 async function loadExisting() {
@@ -227,7 +259,9 @@ async function resolveRow(row, existing, townCentres) {
   }
 
   // 5. Outline from OpenStreetMap
-  if (entry.point) {
+  if (entry.point && noOutlines) {
+    notes.push('Outline not looked up: this run used --no-outlines. Re-run without it while the row is still needs_review.');
+  } else if (entry.point) {
     const namedWay = entry.source_urls.map(osmWayFromUrl).find(Boolean);
     let elements = await overpass(aroundQuery(entry.point.lat, entry.point.lng, 400));
     if (namedWay && !elements.some((e) => `${e.type}/${e.id}` === namedWay)) {
