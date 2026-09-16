@@ -77,6 +77,16 @@ export default function RootLayout({
                   window.addEventListener('load', () => {
                     navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW failed', err));
                   });
+                  // A page that already had a worker is running an older build once a new worker takes over,
+                  // so reload it once. A first install also fires this, but with no previous controller.
+                  if (navigator.serviceWorker.controller) {
+                    let reloaded = false;
+                    navigator.serviceWorker.addEventListener('controllerchange', () => {
+                      if (reloaded) return;
+                      reloaded = true;
+                      window.location.reload();
+                    });
+                  }
                 } else {
                   navigator.serviceWorker.getRegistrations().then(registrations => {
                     for (const reg of registrations) reg.unregister();

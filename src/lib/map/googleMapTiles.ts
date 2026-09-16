@@ -61,11 +61,19 @@ export function localeFromLanguageTag(tag: string | undefined): MapLocale {
   return { language: tag, region: region ? region.toUpperCase() : 'US' };
 }
 
+// Google's imagery over Cape Town cemeteries is about 7 cm per pixel, and the deepest tiles it serves are
+// zoom 22. Requesting them at twice the pixel size keeps that detail sharp on phone screens; a plain 256 px
+// tile stretched three-fold on a modern phone is what made kerbs and headstones blur into one another.
+export const TILE_SCALE = 'scaleFactor2x';
+export const MAX_TILE_ZOOM = 22;
+
 export function buildSessionRequest(mapType: GoogleMapType, locale: MapLocale) {
   return {
     mapType,
     language: locale.language,
     region: locale.region,
+    scale: TILE_SCALE,
+    highDpi: true,
     // Road names and places drawn over the imagery, like the hybrid tiles the app showed before
     ...(mapType === 'satellite' ? { layerTypes: ['layerRoadmap'], overlay: false } : {}),
   };
@@ -117,11 +125,12 @@ export function googleRasterStyle(mapType: GoogleMapType): StyleSpecification {
       'google-tiles': {
         type: 'raster',
         tiles: [`${GOOGLE_TILES_PROTOCOL}://${mapType}/{z}/{x}/{y}`],
+        // Each tile is 512 px but covers 256 CSS px, so every screen pixel gets its own imagery pixel
         tileSize: 256,
-        maxzoom: 21,
+        maxzoom: MAX_TILE_ZOOM,
       },
     },
-    layers: [{ id: 'google-tiles-layer', type: 'raster', source: 'google-tiles', minzoom: 0, maxzoom: 21 }],
+    layers: [{ id: 'google-tiles-layer', type: 'raster', source: 'google-tiles', minzoom: 0, maxzoom: MAX_TILE_ZOOM }],
   };
 }
 
@@ -136,7 +145,9 @@ function currentLocale(): MapLocale {
   return localeFromLanguageTag(typeof navigator !== 'undefined' ? navigator.language : undefined);
 }
 
-const cacheKey = (mapType: GoogleMapType, locale: MapLocale) => `${mapType}_${locale.language}_${locale.region}`;
+// The scale is part of the key, so a session created for plain tiles is never reused for high-DPI ones
+const cacheKey = (mapType: GoogleMapType, locale: MapLocale) =>
+  `${mapType}_${TILE_SCALE}_${locale.language}_${locale.region}`;
 
 function readStoredSession(key: string): TileSession | null {
   if (typeof window === 'undefined') return null;
@@ -249,12 +260,27 @@ const loadGoogleTile: AddProtocolAction = async (params, abortController) => {
   };
 };
 
+// Sessions saved before the scale was part of the key would serve plain tiles for another two weeks
+export function discardStaleTileSessions(storage: Pick<Storage, 'length' | 'key' | 'removeItem'>) {
+  const stale: string[] = [];
+  for (let i = 0; i < storage.length; i += 1) {
+    const key = storage.key(i);
+    if (key && key.startsWith(SESSION_STORAGE_PREFIX) && !key.includes(`_${TILE_SCALE}_`)) stale.push(key);
+  }
+  for (const key of stale) storage.removeItem(key);
+}
+
 let protocolRegistered = false;
 
 export function registerGoogleTilesProtocol(maplibregl: {
   addProtocol: (protocol: string, loadFn: AddProtocolAction) => void;
 }) {
   if (protocolRegistered) return;
+  try {
+    if (typeof window !== 'undefined') discardStaleTileSessions(window.localStorage);
+  } catch {
+    // Storage blocked: nothing stale to clear
+  }
   maplibregl.addProtocol(GOOGLE_TILES_PROTOCOL, loadGoogleTile);
   protocolRegistered = true;
 }

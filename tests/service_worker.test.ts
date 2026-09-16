@@ -123,7 +123,7 @@ describe('Service Worker Caching Tests', () => {
     const sw = loadServiceWorker(async () => reply('missing', 404));
     const { response } = await dispatchFetch(sw, request('/_next/static/chunks/app.js'));
     expect(response!.status).toBe(404);
-    expect(sw.stores.get('qabrmap-static-v4')?.size ?? 0).toBe(0);
+    expect(sw.stores.get('qabrmap-static-v5')?.size ?? 0).toBe(0);
   });
 
   it('answers API calls with an offline JSON error when the network is down', async () => {
@@ -140,7 +140,7 @@ describe('Service Worker Caching Tests', () => {
     for (let i = 0; i < 205; i++) {
       await dispatchFetch(sw, request(`/_next/static/chunks/${i}.js`));
     }
-    const cached = Array.from(sw.stores.get('qabrmap-static-v4')!.keys());
+    const cached = Array.from(sw.stores.get('qabrmap-static-v5')!.keys());
     expect(cached).toHaveLength(200);
     expect(cached[0]).toBe(`${ORIGIN}/_next/static/chunks/5.js`);
   });
@@ -148,12 +148,12 @@ describe('Service Worker Caching Tests', () => {
   it('removes caches from older service worker versions on activate', async () => {
     const sw = loadServiceWorker(async () => reply('ok'));
     sw.stores.set('qabrmap-v2', new Map([[`${ORIGIN}/`, reply('old')]]));
-    sw.stores.set('qabrmap-static-v4', new Map());
+    sw.stores.set('qabrmap-static-v5', new Map());
 
     const lifetime: Promise<unknown>[] = [];
     sw.listeners.activate({ waitUntil: (promise: Promise<unknown>) => lifetime.push(promise) });
     await Promise.all(lifetime);
 
-    expect(Array.from(sw.stores.keys())).toEqual(['qabrmap-static-v4']);
+    expect(Array.from(sw.stores.keys())).toEqual(['qabrmap-static-v5']);
   });
 });

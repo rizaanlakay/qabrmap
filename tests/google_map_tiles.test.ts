@@ -61,10 +61,47 @@ describe('Google Map Tiles Tests', () => {
       mapType: 'satellite',
       language: 'en-ZA',
       region: 'ZA',
+      scale: 'scaleFactor2x',
+      highDpi: true,
       layerTypes: ['layerRoadmap'],
       overlay: false,
     });
-    expect(tiles.buildSessionRequest('roadmap', locale)).toEqual({ mapType: 'roadmap', language: 'en-ZA', region: 'ZA' });
+    expect(tiles.buildSessionRequest('roadmap', locale)).toEqual({
+      mapType: 'roadmap',
+      language: 'en-ZA',
+      region: 'ZA',
+      scale: 'scaleFactor2x',
+      highDpi: true,
+    });
+  });
+
+  it('clears sessions saved for plain tiles when the protocol is registered', async () => {
+    const tiles = await loadModule();
+    const items = new Map<string, string>([
+      ['qabrmap_gmaps_tile_session_satellite_en-ZA_ZA', '{"session":"old"}'],
+      ['qabrmap_gmaps_tile_session_roadmap_en-ZA_ZA', '{"session":"old"}'],
+      ['qabrmap_gmaps_tile_session_satellite_scaleFactor2x_en-ZA_ZA', '{"session":"new"}'],
+      ['qabrmap_other', 'keep'],
+    ]);
+    const storage = {
+      get length() {
+        return items.size;
+      },
+      key: (i: number) => Array.from(items.keys())[i] ?? null,
+      removeItem: (key: string) => void items.delete(key),
+    };
+    vi.stubGlobal('window', { localStorage: storage });
+    await registerLoader(tiles);
+    expect(Array.from(items.keys())).toEqual(['qabrmap_gmaps_tile_session_satellite_scaleFactor2x_en-ZA_ZA', 'qabrmap_other']);
+  });
+
+  it('lets the map zoom to the deepest tiles Google serves, drawn at 256 css px each', async () => {
+    const tiles = await loadModule();
+    const style = tiles.googleRasterStyle('satellite');
+    const source = style.sources['google-tiles'] as { tileSize: number; maxzoom: number };
+    expect(source.tileSize).toBe(256);
+    expect(source.maxzoom).toBe(22);
+    expect(style.layers[0]).toMatchObject({ maxzoom: 22 });
   });
 
   it('parses sessions and treats nearly expired ones as unusable', async () => {

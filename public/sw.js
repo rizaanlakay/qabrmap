@@ -1,5 +1,5 @@
 // QabrMap Service Worker: app shell for the installed app plus offline resilience
-const VERSION = 'v4';
+const VERSION = 'v5';
 const SHELL_CACHE = `qabrmap-shell-${VERSION}`;
 const STATIC_CACHE = `qabrmap-static-${VERSION}`;
 const CURRENT_CACHES = [SHELL_CACHE, STATIC_CACHE];
