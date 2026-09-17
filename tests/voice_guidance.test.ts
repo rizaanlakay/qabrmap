@@ -279,3 +279,67 @@ describe('Arrival and rerouting', () => {
     expect(afterwards.phrase).toContain('Head out onto Lawrence Road.');
   });
 });
+
+// The drive in the screenshot: 3 km from Lawrence Road to the Johnstone Road gate
+const JOHNSON_ROAD: RouteStep[] = [
+  leg('Head out onto Lawrence Road', 'Lawrence Road', 600, 'depart'),
+  leg('Turn right onto Aden Avenue', 'Aden Avenue', 450),
+  leg('Turn left onto Klipfontein Road', 'Klipfontein Road', 1600),
+  leg('Turn right onto Johnston Road', 'Johnston Road', 250),
+  leg('Turn left onto Rylands Road', 'Rylands Road', 60),
+  leg('Turn right onto Carnie Road', 'Carnie Road', 40),
+  leg('Arrive at Johnstone Road Gate', '', 0, 'arrive'),
+];
+
+describe('A whole drive to the cemetery', () => {
+  it('speaks the drive the way a Garmin would, and never repeats itself', () => {
+    const legLengths = JOHNSON_ROAD.map((step) => step.distanceMeters);
+    const total = legLengths.reduce((sum, metres) => sum + metres, 0);
+    let memory = emptyVoiceMemory();
+    const spoken: string[] = [];
+    let travelled = 0;
+
+    // A fix every 10 m, which is about one a second at 50 km/h
+    while (travelled <= total) {
+      // Walk the legs in order and stop on the one the driver is inside. Testing every leg against a
+      // legStart left over from an earlier one jumps stepIndex onto the short legs near the gate.
+      let stepIndex = 0;
+      let legStart = 0;
+      while (stepIndex + 1 < legLengths.length && travelled >= legStart + legLengths[stepIndex]) {
+        legStart += legLengths[stepIndex];
+        stepIndex += 1;
+      }
+      const result = nextAnnouncement(
+        {
+          steps: JOHNSON_ROAD,
+          stepIndex,
+          distanceToNextManeuverMeters: legStart + legLengths[stepIndex] - travelled,
+          remainingMeters: total - travelled,
+          speedMps: 13.9,
+          entranceName: 'Johnstone Road Gate',
+          isPreviewing: false,
+          hasArrived: false,
+          rerouteCount: 0,
+        },
+        memory
+      );
+      memory = result.memory;
+      if (result.phrase) spoken.push(result.phrase);
+      travelled += 10;
+    }
+
+    expect(spoken).toEqual([
+      'Head out onto Lawrence Road.',
+      'In 400 metres, turn right onto Aden Avenue.',
+      'Turn right onto Aden Avenue.',
+      'In 400 metres, turn left onto Klipfontein Road.',
+      'Turn left onto Klipfontein Road.',
+      'Continue on Klipfontein Road for 1.5 kilometres.',
+      'In 400 metres, turn right onto Johnston Road.',
+      'Turn right onto Johnston Road, then turn left onto Rylands Road.',
+      'Turn left onto Rylands Road, then turn right onto Carnie Road.',
+      'Turn right onto Carnie Road.',
+      'You have arrived at Johnstone Road Gate.',
+    ]);
+  });
+});
