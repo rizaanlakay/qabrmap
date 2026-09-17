@@ -18,8 +18,9 @@ export interface UseVoiceGuidanceInput {
   entranceName: string;
   isPreviewing: boolean;
   hasArrived: boolean;
-  // False for a route planned from the default start position, which names a road the driver is nowhere near
-  routeFromLiveFix: boolean;
+  // False for a route planned from the default start position that the driver is nowhere near, which would
+  // otherwise open the drive by naming a road they cannot see
+  routeWorthAnnouncing: boolean;
 }
 
 export function useVoiceGuidance(input: UseVoiceGuidanceInput) {
@@ -78,7 +79,7 @@ export function useVoiceGuidance(input: UseVoiceGuidanceInput) {
   useEffect(() => {
     // A route planned from the default start is replaced the moment a real fix lands, so it is not a route
     // the voice ever knew about and its replacement is not a reroute
-    if (!input.routeFromLiveFix) return;
+    if (!input.routeWorthAnnouncing) return;
     if (input.steps.length === 0 || input.steps === knownStepsRef.current) return;
     const hadRoute = knownStepsRef.current !== null;
     knownStepsRef.current = input.steps;
@@ -86,7 +87,7 @@ export function useVoiceGuidance(input: UseVoiceGuidanceInput) {
     lastFixRef.current = null;
     derivedSpeedRef.current = null;
     if (hadRoute) routeGenerationRef.current += 1;
-  }, [input.steps, input.routeFromLiveFix]);
+  }, [input.steps, input.routeWorthAnnouncing]);
 
   // Speed from successive fixes, used when the device reports none of its own
   useEffect(() => {
@@ -110,7 +111,7 @@ export function useVoiceGuidance(input: UseVoiceGuidanceInput) {
 
   useEffect(() => {
     if (!enabled || !speakerRef.current) return;
-    if (!input.routeFromLiveFix) return;
+    if (!input.routeWorthAnnouncing) return;
     // Arrival is the one thing still worth saying once driving mode has ended, because reaching the
     // cemetery boundary is what ends it
     if (!input.active && !input.hasArrived) return;
@@ -148,7 +149,7 @@ export function useVoiceGuidance(input: UseVoiceGuidanceInput) {
     input.entranceName,
     input.isPreviewing,
     input.hasArrived,
-    input.routeFromLiveFix,
+    input.routeWorthAnnouncing,
   ]);
 
   // Leaving the screen must not leave a sentence talking over whatever comes next, nor a speaker still

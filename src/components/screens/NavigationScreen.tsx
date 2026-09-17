@@ -484,6 +484,12 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
   const liveStepIndex = routeProgress ? Math.min(routeProgress.stepIndex, Math.max(0, drivingSteps.length - 1)) : 0;
   const isPreviewingStep = previewStepIndex !== null;
 
+  // A route is worth speaking when it was planned from a real fix, or when the driver is plainly on the one
+  // we already have. The first route of a session is always planned from the default start, and when it
+  // happens to be right no replacement is ever fetched, which would otherwise leave the voice silent.
+  const routeWorthAnnouncing =
+    routeFromLiveFix || (gpsStatus === 'live' && drivingSteps.length > 0 && offRouteMeters <= REROUTE_OFF_ROUTE_METERS);
+
   // Spoken turn-by-turn guidance. Off until the driver taps the speaker, then remembered on this device.
   const voice = useVoiceGuidance({
     active: activeMode === 'driving',
@@ -495,7 +501,7 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
     entranceName,
     isPreviewing: isPreviewingStep,
     hasArrived,
-    routeFromLiveFix,
+    routeWorthAnnouncing,
   });
 
   const currentStepIndex = previewStepIndex ?? liveStepIndex;
