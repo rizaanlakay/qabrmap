@@ -61,8 +61,6 @@ export function expandStreetName(text: string): string {
 
 import type { RouteStep } from '@/lib/geospatial';
 
-type VoiceTier = 'depart' | 'headsUp' | 'warning' | 'turn' | 'arrive';
-
 export interface VoiceInput {
   steps: RouteStep[];
   // The leg being driven now. The maneuver being announced is the one after it.
