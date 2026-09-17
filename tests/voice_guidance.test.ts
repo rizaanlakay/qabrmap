@@ -172,9 +172,11 @@ describe('Long legs and close turns', () => {
     ]);
   });
 
-  it('gives no heads-up on a short leg', () => {
+  it('gives no heads-up on a short leg, only the ordinary warning', () => {
+    // 250 m is inside the warning distance, so the warning is due. What must not appear is a
+    // "Continue on Johnston Road for..." line, because the leg is well under HEADS_UP_MIN_STEP_M.
     const spoken = drive([{ stepIndex: 2, distanceToNextManeuverMeters: 250 }], LONG_DRIVE);
-    expect(spoken).toEqual(['Head out onto Lawrence Road.']);
+    expect(spoken).toEqual(['Head out onto Lawrence Road. In 300 metres, turn left onto Rylands Road.']);
   });
 
   it('chains a turn that is followed closely by another', () => {

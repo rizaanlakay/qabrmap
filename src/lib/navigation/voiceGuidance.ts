@@ -136,7 +136,7 @@ export function nextAnnouncement(input: VoiceInput, memory: VoiceMemory): VoiceR
     said.add(warnKey);
     said.add(headsUpKey);
     parts.push(sentence(chainedTurn(steps, turnIndex, warnAt, said)));
-  } else if (toTurn <= warnAt && !said.has(warnKey) && toTurn < (steps[stepIndex]?.distanceMeters ?? 0)) {
+  } else if (toTurn <= warnAt && !said.has(warnKey)) {
     said.add(warnKey);
     said.add(headsUpKey);
     parts.push(sentence(`In ${speakDistance(toTurn)}, ${lowerFirst(expandStreetName(upcoming.instruction))}`));
