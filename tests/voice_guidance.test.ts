@@ -220,3 +220,62 @@ describe('Long legs and close turns', () => {
     expect(spoken).toEqual([]);
   });
 });
+
+describe('Arrival and rerouting', () => {
+  it('announces arrival once, by the gate name', () => {
+    const spoken = drive([
+      { stepIndex: 1, remainingMeters: 30 },
+      { stepIndex: 1, remainingMeters: 12 },
+    ]);
+    expect(spoken).toEqual([
+      'Head out onto Lawrence Road. You have arrived at Johnstone Road Gate.',
+    ]);
+  });
+
+  it('announces arrival when the screen latches it, even further out', () => {
+    const spoken = drive([{ stepIndex: 1, remainingMeters: 300, hasArrived: true }]);
+    expect(spoken[0]).toContain('You have arrived at Johnstone Road Gate.');
+  });
+
+  it('says nothing about rerouting on the first route of a drive', () => {
+    expect(drive([{ distanceToNextManeuverMeters: 600, rerouteCount: 0 }])).toEqual([
+      'Head out onto Lawrence Road.',
+    ]);
+  });
+
+  it('leaves the final maneuver to the arrival line rather than calling it as a turn', () => {
+    // 50 m out the arrive maneuver is inside the turn distance, but the arrival line follows at 40 m
+    const spoken = drive([
+      { stepIndex: 1, distanceToNextManeuverMeters: 50, remainingMeters: 50 },
+      { stepIndex: 1, distanceToNextManeuverMeters: 40, remainingMeters: 40 },
+    ]);
+    expect(spoken).toEqual([
+      'Head out onto Lawrence Road.',
+      'You have arrived at Johnstone Road Gate.',
+    ]);
+  });
+
+  it('says rerouting and forgets what it said when a new route arrives', () => {
+    let memory = emptyVoiceMemory();
+    const base: VoiceInput = {
+      steps: DRIVE,
+      stepIndex: 0,
+      distanceToNextManeuverMeters: 300,
+      remainingMeters: 3000,
+      speedMps: 13.9,
+      entranceName: 'Johnstone Road Gate',
+      isPreviewing: false,
+      hasArrived: false,
+      rerouteCount: 0,
+    };
+    memory = nextAnnouncement(base, memory).memory;
+
+    const rerouted = nextAnnouncement({ ...base, rerouteCount: 1 }, memory);
+    expect(rerouted.phrase).toBe('Rerouting.');
+    expect(rerouted.memory.said).toEqual([]);
+
+    // The new route's own departure is spoken again, because it is a different route
+    const afterwards = nextAnnouncement({ ...base, rerouteCount: 1 }, rerouted.memory);
+    expect(afterwards.phrase).toContain('Head out onto Lawrence Road.');
+  });
+});

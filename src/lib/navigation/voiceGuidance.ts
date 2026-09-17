@@ -103,7 +103,22 @@ const lowerFirst = (text: string) => {
 };
 
 export function nextAnnouncement(input: VoiceInput, memory: VoiceMemory): VoiceResult {
-  const { steps, stepIndex, distanceToNextManeuverMeters: toTurn, speedMps, isPreviewing, rerouteCount } = input;
+  const {
+    steps,
+    stepIndex,
+    distanceToNextManeuverMeters: toTurn,
+    remainingMeters,
+    speedMps,
+    entranceName,
+    isPreviewing,
+    hasArrived,
+    rerouteCount,
+  } = input;
+
+  // A new route means the old route's step numbers mean nothing, so the memory goes with it
+  if (rerouteCount !== memory.rerouteCount) {
+    return { phrase: 'Rerouting.', memory: { said: [], rerouteCount } };
+  }
 
   if (isPreviewing || steps.length === 0) return { phrase: null, memory };
 
@@ -119,6 +134,13 @@ export function nextAnnouncement(input: VoiceInput, memory: VoiceMemory): VoiceR
     parts.push(sentence(expandStreetName(steps[0].instruction)));
   }
 
+  // Arrival ends the drive and outranks any turn still pending
+  if ((hasArrived || remainingMeters <= ARRIVAL_M) && !said.has('arrive')) {
+    said.add('arrive');
+    parts.push(sentence(`You have arrived at ${expandStreetName(entranceName)}`));
+    return finish(parts.join(' '));
+  }
+
   const turnIndex = stepIndex + 1;
   const upcoming = steps[turnIndex];
   if (!upcoming) return finish(parts.length > 0 ? parts.join(' ') : null);
@@ -130,13 +152,16 @@ export function nextAnnouncement(input: VoiceInput, memory: VoiceMemory): VoiceR
 
   const headsUpKey = `${stepIndex}:headsUp`;
 
-  if (toTurn <= turnAt && !said.has(turnKey)) {
+  // The last maneuver is the destination. Calling it as a turn would say the same thing twice, seconds apart.
+  const isArrival = upcoming.type === 'arrive';
+
+  if (!isArrival && toTurn <= turnAt && !said.has(turnKey)) {
     // A tier that is already behind us is marked said rather than spoken late
     said.add(turnKey);
     said.add(warnKey);
     said.add(headsUpKey);
     parts.push(sentence(chainedTurn(steps, turnIndex, warnAt, said)));
-  } else if (toTurn <= warnAt && !said.has(warnKey)) {
+  } else if (!isArrival && toTurn <= warnAt && !said.has(warnKey)) {
     said.add(warnKey);
     said.add(headsUpKey);
     parts.push(sentence(`In ${speakDistance(toTurn)}, ${lowerFirst(expandStreetName(upcoming.instruction))}`));
