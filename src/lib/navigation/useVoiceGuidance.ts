@@ -84,8 +84,18 @@ export function useVoiceGuidance(input: UseVoiceGuidanceInput) {
     lastFixRef.current = { remaining: input.remainingMeters, at: now };
   }, [input.remainingMeters]);
 
+  // Leaving driving mode silences a maneuver that is still playing. This sits before the announcement
+  // effect so that on the render where driving ends at arrival, the stale phrase is cancelled first and
+  // the arrival line spoken after.
   useEffect(() => {
-    if (!enabled || !input.active || !speakerRef.current) return;
+    if (!input.active) speakerRef.current?.stop();
+  }, [input.active]);
+
+  useEffect(() => {
+    if (!enabled || !speakerRef.current) return;
+    // Arrival is the one thing still worth saying once driving mode has ended, because reaching the
+    // cemetery boundary is what ends it
+    if (!input.active && !input.hasArrived) return;
     const { phrase, memory } = nextAnnouncement(
       {
         steps: input.steps,
