@@ -18,6 +18,8 @@ import {
   ArrowUp,
   Navigation,
   RotateCcw,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
 import { Cemetery, Grave } from '@/types';
 import {
@@ -56,6 +58,7 @@ import {
   type TravelBearingState,
 } from '@/lib/geospatial/routeProgress';
 import { hasArrivedAtCemetery, resolveNavigationMode, shouldOfferArrival } from '@/lib/geospatial/navigationMode';
+import { useVoiceGuidance } from '@/lib/navigation/useVoiceGuidance';
 import { GoogleMapsAttribution } from '@/components/common/GoogleMapsAttribution';
 import { preloadXR8 } from '@/lib/ar/xr8';
 
@@ -219,6 +222,7 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
   const [gpsStatus, setGpsStatus] = useState<'waiting' | 'live' | 'denied' | 'unavailable'>('waiting');
   // Accuracy of the latest fix, for "I found it"
   const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null);
+  const [deviceSpeedMps, setDeviceSpeedMps] = useState<number | null>(null);
   const [mapType, setMapType] = useState<'satellite' | 'roadmap'>('satellite');
   const [zoomDisplay, setZoomDisplay] = useState(100);
   const [isMapReady, setIsMapReady] = useState(false);
@@ -381,6 +385,9 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
           if (!isUsableGpsFix(next.lat, next.lng)) return;
           setGpsStatus('live');
           setGpsAccuracy(pos.coords.accuracy);
+          // Android usually reports speed; iOS often does not, and the hook falls back to its own estimate
+          const reported = pos.coords.speed;
+          setDeviceSpeedMps(reported !== null && Number.isFinite(reported) && reported >= 0 ? reported : null);
           // A stationary device repeats the same fix; skip it rather than re-render the map for nothing
           if (lastFix && lastFix.lat === next.lat && lastFix.lng === next.lng) return;
           lastFix = next;
@@ -472,6 +479,20 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
   // Current turn instruction: the step live progress has reached, unless the driver is previewing another one
   const liveStepIndex = routeProgress ? Math.min(routeProgress.stepIndex, Math.max(0, drivingSteps.length - 1)) : 0;
   const isPreviewingStep = previewStepIndex !== null;
+
+  // Spoken turn-by-turn guidance. Off until the driver taps the speaker, then remembered on this device.
+  const voice = useVoiceGuidance({
+    active: activeMode === 'driving',
+    steps: drivingSteps,
+    stepIndex: liveStepIndex,
+    distanceToNextManeuverMeters: routeProgress?.distanceToNextManeuverMeters ?? Infinity,
+    remainingMeters: routeProgress?.remainingMeters ?? Infinity,
+    deviceSpeedMps,
+    entranceName,
+    isPreviewing: isPreviewingStep,
+    hasArrived,
+  });
+
   const currentStepIndex = previewStepIndex ?? liveStepIndex;
   const activeStep = drivingSteps[currentStepIndex] || drivingSteps[0];
   const nextStep = drivingSteps[currentStepIndex + 1];
@@ -1278,32 +1299,49 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
       {activeMode === 'driving' && (
         <div className="absolute top-24 inset-x-3 z-20 pointer-events-auto transition-all duration-300">
           <div className="relative bg-emerald-800/95 backdrop-blur-md text-white rounded-2xl p-3.5 shadow-2xl border border-emerald-500/40 flex items-center justify-between">
-            {/* Top-Right Maneuver Step Badge (e.g. 2/13) */}
-            {drivingSteps.length > 1 && (
-              <div className="absolute top-2.5 right-3 flex items-center bg-black/40 backdrop-blur-xs rounded-lg p-0.5 border border-emerald-400/25 z-10">
+            {/* Top-Right Voice Toggle and Maneuver Step Badge (e.g. 2/13) */}
+            <div className="absolute top-2.5 right-3 flex items-center space-x-1.5 z-10">
+              {voice.available && (
                 <button
-                  onClick={() => handleSelectStep(Math.max(0, currentStepIndex - 1))}
-                  disabled={currentStepIndex === 0}
-                  className="w-5 h-5 flex items-center justify-center text-white/80 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed text-xs font-bold active:scale-95 transition-transform"
-                  title="Previous maneuver"
+                  onClick={voice.toggle}
+                  className="w-7 h-7 flex items-center justify-center rounded-lg bg-black/40 backdrop-blur-xs border border-emerald-400/25 text-white/80 hover:text-white active:scale-95 transition-transform"
+                  title={voice.enabled ? 'Turn off spoken directions' : 'Turn on spoken directions'}
+                  aria-label={voice.enabled ? 'Turn off spoken directions' : 'Turn on spoken directions'}
+                  aria-pressed={voice.enabled}
                 >
-                  ‹
+                  {voice.enabled ? (
+                    <Volume2 className="w-4 h-4 text-emerald-300" />
+                  ) : (
+                    <VolumeX className="w-4 h-4" />
+                  )}
                 </button>
-                <span className="text-[10px] font-bold text-emerald-200 px-1.5 select-none tracking-wider">
-                  {currentStepIndex + 1}/{drivingSteps.length}
-                </span>
-                <button
-                  onClick={() => handleSelectStep(Math.min(drivingSteps.length - 1, currentStepIndex + 1))}
-                  disabled={currentStepIndex >= drivingSteps.length - 1}
-                  className="w-5 h-5 flex items-center justify-center text-white/80 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed text-xs font-bold active:scale-95 transition-transform"
-                  title="Next maneuver"
-                >
-                  ›
-                </button>
-              </div>
-            )}
+              )}
+              {drivingSteps.length > 1 && (
+                <div className="flex items-center bg-black/40 backdrop-blur-xs rounded-lg p-0.5 border border-emerald-400/25">
+                  <button
+                    onClick={() => handleSelectStep(Math.max(0, currentStepIndex - 1))}
+                    disabled={currentStepIndex === 0}
+                    className="w-5 h-5 flex items-center justify-center text-white/80 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed text-xs font-bold active:scale-95 transition-transform"
+                    title="Previous maneuver"
+                  >
+                    ‹
+                  </button>
+                  <span className="text-[10px] font-bold text-emerald-200 px-1.5 select-none tracking-wider">
+                    {currentStepIndex + 1}/{drivingSteps.length}
+                  </span>
+                  <button
+                    onClick={() => handleSelectStep(Math.min(drivingSteps.length - 1, currentStepIndex + 1))}
+                    disabled={currentStepIndex >= drivingSteps.length - 1}
+                    className="w-5 h-5 flex items-center justify-center text-white/80 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed text-xs font-bold active:scale-95 transition-transform"
+                    title="Next maneuver"
+                  >
+                    ›
+                  </button>
+                </div>
+              )}
+            </div>
 
-            <div className="flex items-center space-x-3.5 pr-16 w-full">
+            <div className="flex items-center space-x-3.5 pr-24 w-full">
               <div className="flex flex-col items-center shrink-0">
                 <div className="w-11 h-11 rounded-xl bg-emerald-900/90 border border-emerald-400/50 flex items-center justify-center shadow-md">
                   {renderManeuverIcon(nextTurnStep)}
