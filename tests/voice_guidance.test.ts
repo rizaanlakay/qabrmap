@@ -57,6 +57,12 @@ describe('Street names for speech', () => {
     expect(expandStreetName('Turn left onto Pluny St')).toBe('Turn left onto Pluny Street');
     expect(expandStreetName('Turn left onto St James Road')).toBe('Turn left onto St James Road');
   });
+
+  it('reads Dr as Drive but leaves the doctor in a road name alone', () => {
+    expect(expandStreetName('Turn right onto Dr Abdurahman Avenue')).toBe('Turn right onto Dr Abdurahman Avenue');
+    expect(expandStreetName('Turn right onto Rosemead Dr')).toBe('Turn right onto Rosemead Drive');
+    expect(expandStreetName('Turn right onto Rosemead Dr and continue')).toBe('Turn right onto Rosemead Drive and continue');
+  });
 });
 
 import type { RouteStep } from '../src/lib/geospatial';
@@ -253,6 +259,23 @@ describe('Arrival and rerouting', () => {
       'Head out onto Lawrence Road.',
       'You have arrived at Johnstone Road Gate.',
     ]);
+  });
+
+  it('says nothing about a distance the screen handed over as a sentinel', () => {
+    // No route progress yet means Infinity for both distances. The Klipfontein leg is long enough for a
+    // heads-up, which would otherwise be spoken as "Continue on Klipfontein Road for Infinity kilometres".
+    const spoken = drive(
+      [{ stepIndex: 1, distanceToNextManeuverMeters: Infinity, remainingMeters: Infinity }],
+      LONG_DRIVE
+    );
+    expect(spoken).toEqual(['Head out onto Lawrence Road.']);
+  });
+
+  it('still announces arrival when the remaining distance is a sentinel', () => {
+    const spoken = drive([
+      { stepIndex: 1, distanceToNextManeuverMeters: Infinity, remainingMeters: Infinity, hasArrived: true },
+    ]);
+    expect(spoken[0]).toContain('You have arrived at Johnstone Road Gate.');
   });
 
   it('says rerouting and forgets what it said when a new route arrives', () => {

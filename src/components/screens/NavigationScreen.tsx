@@ -239,6 +239,8 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
   const [drivingSteps, setDrivingSteps] = useState<RouteStep[]>([]);
   // A step the driver is previewing with the ‹ › buttons; null while following live progress along the route
   const [previewStepIndex, setPreviewStepIndex] = useState<number | null>(null);
+  // Whether the steps now on screen came from a route planned off a real fix, which is what the voice waits for
+  const [routeFromLiveFix, setRouteFromLiveFix] = useState(false);
   const [drivingDistanceMeters, setDrivingDistanceMeters] = useState<number | null>(null);
   const [drivingDurationSeconds, setDrivingDurationSeconds] = useState<number | null>(null);
   const lastRouteFetchAtRef = useRef(0);
@@ -441,7 +443,8 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
     routeRequestRef.current = controller;
     lastRouteFetchAtRef.current = Date.now();
     // Not gpsStatus: a reroute during a brief signal loss would count as a guess and skip the reroute wait
-    routeFromLiveFixRef.current = hasLiveFixRef.current;
+    const fromLiveFix = hasLiveFixRef.current;
+    routeFromLiveFixRef.current = fromLiveFix;
     const travelBearing = travelBearingRef.current?.bearing;
     const bearingParam = travelBearing == null ? '' : `&bearing=${Math.round(travelBearing)}`;
     const fetchUrl = `/api/directions?startLng=${currentLoc.lng}&startLat=${currentLoc.lat}&endLng=${entranceLng}&endLat=${entranceLat}&mode=driving${bearingParam}`;
@@ -455,6 +458,7 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
           setDrivingDurationSeconds(data.durationSeconds);
           if (data.steps && data.steps.length > 0) {
             setDrivingSteps(data.steps);
+            setRouteFromLiveFix(fromLiveFix);
             setPreviewStepIndex(null);
           }
         }
@@ -491,6 +495,7 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
     entranceName,
     isPreviewing: isPreviewingStep,
     hasArrived,
+    routeFromLiveFix,
   });
 
   const currentStepIndex = previewStepIndex ?? liveStepIndex;

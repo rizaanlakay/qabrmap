@@ -20,6 +20,7 @@ export interface SynthLike {
   speak(utterance: UtteranceLike): void;
   cancel(): void;
   addEventListener?(type: string, listener: () => void): void;
+  removeEventListener?(type: string, listener: () => void): void;
 }
 
 // Names the common female voices go by on Android, iOS and Windows
@@ -51,11 +52,12 @@ export function pickVoice(voices: VoiceLike[]): VoiceLike | null {
 
 export class VoiceSpeaker {
   private voice: VoiceLike | null = null;
+  private readonly onVoicesChanged = () => this.refreshVoice();
 
   constructor(private readonly deps: { synth: SynthLike; createUtterance: (text: string) => UtteranceLike }) {
     this.refreshVoice();
     // getVoices() is often empty on the first call and fills in a moment later
-    this.deps.synth.addEventListener?.('voiceschanged', () => this.refreshVoice());
+    this.deps.synth.addEventListener?.('voiceschanged', this.onVoicesChanged);
   }
 
   private refreshVoice(): void {
@@ -85,6 +87,11 @@ export class VoiceSpeaker {
 
   stop(): void {
     this.deps.synth.cancel();
+  }
+
+  // speechSynthesis is global, so a speaker left listening outlives the screen that made it
+  dispose(): void {
+    this.deps.synth.removeEventListener?.('voiceschanged', this.onVoicesChanged);
   }
 }
 

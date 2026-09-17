@@ -82,4 +82,24 @@ describe('Speaking', () => {
     speaker.say('Rerouting.');
     expect(spoken[0].voice?.name).toBe('Tessa');
   });
+
+  it('stops listening to the global synth when disposed', () => {
+    const added: Array<[string, () => void]> = [];
+    const removed: Array<[string, () => void]> = [];
+    const speaker = new VoiceSpeaker({
+      synth: {
+        getVoices: () => [voice('Tessa', 'en-ZA')],
+        speak: () => {},
+        cancel: () => {},
+        addEventListener: (type, listener) => void added.push([type, listener]),
+        removeEventListener: (type, listener) => void removed.push([type, listener]),
+      },
+      createUtterance: (text) => ({ text, voice: null, lang: '', rate: 1, pitch: 1, volume: 1 }),
+    });
+
+    expect(added).toHaveLength(1);
+    expect(added[0][0]).toBe('voiceschanged');
+    speaker.dispose();
+    expect(removed).toEqual(added);
+  });
 });

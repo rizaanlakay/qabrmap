@@ -52,11 +52,15 @@ const ABBREVIATIONS: Record<string, string> = {
 };
 
 export function expandStreetName(text: string): string {
-  const expanded = text.replace(/\b(Rd|Ave|Av|Dr|Ln|Cres|Blvd|Hwy|Pl|Sq)\b\.?/gi, (_match, word: string) =>
+  const expanded = text.replace(/\b(Rd|Ave|Av|Ln|Cres|Blvd|Hwy|Pl|Sq)\b\.?/gi, (_match, word: string) =>
     ABBREVIATIONS[word.toLowerCase()]
   );
+  // "Dr" is Drive only when no name follows it; "Dr Abdurahman Avenue" is a title
+  const withDrive = expanded.replace(/\bDr\b\.?/gi, (match: string, offset: number) =>
+    /^\s+[A-Z]/.test(expanded.slice(offset + match.length)) ? match : ABBREVIATIONS.dr
+  );
   // "St" is Street only at the end of a name; "St James Road" is a saint
-  return expanded.replace(/\bSt\b\.?\s*$/i, 'Street');
+  return withDrive.replace(/\bSt\b\.?\s*$/i, 'Street');
 }
 
 import type { RouteStep } from '@/lib/geospatial';
@@ -141,6 +145,10 @@ export function nextAnnouncement(input: VoiceInput, memory: VoiceMemory): VoiceR
     return finish(parts.join(' '));
   }
 
+  // The screen hands sentinels through while no route progress exists. Speaking off them says "Infinity
+  // kilometres", so the tier chain is skipped rather than trusted. Arrival above still works on a sentinel.
+  if (!Number.isFinite(toTurn)) return finish(parts.length > 0 ? parts.join(' ') : null);
+
   const turnIndex = stepIndex + 1;
   const upcoming = steps[turnIndex];
   if (!upcoming) return finish(parts.length > 0 ? parts.join(' ') : null);
@@ -153,15 +161,15 @@ export function nextAnnouncement(input: VoiceInput, memory: VoiceMemory): VoiceR
   const headsUpKey = `${stepIndex}:headsUp`;
 
   // The last maneuver is the destination. Calling it as a turn would say the same thing twice, seconds apart.
-  const isArrival = upcoming.type === 'arrive';
+  const nextIsDestination = upcoming.type === 'arrive';
 
-  if (!isArrival && toTurn <= turnAt && !said.has(turnKey)) {
+  if (!nextIsDestination && toTurn <= turnAt && !said.has(turnKey)) {
     // A tier that is already behind us is marked said rather than spoken late
     said.add(turnKey);
     said.add(warnKey);
     said.add(headsUpKey);
     parts.push(sentence(chainedTurn(steps, turnIndex, warnAt, said)));
-  } else if (!isArrival && toTurn <= warnAt && !said.has(warnKey)) {
+  } else if (!nextIsDestination && toTurn <= warnAt && !said.has(warnKey)) {
     said.add(warnKey);
     said.add(headsUpKey);
     parts.push(sentence(`In ${speakDistance(toTurn)}, ${lowerFirst(expandStreetName(upcoming.instruction))}`));
