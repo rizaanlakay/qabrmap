@@ -58,3 +58,94 @@ describe('Street names for speech', () => {
     expect(expandStreetName('Turn left onto St James Road')).toBe('Turn left onto St James Road');
   });
 });
+
+import type { RouteStep } from '../src/lib/geospatial';
+import { emptyVoiceMemory, nextAnnouncement, type VoiceInput, type VoiceMemory } from '../src/lib/navigation/voiceGuidance';
+
+const leg = (instruction: string, streetName: string, distanceMeters: number, type = 'turn'): RouteStep => ({
+  instruction,
+  streetName,
+  distanceMeters,
+  durationSeconds: 0,
+  type,
+  location: [18.5, -33.96],
+});
+
+const DRIVE: RouteStep[] = [
+  leg('Head out onto Lawrence Road', 'Lawrence Road', 600, 'depart'),
+  leg('Turn right onto Aden Avenue', 'Aden Avenue', 450),
+  leg('Arrive at Johnstone Road Gate', '', 0, 'arrive'),
+];
+
+// Feeds fixes through the engine and collects only what was actually spoken
+function drive(fixes: Partial<VoiceInput>[], steps: RouteStep[] = DRIVE): string[] {
+  let memory: VoiceMemory = emptyVoiceMemory();
+  const spoken: string[] = [];
+  for (const fix of fixes) {
+    const result = nextAnnouncement(
+      {
+        steps,
+        stepIndex: 0,
+        distanceToNextManeuverMeters: 1000,
+        remainingMeters: 3000,
+        speedMps: 13.9,
+        entranceName: 'Johnstone Road Gate',
+        isPreviewing: false,
+        hasArrived: false,
+        rerouteCount: 0,
+        ...fix,
+      },
+      memory
+    );
+    memory = result.memory;
+    if (result.phrase) spoken.push(result.phrase);
+  }
+  return spoken;
+}
+
+describe('The three ordinary tiers', () => {
+  it('says where to set off, once', () => {
+    expect(drive([{ distanceToNextManeuverMeters: 600 }, { distanceToNextManeuverMeters: 590 }])).toEqual([
+      'Head out onto Lawrence Road.',
+    ]);
+  });
+
+  it('warns before the turn and then calls the turn', () => {
+    expect(
+      drive([
+        { distanceToNextManeuverMeters: 600 },
+        { distanceToNextManeuverMeters: 410 },
+        { distanceToNextManeuverMeters: 200 },
+        { distanceToNextManeuverMeters: 50 },
+      ])
+    ).toEqual([
+      'Head out onto Lawrence Road.',
+      'In 400 metres, turn right onto Aden Avenue.',
+      'Turn right onto Aden Avenue.',
+    ]);
+  });
+
+  it('says nothing twice when the distance jitters back over a threshold', () => {
+    expect(
+      drive([
+        { distanceToNextManeuverMeters: 600 },
+        { distanceToNextManeuverMeters: 410 },
+        { distanceToNextManeuverMeters: 425 },
+        { distanceToNextManeuverMeters: 405 },
+      ])
+    ).toEqual(['Head out onto Lawrence Road.', 'In 400 metres, turn right onto Aden Avenue.']);
+  });
+
+  it('drops a warning that is already stale rather than speaking it late', () => {
+    expect(drive([{ distanceToNextManeuverMeters: 600 }, { distanceToNextManeuverMeters: 40 }])).toEqual([
+      'Head out onto Lawrence Road.',
+      'Turn right onto Aden Avenue.',
+    ]);
+  });
+
+  it('speaks a depart and a warning in one breath on a short first leg', () => {
+    expect(drive([{ distanceToNextManeuverMeters: 100 }])).toEqual([
+      'Head out onto Lawrence Road. In 100 metres, turn right onto Aden Avenue.',
+    ]);
+  });
+});

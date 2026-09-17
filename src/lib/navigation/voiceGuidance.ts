@@ -58,3 +58,87 @@ export function expandStreetName(text: string): string {
   // "St" is Street only at the end of a name; "St James Road" is a saint
   return expanded.replace(/\bSt\b\.?\s*$/i, 'Street');
 }
+
+import type { RouteStep } from '@/lib/geospatial';
+
+type VoiceTier = 'depart' | 'headsUp' | 'warning' | 'turn' | 'arrive';
+
+export interface VoiceInput {
+  steps: RouteStep[];
+  // The leg being driven now. The maneuver being announced is the one after it.
+  stepIndex: number;
+  distanceToNextManeuverMeters: number;
+  remainingMeters: number;
+  speedMps: number | null;
+  entranceName: string;
+  // True while the driver is scrubbing turns with the pager, which must stay silent
+  isPreviewing: boolean;
+  hasArrived: boolean;
+  // Bumped by the screen each time a new route replaces one the driver left. 0 for a drive's first route.
+  rerouteCount: number;
+}
+
+export interface VoiceMemory {
+  // Keys of what has already been spoken, as `${index}:${tier}`
+  said: string[];
+  rerouteCount: number;
+}
+
+export interface VoiceResult {
+  phrase: string | null;
+  memory: VoiceMemory;
+}
+
+export const emptyVoiceMemory = (): VoiceMemory => ({ said: [], rerouteCount: 0 });
+
+const sentence = (text: string) => {
+  const trimmed = text.trim();
+  return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`;
+};
+
+// "Turn right onto X" reads as "..., then turn right onto X" when chained, but "N2" must keep its capitals
+const lowerFirst = (text: string) => {
+  const trimmed = text.trim();
+  const firstWord = trimmed.split(' ')[0] ?? '';
+  if (firstWord.length > 1 && firstWord === firstWord.toUpperCase()) return trimmed;
+  return trimmed.charAt(0).toLowerCase() + trimmed.slice(1);
+};
+
+export function nextAnnouncement(input: VoiceInput, memory: VoiceMemory): VoiceResult {
+  const { steps, stepIndex, distanceToNextManeuverMeters: toTurn, speedMps, isPreviewing, rerouteCount } = input;
+
+  if (isPreviewing || steps.length === 0) return { phrase: null, memory };
+
+  const said = new Set(memory.said);
+  const finish = (phrase: string | null): VoiceResult => ({
+    phrase,
+    memory: { said: Array.from(said), rerouteCount },
+  });
+
+  const parts: string[] = [];
+  if (!said.has('depart')) {
+    said.add('depart');
+    parts.push(sentence(expandStreetName(steps[0].instruction)));
+  }
+
+  const turnIndex = stepIndex + 1;
+  const upcoming = steps[turnIndex];
+  if (!upcoming) return finish(parts.length > 0 ? parts.join(' ') : null);
+
+  const warnAt = warningDistanceMeters(speedMps);
+  const turnAt = turnDistanceMeters(speedMps);
+  const warnKey = `${turnIndex}:warning`;
+  const turnKey = `${turnIndex}:turn`;
+
+  if (toTurn <= turnAt && !said.has(turnKey)) {
+    // A tier that is already behind us is marked said rather than spoken late
+    said.add(turnKey);
+    said.add(warnKey);
+    parts.push(sentence(expandStreetName(upcoming.instruction)));
+  } else if (toTurn <= warnAt && !said.has(warnKey)) {
+    said.add(warnKey);
+    parts.push(sentence(`In ${speakDistance(toTurn)}, ${lowerFirst(expandStreetName(upcoming.instruction))}`));
+  }
+
+  return finish(parts.length > 0 ? parts.join(' ') : null);
+}
