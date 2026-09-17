@@ -128,15 +128,39 @@ export function nextAnnouncement(input: VoiceInput, memory: VoiceMemory): VoiceR
   const warnKey = `${turnIndex}:warning`;
   const turnKey = `${turnIndex}:turn`;
 
+  const headsUpKey = `${stepIndex}:headsUp`;
+
   if (toTurn <= turnAt && !said.has(turnKey)) {
     // A tier that is already behind us is marked said rather than spoken late
     said.add(turnKey);
     said.add(warnKey);
-    parts.push(sentence(expandStreetName(upcoming.instruction)));
-  } else if (toTurn <= warnAt && !said.has(warnKey)) {
+    said.add(headsUpKey);
+    parts.push(sentence(chainedTurn(steps, turnIndex, warnAt, said)));
+  } else if (toTurn <= warnAt && !said.has(warnKey) && toTurn < (steps[stepIndex]?.distanceMeters ?? 0)) {
     said.add(warnKey);
+    said.add(headsUpKey);
     parts.push(sentence(`In ${speakDistance(toTurn)}, ${lowerFirst(expandStreetName(upcoming.instruction))}`));
+  } else if (
+    !said.has(headsUpKey) &&
+    toTurn > warnAt &&
+    (steps[stepIndex]?.distanceMeters ?? 0) > HEADS_UP_MIN_STEP_M
+  ) {
+    said.add(headsUpKey);
+    const road = expandStreetName(steps[stepIndex].streetName || '');
+    parts.push(sentence(road ? `Continue on ${road} for ${speakDistance(toTurn)}` : `Continue for ${speakDistance(toTurn)}`));
   }
 
   return finish(parts.length > 0 ? parts.join(' ') : null);
+}
+
+// Two turns closer together than the warning distance are spoken as one sentence, and the second one's
+// warning is marked said so it is not announced again from a standing start. Arrival is never chained onto,
+// because the arrival line follows seconds later.
+function chainedTurn(steps: RouteStep[], turnIndex: number, warnAt: number, said: Set<string>): string {
+  const instruction = expandStreetName(steps[turnIndex].instruction);
+  const following = steps[turnIndex + 1];
+  const legAfter = steps[turnIndex].distanceMeters;
+  if (!following || following.type === 'arrive' || legAfter >= warnAt) return instruction;
+  said.add(`${turnIndex + 1}:warning`);
+  return `${instruction}, then ${lowerFirst(expandStreetName(following.instruction))}`;
 }

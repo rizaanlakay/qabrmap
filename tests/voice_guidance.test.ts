@@ -149,3 +149,72 @@ describe('The three ordinary tiers', () => {
     ]);
   });
 });
+
+const LONG_DRIVE: RouteStep[] = [
+  leg('Head out onto Lawrence Road', 'Lawrence Road', 600, 'depart'),
+  leg('Turn left onto Klipfontein Road', 'Klipfontein Road', 1600),
+  leg('Turn right onto Johnston Road', 'Johnston Road', 250),
+  leg('Turn left onto Rylands Road', 'Rylands Road', 60),
+  leg('Arrive at Johnstone Road Gate', '', 0, 'arrive'),
+];
+
+describe('Long legs and close turns', () => {
+  it('gives a heads-up once on a leg over 1.5 km', () => {
+    const spoken = drive(
+      [
+        { stepIndex: 1, distanceToNextManeuverMeters: 1600 },
+        { stepIndex: 1, distanceToNextManeuverMeters: 1200 },
+      ],
+      LONG_DRIVE
+    );
+    expect(spoken).toEqual([
+      'Head out onto Lawrence Road. Continue on Klipfontein Road for 1.5 kilometres.',
+    ]);
+  });
+
+  it('gives no heads-up on a short leg', () => {
+    const spoken = drive([{ stepIndex: 2, distanceToNextManeuverMeters: 250 }], LONG_DRIVE);
+    expect(spoken).toEqual(['Head out onto Lawrence Road.']);
+  });
+
+  it('chains a turn that is followed closely by another', () => {
+    const spoken = drive(
+      [
+        { stepIndex: 1, distanceToNextManeuverMeters: 1600 },
+        { stepIndex: 1, distanceToNextManeuverMeters: 40 },
+      ],
+      LONG_DRIVE
+    );
+    expect(spoken[1]).toBe('Turn right onto Johnston Road, then turn left onto Rylands Road.');
+  });
+
+  it('does not warn again for a turn that was already chained', () => {
+    let memory = emptyVoiceMemory();
+    const base: VoiceInput = {
+      steps: LONG_DRIVE,
+      stepIndex: 1,
+      distanceToNextManeuverMeters: 40,
+      remainingMeters: 400,
+      speedMps: 13.9,
+      entranceName: 'Johnstone Road Gate',
+      isPreviewing: false,
+      hasArrived: false,
+      rerouteCount: 0,
+    };
+    memory = nextAnnouncement(base, memory).memory;
+    // Now on Johnston Road, 200 m from the Rylands turn, which is inside the warning distance
+    const next = nextAnnouncement({ ...base, stepIndex: 2, distanceToNextManeuverMeters: 200 }, memory);
+    expect(next.phrase).toBeNull();
+  });
+
+  it('never chains into arrival, which announces itself', () => {
+    // Turning onto Rylands is followed 60 m later by arrival, which is close enough to chain but must not
+    const spoken = drive([{ stepIndex: 2, distanceToNextManeuverMeters: 40 }], LONG_DRIVE);
+    expect(spoken[0]).toBe('Head out onto Lawrence Road. Turn left onto Rylands Road.');
+  });
+
+  it('stays silent while the driver scrubs through turns', () => {
+    const spoken = drive([{ distanceToNextManeuverMeters: 40, isPreviewing: true }]);
+    expect(spoken).toEqual([]);
+  });
+});
