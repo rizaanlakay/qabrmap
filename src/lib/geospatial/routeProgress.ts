@@ -1,7 +1,7 @@
 // Live progress along a driving route: where the driver is on the route line, which step they're on,
 // and how far to the next turn, so guidance counts down continuously like Google Maps or a Garmin.
 
-import { calculateDistanceMeters, RouteStep } from './index';
+import { calculateBearing, calculateDistanceMeters, RouteStep } from './index';
 
 // Ask for new directions once the driver is this far from the route line...
 export const REROUTE_OFF_ROUTE_METERS = 50;
@@ -139,6 +139,27 @@ export function shouldReroute({
 }): boolean {
   if (!hasRoute) return true;
   return offRouteMeters > REROUTE_OFF_ROUTE_METERS && msSinceLastFetch >= REROUTE_MIN_INTERVAL_MS;
+}
+
+// The driver must move this far before their direction of travel is re-read, so GPS jitter can't spin it
+export const TRAVEL_BEARING_MIN_METERS = 12;
+
+export interface TravelBearingState {
+  // The fix the next bearing is measured from
+  anchor: { lat: number; lng: number };
+  bearing: number | null;
+}
+
+// Direction of travel from successive GPS fixes. Browsers rarely report a heading of their own, and the
+// compass gives the way the phone points, not the way the car moves.
+export function nextTravelBearing(
+  previous: TravelBearingState | null,
+  fix: { lat: number; lng: number }
+): TravelBearingState {
+  if (!previous) return { anchor: fix, bearing: null };
+  const moved = calculateDistanceMeters(previous.anchor.lat, previous.anchor.lng, fix.lat, fix.lng);
+  if (moved < TRAVEL_BEARING_MIN_METERS) return previous;
+  return { anchor: fix, bearing: calculateBearing(previous.anchor.lat, previous.anchor.lng, fix.lat, fix.lng) };
 }
 
 // Rounded like in-car navigation: 10 m steps close to the turn, 50 m further out, kilometres from 1 km

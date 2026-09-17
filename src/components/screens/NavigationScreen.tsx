@@ -51,8 +51,11 @@ import {
   computeRouteProgress,
   formatManeuverDistance,
   isUsableGpsFix,
+  nextTravelBearing,
   shouldReroute,
+  type TravelBearingState,
 } from '@/lib/geospatial/routeProgress';
+import { hasArrivedAtCemetery, resolveNavigationMode, shouldOfferArrival } from '@/lib/geospatial/navigationMode';
 import { GoogleMapsAttribution } from '@/components/common/GoogleMapsAttribution';
 import { preloadXR8 } from '@/lib/ar/xr8';
 
@@ -155,6 +158,13 @@ function getRoadBearingAtCoordinate(
   }
 
   return fallbackBearing;
+}
+
+// Whether two route lines are the same: the fetched route by identity, the short straight lines by value
+function isSameLine(a: [number, number][] | null, b: [number, number][]): boolean {
+  if (a === b) return true;
+  if (!a || a.length !== b.length || a.length > 2) return false;
+  return a.every((point, i) => point[0] === b[i][0] && point[1] === b[i][1]);
 }
 
 // Generate HTML for User Marker (Garmin/Google Maps 3D Arrow in Driving Mode; Pedestrian Dot in Walking Mode)
@@ -290,16 +300,21 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
     );
   }, [cemetery, currentLoc.lat, currentLoc.lng]);
 
-  // Determine active navigation mode:
-  // Beyond walking distance threshold (350m to entrance) and outside cemetery -> Driving
-  // Within 350m or inside cemetery -> Walking
-  const isBeyondWalking = distToEntrance > 350 && !isInsideCemetery;
-  const activeMode: 'driving' | 'walking' =
-    manualMode === 'auto'
-      ? isBeyondWalking
-        ? 'driving'
-        : 'walking'
-      : manualMode;
+  // Driving guidance runs until a real GPS fix lands inside the cemetery boundary, then the top-down walking
+  // view takes over. Latched, so a fix drifting back over the fence can't throw the visitor back into driving.
+  // A cemetery with no boundary relies on the "I have arrived" button instead.
+  const [hasArrived, setHasArrived] = useState(false);
+  useEffect(() => {
+    if (hasArrivedAtCemetery({ isInsideBoundary: isInsideCemetery, hasLiveFix: gpsStatus === 'live' })) {
+      setHasArrived(true);
+    }
+  }, [isInsideCemetery, gpsStatus]);
+  const activeMode = resolveNavigationMode({ manualMode, hasArrived });
+  const offerArrival = shouldOfferArrival({
+    mode: activeMode,
+    distToEntranceMeters: distToEntrance,
+    distToGraveMeters: distToGrave,
+  });
 
   // Road-snapped user location for driving navigation (aligns vehicle arrow directly on the road route)
   const displayedUserLoc = useMemo(() => {
@@ -352,6 +367,10 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
 
   // Real GPS Geolocation watcher if supported. Started once per visit: restarting it on every render
   // switched location tracking off and on hundreds of times a second, flickering Android's status bar.
+  // Direction the car is moving, sent with reroutes so the new route sets off ahead of the driver
+  const travelBearingRef = useRef<TravelBearingState | null>(null);
+  // Whether a real GPS fix has ever arrived; a brief signal loss afterwards doesn't undo it
+  const hasLiveFixRef = useRef(false);
   useEffect(() => {
     if (typeof navigator !== 'undefined' && 'geolocation' in navigator) {
       let lastFix: { lat: number; lng: number } | null = null;
@@ -365,6 +384,8 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
           // A stationary device repeats the same fix; skip it rather than re-render the map for nothing
           if (lastFix && lastFix.lat === next.lat && lastFix.lng === next.lng) return;
           lastFix = next;
+          hasLiveFixRef.current = true;
+          travelBearingRef.current = nextTravelBearing(travelBearingRef.current, next);
           setCurrentLoc(next);
           onUpdateUserLocationRef.current?.(next);
         },
@@ -412,8 +433,11 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
     const controller = new AbortController();
     routeRequestRef.current = controller;
     lastRouteFetchAtRef.current = Date.now();
-    routeFromLiveFixRef.current = gpsStatus === 'live';
-    const fetchUrl = `/api/directions?startLng=${currentLoc.lng}&startLat=${currentLoc.lat}&endLng=${entranceLng}&endLat=${entranceLat}&mode=driving`;
+    // Not gpsStatus: a reroute during a brief signal loss would count as a guess and skip the reroute wait
+    routeFromLiveFixRef.current = hasLiveFixRef.current;
+    const travelBearing = travelBearingRef.current?.bearing;
+    const bearingParam = travelBearing == null ? '' : `&bearing=${Math.round(travelBearing)}`;
+    const fetchUrl = `/api/directions?startLng=${currentLoc.lng}&startLat=${currentLoc.lat}&endLng=${entranceLng}&endLat=${entranceLat}&mode=driving${bearingParam}`;
 
     fetch(fetchUrl, { signal: controller.signal })
       .then((res) => res.json())
@@ -592,6 +616,9 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
     [drivingSteps, drivingRoute, displayedUserLoc.lng, displayedUserLoc.lat, directEntranceBearing, liveStepIndex]
   );
 
+  // The line coordinates last handed to the map
+  const drawnRouteRef = useRef<[number, number][] | null>(null);
+
   // Setup / Update Direction Line on top of Google Maps
   const setupRouteLayers = useCallback(
     (map: any) => {
@@ -623,9 +650,13 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
         },
       };
 
+
       try {
         if (map.getSource('navigation-route')) {
-          map.getSource('navigation-route').setData(routeGeoJSON);
+          // Re-sending an unchanged line makes the map rebuild it, which shows as a flicker
+          if (!isSameLine(drawnRouteRef.current, routeCoords)) {
+            map.getSource('navigation-route').setData(routeGeoJSON);
+          }
         } else {
           map.addSource('navigation-route', {
             type: 'geojson',
@@ -666,6 +697,7 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
             },
           });
         }
+        drawnRouteRef.current = routeCoords;
 
         // Update paint styling dynamically when mode changes
         if (map.getLayer('navigation-route-glow')) {
@@ -887,15 +919,18 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
     };
   }, []); // Mount map once
 
-  // Update map style on switch
+  // Update map style on switch. Only when the map type really changes: a new style drops the route line until
+  // it is drawn again, and re-applying it on every GPS fix made the line flicker all the way to the cemetery.
+  const appliedMapTypeRef = useRef(mapType);
   useEffect(() => {
     const map = mapInstanceRef.current;
-    if (!map || !isMapReady) return;
+    if (!map || !isMapReady || appliedMapTypeRef.current === mapType) return;
+    appliedMapTypeRef.current = mapType;
     map.setStyle(mapType === 'satellite' ? GOOGLE_SATELLITE_STYLE : GOOGLE_ROADMAP_STYLE);
     map.once('style.load', () => {
-      setupRouteLayers(map);
+      setupRouteLayersRef.current(map);
     });
-  }, [mapType, isMapReady, setupRouteLayers]);
+  }, [mapType, isMapReady]);
 
   // A confirmed visit can move the grave, so the pin follows the refined position
   useEffect(() => {
@@ -934,6 +969,11 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
     []
   );
 
+  const userMarkerHtmlRef = useRef<string | null>(null);
+  // Only the walking dot shows the compass heading. Ignoring it while driving keeps every compass tick from
+  // redoing the route, marker and camera work below.
+  const markerHeadingDeg = activeMode === 'walking' ? headingDeg : 0;
+
   // Update route layer, markers, and follow-me tracking as user moves or scrubs steps
   useEffect(() => {
     const map = mapInstanceRef.current;
@@ -942,9 +982,12 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
 
       if (userMarkerRef.current) {
         animateUserMarkerTo(vehicleMarkerCoord, isPreviewingStep ? 0 : MARKER_GLIDE_MS);
+        // Rewriting identical markup restarts the arrow's pulse animation, so only touch it when it changes
         const el = userMarkerRef.current.getElement();
-        if (el) {
-          el.innerHTML = getUserMarkerHtml(activeMode, headingDeg);
+        const markerHtml = getUserMarkerHtml(activeMode, markerHeadingDeg);
+        if (el && userMarkerHtmlRef.current !== markerHtml) {
+          userMarkerHtmlRef.current = markerHtml;
+          el.innerHTML = markerHtml;
         }
       }
       if (entranceMarkerRef.current) {
@@ -963,7 +1006,7 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
     isPreviewingStep,
     entranceLat,
     entranceLng,
-    headingDeg,
+    markerHeadingDeg,
     isFollowingUser,
     isMapReady,
     setupRouteLayers,
@@ -1127,6 +1170,16 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
   useEffect(() => {
     if (isNearby) snapSheet(true);
   }, [isNearby, snapSheet]);
+
+  // Likewise when the "I have arrived" button appears, and when the walking view with its AR button takes over
+  useEffect(() => {
+    if (offerArrival || hasArrived) snapSheet(true);
+  }, [offerArrival, hasArrived, snapSheet]);
+
+  // On arrival the camera must swing from the tilted road view to the top-down view, even if the driver had panned away
+  useEffect(() => {
+    if (hasArrived) setIsFollowingUser(true);
+  }, [hasArrived]);
 
   // The AR engine is a large download, so fetch it as soon as the "Open AR" prompt appears. Latched, so
   // walking in and out of range does not ask for it again.
@@ -1505,16 +1558,19 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
 
             {/* Action Buttons for Drivers */}
             <div className="mt-4 flex flex-col space-y-2">
-              <button
-                onClick={() => {
-                  setManualMode('walking');
-                  setIsFollowingUser(false);
-                }}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl py-3 px-4 font-semibold text-xs flex items-center justify-center space-x-2 shadow-md active:scale-[0.99] transition-all"
-              >
-                <Footprints className="w-4 h-4" />
-                <span>I have arrived at the gate (Switch to Walking)</span>
-              </button>
+              {/* Only near the cemetery, so it can't be tapped by mistake on the road */}
+              {offerArrival && (
+                <button
+                  onClick={() => {
+                    setManualMode('auto');
+                    setHasArrived(true);
+                  }}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl py-3 px-4 font-semibold text-xs flex items-center justify-center space-x-2 shadow-md active:scale-[0.99] transition-all"
+                >
+                  <Footprints className="w-4 h-4" />
+                  <span>I have arrived at the cemetery</span>
+                </button>
+              )}
 
               <a
                 href={externalGoogleMapsUrl}
