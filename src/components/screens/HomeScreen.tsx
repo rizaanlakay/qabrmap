@@ -33,7 +33,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ myCemeteryCount = 2, onN
   return (
     <div className="flex-1 flex flex-col overflow-y-auto bg-slate-50">
       {/* Full-bleed Hero with overlaid text */}
-      <div className="relative w-full h-60 shrink-0">
+      <div className="relative w-full h-[272px] sm:h-72 shrink-0">
         {/* Hero Image — edge to edge, flush to top */}
         <Image
           src="/QabrHero.png"
@@ -78,12 +78,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ myCemeteryCount = 2, onN
 
         {/* Overlaid Brand Content */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <div className="w-11 h-11 mb-1.5 relative drop-shadow-lg">
+          <div className="w-10 h-10 mb-1 relative drop-shadow-lg">
             <Image
               src="/icons/icon.svg"
               alt="Ta'awun Qabr Map Crest"
-              width={44}
-              height={44}
+              width={40}
+              height={40}
               className="object-contain drop-shadow-lg"
             />
           </div>
@@ -94,13 +94,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ myCemeteryCount = 2, onN
             Ta&apos;awun Qabr Map
           </h1>
           <p
-            className="text-sm text-white/90 tracking-widest mt-0.5 font-medium"
+            className="text-xs sm:text-sm text-white/90 tracking-widest mt-0.5 font-medium"
             style={{ textShadow: '0 1px 6px rgba(0,0,0,0.5)' }}
           >
             Find. Remember. Always.
           </p>
           <div
-            className="mt-2 text-center"
+            className="mt-2 flex flex-col items-center text-center"
             style={{ textShadow: '0 1px 4px rgba(0,0,0,0.7)' }}
           >
             <p className="text-[10px] text-white/80 tracking-wide font-normal">
@@ -110,9 +110,20 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ myCemeteryCount = 2, onN
               href="https://taawun.co.za"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-block text-xs font-bold text-white hover:text-emerald-300 hover:underline underline-offset-2 tracking-wide mt-0.5 transition-colors"
+              className="inline-flex flex-col items-center group mt-0.5"
             >
-              Ta&apos;awun Community Fund
+              <span className="text-xs font-bold text-white group-hover:text-emerald-300 group-hover:underline underline-offset-2 tracking-wide transition-colors">
+                Ta&apos;awun Community Fund
+              </span>
+              <div className="mt-1.5 w-9 h-9 rounded-full overflow-hidden shadow-lg border-2 border-[#CDAD62]/80 bg-white/95 p-0.5 flex items-center justify-center group-hover:scale-105 group-hover:border-[#CDAD62] transition-all duration-200">
+                <Image
+                  src="/Logo.png"
+                  alt="Ta'awun Community Fund Logo"
+                  width={34}
+                  height={34}
+                  className="w-full h-full object-cover rounded-full scale-105"
+                />
+              </div>
             </a>
           </div>
         </div>
