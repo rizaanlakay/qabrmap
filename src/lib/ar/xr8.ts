@@ -15,10 +15,22 @@ export interface XR8Reality {
   trackingReason: 'UNSPECIFIED' | 'INITIALIZING';
 }
 
+// What CameraPixelArray's onProcessGpu returns once it has an image; one byte per pixel when luminance is on
+export interface XR8PixelArray {
+  rows: number;
+  cols: number;
+  rowBytes: number;
+  pixels: Uint8Array;
+}
+
 export interface XR8PipelineModule {
   name: string;
   onStart?: (args: { canvasWidth: number; canvasHeight: number }) => void;
   onUpdate?: (args: { processCpuResult: { reality?: XR8Reality } }) => void;
+  // Runs before anything is drawn; what it returns becomes this module's entry in processGpuResult
+  onProcessGpu?: (args: { frameStartResult: unknown }) => unknown;
+  onAttach?: (args: unknown) => void;
+  onCanvasSizeChange?: (args: { canvasWidth: number; canvasHeight: number }) => void;
   onCameraStatusChange?: (args: { status: 'requesting' | 'hasStream' | 'hasVideo' | 'failed' }) => void;
   onException?: (error: unknown) => void;
   listeners?: Array<{ event: string; process: (event: { name: string; detail: Record<string, unknown> }) => void }>;
@@ -30,7 +42,13 @@ export interface XR8Api {
   stop: () => void;
   addCameraPipelineModules: (modules: XR8PipelineModule[]) => void;
   clearCameraPipelineModules: () => void;
-  GlTextureRenderer: { pipelineModule: () => XR8PipelineModule };
+  GlTextureRenderer: {
+    pipelineModule: () => XR8PipelineModule;
+    // With a provider set the camera image on screen comes only from it; null restores the engine's own source
+    setTextureProvider?: (provider: ((args: unknown) => unknown) | null) => void;
+  };
+  // Reads the raw camera image (before three.js or the page draw over it) into a pixel array, every frame
+  CameraPixelArray?: { pipelineModule: (options: { luminance?: boolean; maxDimension?: number }) => XR8PipelineModule };
   Threejs: {
     pipelineModule: () => XR8PipelineModule;
     xrScene: () => { scene: import('three').Scene; camera: import('three').PerspectiveCamera; renderer: import('three').WebGLRenderer };

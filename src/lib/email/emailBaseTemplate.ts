@@ -1,5 +1,5 @@
 /**
- * QabrMap Bulletproof Responsive Email Template Generator
+ * Ta'awun Qabr Map Bulletproof Responsive Email Template Generator
  * 
  * Optimized specifically for Gmail (iOS, Android, Web), Outlook, Apple Mail, and Yahoo.
  * - Table-based 600px centered responsive layout
@@ -179,7 +179,7 @@ export function renderQabrMapEmail(options: EmailTemplateOptions): string {
                   <td align="center" style="padding-bottom: 14px;">
                     <a href="https://qabrmap.vercel.app" target="_blank" style="text-decoration: none;">
                       <img src="https://qabrmap.vercel.app/icons/icon-192.png" 
-                           alt="QabrMap Crest" 
+                           alt="Ta'awun Qabr Map Crest" 
                            width="68" 
                            height="68" 
                            style="display: block; width: 68px; height: 68px; border-radius: 16px; border: 2px solid #D4AF37; box-shadow: 0 4px 16px rgba(0,0,0,0.35);" />
@@ -190,7 +190,7 @@ export function renderQabrMapEmail(options: EmailTemplateOptions): string {
 
               <!-- Brand Name -->
               <h1 style="margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 26px; font-weight: 800; color: #FFFFFF; letter-spacing: -0.5px;">
-                QabrMap
+                Ta'awun Qabr Map
               </h1>
 
               <!-- Brand Slogan -->
@@ -255,7 +255,7 @@ export function renderQabrMapEmail(options: EmailTemplateOptions): string {
               <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 16px;">
                 <tr>
                   <td style="padding: 0 10px;">
-                    <a href="https://qabrmap.vercel.app" target="_blank" style="color: #34D399; text-decoration: none; font-weight: 600; font-size: 12px;">QabrMap App</a>
+                    <a href="https://qabrmap.vercel.app" target="_blank" style="color: #34D399; text-decoration: none; font-weight: 600; font-size: 12px;">Ta'awun Qabr Map App</a>
                   </td>
                   <td style="color: #475569;">&bull;</td>
                   <td style="padding: 0 10px;">
@@ -270,12 +270,12 @@ export function renderQabrMapEmail(options: EmailTemplateOptions): string {
 
               <!-- Safety Disclaimer -->
               <p style="margin: 0 0 10px 0; color: #64748B; font-size: 11px; max-width: 480px;">
-                If you did not make this request or register for an account with QabrMap, you can safely disregard this email. Your email address and personal information remain secure.
+                If you did not make this request or register for an account with Ta'awun Qabr Map, you can safely disregard this email. Your email address and personal information remain secure.
               </p>
 
               <!-- Copyright -->
               <p style="margin: 0; color: #475569; font-size: 11px;">
-                &copy; 2026 QabrMap &bull; Dedicated to the Muslim Ummah with reverence and love.
+                &copy; 2026 Ta'awun Qabr Map &bull; Dedicated to the Muslim Ummah with reverence and love.
               </p>
 
             </td>

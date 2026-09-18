@@ -117,7 +117,7 @@ describe('My Cemeteries & Grave Relationship System', () => {
       savedAt: new Date().toISOString(),
     });
 
-    const savedResults = await dataStore.searchGraves('', 'saved');
+    const savedResults = await dataStore.searchLovedOnes('');
     expect(savedResults.map((g) => g.id)).toEqual(['grave_test_grandmother']);
     expect(savedResults[0].relationship).toBeDefined();
     expect(savedResults[0].cemeteryName).toBe('Mowbray Muslim Cemetery / Gamedia Maqbara');

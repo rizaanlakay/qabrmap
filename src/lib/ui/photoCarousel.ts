@@ -15,6 +15,12 @@ export function swipeStep(deltaX: number, deltaY: number): -1 | 0 | 1 {
   return deltaX < 0 ? 1 : -1;
 }
 
+// Check if a header swipe gesture should trigger back navigation
+export const HEADER_SWIPE_THRESHOLD_PX = 50;
+export function isHeaderSwipeBack(deltaX: number, deltaY: number): boolean {
+  return deltaX > HEADER_SWIPE_THRESHOLD_PX && Math.abs(deltaX) > Math.abs(deltaY) * 1.2;
+}
+
 export function photoCounterLabel(index: number, count: number): string {
   if (count <= 0) return 'No photos yet';
   return `Photo ${wrapPhotoIndex(index, count) + 1} of ${count}`;

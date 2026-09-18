@@ -30,12 +30,11 @@ interface ProfileScreenProps {
 }
 
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate, onBack }) => {
-  const { user, signOut, isAdmin } = useAuth();
-  const [fridayReminders, setFridayReminders] = useState(true);
-  const [janazahAlerts, setJanazahAlerts] = useState(true);
+  const { user, profile, signOut, isAdmin } = useAuth();
   const [isSigningOut, setIsSigningOut] = useState(false);
 
-  const displayName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'Community Member';
+  const displayName = profile?.displayName || user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'Community Member';
+  const subscriptionType = profile?.subscriptionType || (user?.user_metadata?.subscription_type === 'Pro' ? 'Pro' : 'Free');
   const email = user?.email || 'No email provided';
   const initial = displayName.charAt(0).toUpperCase();
 
@@ -62,7 +61,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate, onBack
   return (
     <div className="flex-1 flex flex-col bg-slate-50 overflow-y-auto">
       {/* Header */}
-      <div className="bg-brand-forest text-white px-6 pt-5 pb-6 shrink-0 relative">
+      <div className="bg-brand-forest text-white px-6 pt-5 pb-5 shrink-0 relative">
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={onBack}
@@ -82,12 +81,15 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate, onBack
             {initial}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 flex-wrap gap-y-1">
               <h1 className="text-lg font-bold text-white tracking-tight truncate">
                 {displayName}
               </h1>
               <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
                 Verified
+              </span>
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/15 text-emerald-200 border border-emerald-400/40 uppercase tracking-wider">
+                {subscriptionType}
               </span>
             </div>
             <p className="text-xs text-emerald-100/80 truncate mt-0.5 flex items-center space-x-1">
@@ -99,7 +101,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate, onBack
       </div>
 
       {/* Stats Summary Bar */}
-      <div className="px-5 -mt-3">
+      <div className="px-5 mt-4">
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 grid grid-cols-2 divide-x divide-slate-100">
           <div className="pr-3 text-center">
             <span className="block text-xl font-bold text-brand-dark">
@@ -122,6 +124,39 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate, onBack
 
       {/* Profile Sections */}
       <div className="px-5 py-4 space-y-4">
+        {/* Membership Tier Status */}
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="w-9 h-9 rounded-xl bg-emerald-50 text-brand-forest flex items-center justify-center font-bold text-sm">
+              ✦
+            </div>
+            <div>
+              <div className="flex items-center space-x-2">
+                <h3 className="text-xs font-bold text-slate-900">
+                  {subscriptionType} Membership
+                </h3>
+                <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full">
+                  Active
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                {subscriptionType === 'Pro'
+                  ? 'Advanced GPS surveying, priority sync & community leadership'
+                  : 'Free community plan — map graves, search resting places & sync loved ones'}
+              </p>
+            </div>
+          </div>
+          {subscriptionType !== 'Pro' && (
+            <button
+              onClick={() => onNavigate('upgrade-pro')}
+              className="shrink-0 px-2.5 py-1 text-[11px] font-bold text-[#0A1F16] bg-gradient-to-r from-[#CDAD62] via-[#E2C98C] to-[#CDAD62] hover:from-[#E2C98C] hover:to-[#CDAD62] rounded-lg shadow-sm transition-all flex items-center gap-1 active:scale-95 ml-2"
+            >
+              <span>Upgrade</span>
+              <ChevronRight className="w-3 h-3 text-[#0A1F16]" />
+            </button>
+          )}
+        </div>
+
         {/* Quick Links */}
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden divide-y divide-slate-100">
           <button
@@ -145,23 +180,47 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate, onBack
           </button>
 
           <button
-            onClick={() => onNavigate('survey-session')}
-            className="w-full px-4 py-3.5 flex items-center justify-between text-left hover:bg-slate-50 transition-colors group"
+            onClick={() => {
+              if (subscriptionType === 'Pro') {
+                onNavigate('survey-session');
+              } else {
+                onNavigate('survey-session');
+              }
+            }}
+            className={`w-full px-4 py-3.5 flex items-center justify-between text-left transition-colors group ${
+              subscriptionType !== 'Pro' ? 'hover:bg-amber-50/40' : 'hover:bg-slate-50'
+            }`}
           >
             <div className="flex items-center space-x-3">
-              <div className="w-9 h-9 rounded-xl bg-emerald-50 text-brand-forest flex items-center justify-center">
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
+                subscriptionType !== 'Pro' ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-brand-forest'
+              }`}>
                 <ClipboardList className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="text-xs font-semibold text-slate-900 group-hover:text-brand-forest">
-                  My Survey Sessions
-                </h3>
+                <div className="flex items-center space-x-1.5">
+                  <h3 className="text-xs font-semibold text-slate-900 group-hover:text-brand-forest">
+                    My Survey Sessions
+                  </h3>
+                  {subscriptionType !== 'Pro' && (
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-100 text-amber-800 uppercase tracking-wider">
+                      <Lock className="w-2.5 h-2.5" />
+                      Pro
+                    </span>
+                  )}
+                </div>
                 <p className="text-[11px] text-slate-500">
-                  {surveyCount} {surveyCount === 1 ? 'survey' : 'surveys'}, {mappedCount} {mappedCount === 1 ? 'grave' : 'graves'} saved
+                  {subscriptionType !== 'Pro'
+                    ? 'Available with Pro membership'
+                    : `${surveyCount} ${surveyCount === 1 ? 'survey' : 'surveys'}, ${mappedCount} ${mappedCount === 1 ? 'grave' : 'graves'} saved`}
                 </p>
               </div>
             </div>
-            <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+            {subscriptionType === 'Pro' ? (
+              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+            ) : (
+              <Lock className="w-3.5 h-3.5 text-amber-600/70" />
+            )}
           </button>
         </div>
 
@@ -178,44 +237,51 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate, onBack
           </div>
         </div>
 
-        {/* Preferences */}
+        {/* Notification Preferences (Disabled - Coming Soon) */}
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 space-y-3">
-          <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider text-emerald-800">
-            Notification Preferences
-          </h3>
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-800">
+              Notification Preferences
+            </h3>
+            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 shrink-0">
+              Coming Soon
+            </span>
+          </div>
 
-          <label className="flex items-center justify-between cursor-pointer py-1">
-            <div className="pr-3">
-              <span className="text-xs font-semibold text-slate-800 block">
+          {/* Toggle 1: Friday Jumu'ah Du'a (Disabled - Coming Soon) */}
+          <label className="flex items-start space-x-3 p-2.5 rounded-xl bg-slate-50/80 border border-slate-200/60 opacity-60 cursor-not-allowed select-none">
+            <input
+              type="checkbox"
+              checked={false}
+              disabled
+              className="w-4 h-4 mt-0.5 text-slate-400 rounded cursor-not-allowed"
+            />
+            <div className="pr-1 flex-1 min-w-0">
+              <span className="text-xs font-semibold text-slate-700 block">
                 Friday Jumu&apos;ah Du&apos;a Reminder
               </span>
-              <span className="text-[11px] text-slate-500 block mt-0.5">
+              <span className="text-[11px] text-slate-500 leading-snug block mt-0.5">
                 Surah Yaseen reminder on Thursday evening / Friday morning
               </span>
             </div>
-            <input
-              type="checkbox"
-              checked={fridayReminders}
-              onChange={(e) => setFridayReminders(e.target.checked)}
-              className="w-4 h-4 text-brand-forest rounded focus:ring-brand-forest"
-            />
           </label>
 
-          <label className="flex items-center justify-between cursor-pointer py-1 border-t border-slate-100 pt-2.5">
-            <div className="pr-3">
-              <span className="text-xs font-semibold text-slate-800 block">
+          {/* Toggle 2: Janazah Announcements (Disabled - Coming Soon) */}
+          <label className="flex items-start space-x-3 p-2.5 rounded-xl bg-slate-50/80 border border-slate-200/60 opacity-60 cursor-not-allowed select-none">
+            <input
+              type="checkbox"
+              checked={false}
+              disabled
+              className="w-4 h-4 mt-0.5 text-slate-400 rounded cursor-not-allowed"
+            />
+            <div className="pr-1 flex-1 min-w-0">
+              <span className="text-xs font-semibold text-slate-700 block">
                 Local Janazah Notices
               </span>
-              <span className="text-[11px] text-slate-500 block mt-0.5">
+              <span className="text-[11px] text-slate-500 leading-snug block mt-0.5">
                 Cape Town community burial announcements
               </span>
             </div>
-            <input
-              type="checkbox"
-              checked={janazahAlerts}
-              onChange={(e) => setJanazahAlerts(e.target.checked)}
-              className="w-4 h-4 text-brand-forest rounded focus:ring-brand-forest"
-            />
           </label>
         </div>
 
@@ -252,7 +318,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate, onBack
           className="w-full py-3 px-4 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 font-semibold text-xs flex items-center justify-center space-x-2 transition-colors active:scale-98 disabled:opacity-50"
         >
           <LogOut className="w-4 h-4" />
-          <span>{isSigningOut ? 'Signing out...' : 'Sign Out of QabrMap'}</span>
+          <span>{isSigningOut ? 'Signing out...' : "Sign Out of Ta'awun Qabr Map"}</span>
         </button>
       </div>
     </div>

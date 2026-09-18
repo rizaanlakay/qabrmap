@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
+  HEADER_SWIPE_THRESHOLD_PX,
   PHOTO_SWIPE_THRESHOLD_PX,
+  isHeaderSwipeBack,
   photoCounterLabel,
   swipeStep,
   wrapPhotoIndex,
@@ -28,5 +30,16 @@ describe('Grave Photo Carousel Tests', () => {
     expect(photoCounterLabel(1, 3)).toBe('Photo 2 of 3');
     expect(photoCounterLabel(3, 3)).toBe('Photo 1 of 3');
     expect(photoCounterLabel(0, 0)).toBe('No photos yet');
+  });
+
+  it('detects header swipe back gestures on mobile', () => {
+    // Valid swipe right to go back
+    expect(isHeaderSwipeBack(HEADER_SWIPE_THRESHOLD_PX + 10, 5)).toBe(true);
+    // Too short swipe
+    expect(isHeaderSwipeBack(HEADER_SWIPE_THRESHOLD_PX - 5, 0)).toBe(false);
+    // Mostly vertical scroll gesture
+    expect(isHeaderSwipeBack(60, 60)).toBe(false);
+    // Swipe left (negative deltaX)
+    expect(isHeaderSwipeBack(-60, 0)).toBe(false);
   });
 });

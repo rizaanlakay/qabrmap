@@ -15,14 +15,20 @@ import {
   Users,
   Trash2,
   Loader2,
+  Pencil,
 } from 'lucide-react';
-import { Grave, GravePhoto, GraveRelationship, RelationshipCategory } from '@/types';
+import { Grave, GravePhoto, GraveRelationship, RelationshipCategory, FREE_SAVED_GRAVES_LIMIT } from '@/types';
 import { GravePhotoCarousel } from '@/components/common/GravePhotoCarousel';
 import { GraveImage } from '@/components/common/GraveImage';
 import { dataStore } from '@/lib/data/store';
 import { buildGraveShareUrl } from '@/lib/share/graveLink';
 import { graveNumberLabel } from '@/lib/ui/graveLabels';
+import { hasRealGravePhoto } from '@/lib/ui/gravestoneInscription';
+import { isHeaderSwipeBack } from '@/lib/ui/photoCarousel';
 import { DeleteGraveError } from '@/lib/graves/deleteMappedGrave';
+import { EditGraveSheet } from '@/components/common/EditGraveSheet';
+import { useAuth } from '@/lib/auth/AuthContext';
+import { PaywallScreen } from '@/components/common/PaywallScreen';
 
 function confidenceLabel(level: Grave['positionConfidence']): string {
   if (level === 'HIGH') return 'High confidence';
@@ -38,10 +44,16 @@ interface GraveDetailsScreenProps {
   // True when the signed-in user mapped this grave, which is the only case it can be deleted
   canDelete?: boolean;
   onDeleted?: () => void;
+  // True when the signed-in user mapped this grave, which is the only case its details can be edited
+  canEdit?: boolean;
+  // Called with the grave as it reads after an edit, so the screen and the lists behind it show the new details
+  onEdited?: (updated: Grave) => void;
   // Changes after a photo is added, to reload this grave's photos
   photosVersion?: number;
   // One-off message from the screen that opened this one, such as a photo that couldn't be saved
   notice?: string | null;
+  onOpenProfile?: () => void;
+  onUpgradePro?: () => void;
 }
 
 export const GraveDetailsScreen: React.FC<GraveDetailsScreenProps> = ({
@@ -52,7 +64,11 @@ export const GraveDetailsScreen: React.FC<GraveDetailsScreenProps> = ({
   photosVersion = 0,
   canDelete = false,
   onDeleted,
+  canEdit = false,
+  onEdited,
   notice = null,
+  onOpenProfile,
+  onUpgradePro,
 }) => {
   const [showProvenance, setShowProvenance] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
@@ -61,6 +77,27 @@ export const GraveDetailsScreen: React.FC<GraveDetailsScreenProps> = ({
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [showEditSheet, setShowEditSheet] = useState(false);
+  const headerTouchStartRef = React.useRef<{ x: number; y: number } | null>(null);
+
+  const handleHeaderTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (e.touches.length === 1) {
+      headerTouchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }
+  };
+
+  const handleHeaderTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    const start = headerTouchStartRef.current;
+    headerTouchStartRef.current = null;
+    if (!start || e.changedTouches.length !== 1) return;
+
+    const deltaX = e.changedTouches[0].clientX - start.x;
+    const deltaY = e.changedTouches[0].clientY - start.y;
+
+    if (isHeaderSwipeBack(deltaX, deltaY)) {
+      onBack();
+    }
+  };
 
   // Relationship state
   const [currentRel, setCurrentRel] = useState<GraveRelationship | undefined>(
@@ -104,16 +141,25 @@ export const GraveDetailsScreen: React.FC<GraveDetailsScreenProps> = ({
   const birthFormatted = formatDate(grave.person?.birthDate);
   const deathFormatted = formatDate(grave.person?.deathDate);
 
+  const { user, profile } = useAuth();
+  const isPro = profile?.subscriptionType === 'Pro' || user?.user_metadata?.subscription_type === 'Pro';
+  const [paywallReason, setPaywallReason] = useState<'share' | 'save-limit' | null>(null);
+
   const [shareNotice, setShareNotice] = useState<string | null>(null);
 
   const handleShare = async () => {
+    if (!isPro) {
+      setPaywallReason('share');
+      return;
+    }
+
     const url = buildGraveShareUrl(window.location.origin, grave.id);
     const name = grave.person?.fullName || `Grave ${grave.graveNumber}`;
 
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `${name} - QabrMap`,
+          title: `${name} - Ta'awun Qabr Map`,
           text: [graveNumberLabel(grave), grave.cemeteryName].filter(Boolean).join(' at '),
           url,
         });
@@ -131,6 +177,29 @@ export const GraveDetailsScreen: React.FC<GraveDetailsScreenProps> = ({
     } catch {
       window.prompt('Copy this link to share the grave:', url);
     }
+  };
+
+  const handleToggleHeart = () => {
+    const currentlySaved = isSaved || dataStore.isGraveSaved(grave.id);
+    if (!currentlySaved && !isPro && dataStore.getMyCemeteriesGraveCount() >= FREE_SAVED_GRAVES_LIMIT) {
+      setPaywallReason('save-limit');
+      return;
+    }
+
+    const newState = dataStore.toggleSavedGrave(grave.id);
+    setIsSaved(newState);
+    if (newState && !currentRel) {
+      setShowRelModal(true);
+    }
+  };
+
+  const handleOpenAddRelationship = () => {
+    const currentlySaved = isSaved || dataStore.isGraveSaved(grave.id);
+    if (!currentlySaved && !isPro && dataStore.getMyCemeteriesGraveCount() >= FREE_SAVED_GRAVES_LIMIT) {
+      setPaywallReason('save-limit');
+      return;
+    }
+    setShowRelModal(true);
   };
 
   const handleDelete = async () => {
@@ -161,10 +230,56 @@ export const GraveDetailsScreen: React.FC<GraveDetailsScreenProps> = ({
     }, 1500);
   };
 
+  if (paywallReason) {
+    const isShare = paywallReason === 'share';
+    return (
+      <PaywallScreen
+        headerTitle={isShare ? 'Share Grave' : 'Saved Loved Ones'}
+        headerSubtitle={grave.person?.fullName || `Grave ${grave.graveNumber}`}
+        title={isShare ? 'Sharing is Disabled' : 'Saved Graves Limit Reached'}
+        description={
+          isShare ? (
+            <p>
+              Sharing graves and resting places with others is exclusive to <strong>Pro members</strong>. Everyone on the Free plan can search, map individual graves, and save loved ones.
+            </p>
+          ) : (
+            <p>
+              Free accounts can save relationships or heart up to <strong>3 graves</strong>. Join Ta&apos;awun Community Fund or upgrade to Pro for unlimited saved graves, relationships, and priority cemetery tools.
+            </p>
+          )
+        }
+        primaryButtonText="Return to Grave"
+        onPrimaryAction={() => setPaywallReason(null)}
+        onBack={() => setPaywallReason(null)}
+        onViewAccount={
+          onOpenProfile
+            ? () => {
+                setPaywallReason(null);
+                onOpenProfile();
+              }
+            : undefined
+        }
+        onUpgradePro={
+          onUpgradePro
+            ? () => {
+                setPaywallReason(null);
+                onUpgradePro();
+              }
+            : undefined
+        }
+      />
+    );
+  }
+
   return (
     <div className="flex-1 flex flex-col bg-slate-50 overflow-y-auto">
       {/* Top Floating Action Bar */}
-      <div className="px-4 py-3 bg-white border-b border-slate-200/80 flex items-center justify-between sticky top-0 z-30">
+      <div
+        className="px-4 py-3 bg-white border-b border-slate-200/80 flex items-center justify-between sticky top-0 z-30 touch-pan-y select-none"
+        onTouchStart={handleHeaderTouchStart}
+        onTouchEnd={handleHeaderTouchEnd}
+        onTouchCancel={() => (headerTouchStartRef.current = null)}
+      >
         <button
           onClick={onBack}
           className="w-9 h-9 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-700 transition-colors"
@@ -174,15 +289,20 @@ export const GraveDetailsScreen: React.FC<GraveDetailsScreenProps> = ({
         </button>
 
         <div className="flex items-center space-x-1">
+          {canEdit && (
+            <button
+              onClick={() => setShowEditSheet(true)}
+              className="w-9 h-9 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-700 transition-colors"
+              aria-label="Edit details"
+              title="Edit details"
+            >
+              <Pencil className="w-5 h-5" />
+            </button>
+          )}
+
           {/* Heart button for My cemeteries */}
           <button
-            onClick={() => {
-              const newState = dataStore.toggleSavedGrave(grave.id);
-              setIsSaved(newState);
-              if (newState && !currentRel) {
-                setShowRelModal(true);
-              }
-            }}
+            onClick={handleToggleHeart}
             className="w-9 h-9 rounded-full hover:bg-slate-100 flex items-center justify-center transition-colors"
             aria-label="Save to My cemeteries"
             title={isSaved ? 'In My cemeteries' : 'Save to My cemeteries'}
@@ -223,7 +343,13 @@ export const GraveDetailsScreen: React.FC<GraveDetailsScreenProps> = ({
 
       {/* Gravestone Photograph Hero: swipe or use the side arrows when a grave has several photos */}
       <GravePhotoCarousel
-        photos={photos.map((photo) => ({ id: photo.id, url: photo.url }))}
+        photos={
+          photos.length > 0
+            ? photos.map((photo) => ({ id: photo.id, url: photo.url }))
+            : hasRealGravePhoto(grave.primaryPhotoUrl)
+            ? [{ id: 'primary', url: grave.primaryPhotoUrl as string }]
+            : []
+        }
         alt={grave.person?.fullName || `Grave ${grave.graveNumber}`}
         fallback={<GraveImage grave={grave} priority />}
       />
@@ -273,7 +399,7 @@ export const GraveDetailsScreen: React.FC<GraveDetailsScreenProps> = ({
               </div>
             ) : (
               <button
-                onClick={() => setShowRelModal(true)}
+                onClick={handleOpenAddRelationship}
                 className="w-full bg-white hover:bg-slate-50 border border-dashed border-slate-300 rounded-2xl p-3 flex items-center justify-between text-left group transition-all"
               >
                 <div className="flex items-center space-x-2.5">
@@ -383,6 +509,17 @@ export const GraveDetailsScreen: React.FC<GraveDetailsScreenProps> = ({
         </div>
       </div>
 
+      {showEditSheet && (
+        <EditGraveSheet
+          grave={grave}
+          onClose={() => setShowEditSheet(false)}
+          onSaved={(updated) => {
+            setShowEditSheet(false);
+            onEdited?.(updated);
+          }}
+        />
+      )}
+
       {/* Provenance Drawer / Modal */}
       {showProvenance && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end justify-center p-4">
@@ -400,7 +537,7 @@ export const GraveDetailsScreen: React.FC<GraveDetailsScreenProps> = ({
               </button>
             </div>
             <p className="text-xs text-slate-500">
-              QabrMap retains a permanent historical audit trail for every spatial estimate and inscription field.
+              Ta&apos;awun Qabr Map retains a permanent historical audit trail for every spatial estimate and inscription field.
             </p>
             <div className="space-y-3">
               {provenanceLogs.map((log) => (
@@ -611,6 +748,13 @@ export const GraveDetailsScreen: React.FC<GraveDetailsScreenProps> = ({
               <button
                 type="button"
                 onClick={() => {
+                  const currentlySaved = isSaved || dataStore.isGraveSaved(grave.id);
+                  if (!currentlySaved && !isPro && dataStore.getMyCemeteriesGraveCount() >= FREE_SAVED_GRAVES_LIMIT) {
+                    setShowRelModal(false);
+                    setPaywallReason('save-limit');
+                    return;
+                  }
+
                   const newRel: GraveRelationship = {
                     graveId: grave.id,
                     category: relCategory,

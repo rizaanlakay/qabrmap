@@ -50,7 +50,7 @@ export default function AuthCallbackPage() {
             onClick={() => router.replace('/')}
             className="mt-5 rounded-xl bg-emerald-400 px-5 py-2.5 text-sm font-bold text-brand-dark hover:bg-emerald-300"
           >
-            Back to QabrMap
+            Back to Ta&apos;awun Qabr Map
           </button>
         </div>
       ) : (

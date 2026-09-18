@@ -28,7 +28,7 @@ describe('Gmail-Friendly Email Template Generator Unit Tests', () => {
     expect(html).toContain('cellspacing="0"');
 
     // Check brand elements & praying hands icon reference
-    expect(html).toContain('QabrMap');
+    expect(html).toContain("Ta'awun Qabr Map");
     expect(html).toContain('Find &bull; Remember &bull; Always');
     expect(html).toContain('https://qabrmap.vercel.app/icons/icon-192.png');
     expect(html).toContain('بِسْمِ ٱللَّٰهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ');

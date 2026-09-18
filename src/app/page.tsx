@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Cemetery, Grave, DeviceTelemetry, AIStructuredExtraction, CaptureSaveAttempt, Survey, SurveyCapture } from '@/types';
+import { Cemetery, Grave, MapGrave, DeviceTelemetry, AIStructuredExtraction, CaptureSaveAttempt, Survey, SurveyCapture } from '@/types';
 import { dataStore } from '@/lib/data/store';
+import { toMapGrave } from '@/lib/graves/mapGraves';
 import { getGraveIdFromUrl, withGraveParam } from '@/lib/share/graveLink';
 import type { VisitFix } from '@/lib/graves/visits';
 import { compassPermission } from '@/lib/device/compass';
@@ -23,6 +24,8 @@ import type { OpenGraveResult } from '@/components/surveys/SurveyCaptureList';
 // Components
 import { StatusBar } from '@/components/ui/StatusBar';
 import { BottomNav, NavTab } from '@/components/ui/BottomNav';
+import { Lock, ArrowLeft, Sparkles, ExternalLink } from 'lucide-react';
+import { PaywallScreen } from '@/components/common/PaywallScreen';
 
 // 12 Screens
 import { HomeScreen } from '@/components/screens/HomeScreen';
@@ -42,6 +45,7 @@ import { MyCemeteriesScreen } from '@/components/screens/MyCemeteriesScreen';
 import { RegisterScreen } from '@/components/screens/RegisterScreen';
 import { ProfileScreen } from '@/components/screens/ProfileScreen';
 import { AdminDashboard } from '@/components/admin/AdminDashboard';
+import { UpgradeProScreen } from '@/components/screens/UpgradeProScreen';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { useWakeLock } from '@/lib/device/useWakeLock';
@@ -66,7 +70,8 @@ export type ScreenId =
   | 'survey-session'
   | 'offline-status'
   | 'profile'
-  | 'admin';
+  | 'admin'
+  | 'upgrade-pro';
 
 // Used when the photo couldn't be read, so the user types everything in
 const EMPTY_EXTRACTION: AIStructuredExtraction = {
@@ -95,7 +100,7 @@ function QabrMapAppContent() {
   const shouldKeepAwake = ['navigation', 'ar-guidance', 'cemetery-map'].includes(currentScreen);
   useWakeLock(shouldKeepAwake);
 
-  // Weekly "Install QabrMap" offer, only on the home screen so it never covers navigation or capture
+  // Weekly "Install Ta'awun Qabr Map" offer, only on the home screen so it never covers navigation or capture
   const installOffer = useInstallOffer({ enabled: mounted && currentScreen === 'home' });
 
   // Ask for the phone's position only while the Explore screen is open; it drives the Nearby chip and distances
@@ -106,6 +111,19 @@ function QabrMapAppContent() {
   const [selectedCemetery, setSelectedCemetery] = useState<Cemetery | null>(null);
   const [graves, setGraves] = useState<Grave[]>([]);
   const [selectedGrave, setSelectedGrave] = useState<Grave | null>(null);
+  // The cemetery map holds a slim row per grave, and the full grave is fetched when one is opened
+  const [mapGraves, setMapGraves] = useState<MapGrave[]>([]);
+  const [mapGravesLoading, setMapGravesLoading] = useState(false);
+  const [selectedMapGraveId, setSelectedMapGraveId] = useState<string | null>(null);
+  // Only the latest request may fill the map, so a slow cemetery can't overwrite the one opened after it
+  const mapGravesRequest = useRef(0);
+
+  // The admin export needs every grave in full, so they load only when that screen opens
+  useEffect(() => {
+    if (currentScreen !== 'admin' || !selectedCemetery) return;
+    dataStore.getGraves(selectedCemetery.id).then(setGraves);
+  }, [currentScreen, selectedCemetery]);
+
   // Grave that "Add a Photo" is capturing for; null when capture maps a new grave
   const [photoTargetGrave, setPhotoTargetGrave] = useState<Grave | null>(null);
   // Bumped after a photo is added so the grave details carousel reloads its photos
@@ -131,8 +149,9 @@ function QabrMapAppContent() {
   // Shown once on the grave details page after a save, for example when the whole-grave photo failed
   const [detailsNotice, setDetailsNotice] = useState<string | null>(null);
 
-  const { user, openAuthModal, loading: authLoading } = useAuth();
+  const { user, profile, openAuthModal, loading: authLoading } = useAuth();
   const userId = user?.id;
+  const isPro = profile?.subscriptionType === 'Pro' || user?.user_metadata?.subscription_type === 'Pro';
 
   // Survey photos on this phone, for the offline screen and the survey camera's counter
   const myCaptures = useLiveValue<SurveyCapture[]>(
@@ -203,13 +222,6 @@ function QabrMapAppContent() {
       if (cems.length > 0) {
         setSelectedCemetery(cems[0]);
       }
-    });
-
-    dataStore.getGraves('cem_athlone').then((gList) => {
-      setGraves(gList);
-      const defaultGrave = gList[0];
-      // Don't override a grave opened from a shared link
-      if (defaultGrave) setSelectedGrave((prev) => prev ?? defaultGrave);
     });
 
     // Track the connection for the offline screen
@@ -285,16 +297,36 @@ function QabrMapAppContent() {
     setSelectedCemetery((prev) => (prev ? cems.find((c) => c.id === prev.id) ?? prev : prev));
   }, []);
 
+  const loadMapGraves = useCallback((cemeteryId: string) => {
+    const request = ++mapGravesRequest.current;
+    setMapGravesLoading(true);
+    dataStore
+      .getMapGraves(cemeteryId)
+      .then((list) => {
+        if (request === mapGravesRequest.current) setMapGraves(list);
+      })
+      .finally(() => {
+        if (request === mapGravesRequest.current) setMapGravesLoading(false);
+      });
+  }, []);
+
   const handleSelectCemetery = (cemetery: Cemetery) => {
     setSelectedCemetery(cemetery);
     setSelectedGrave(null);
-    setGraves([]);
-    dataStore.getGraves(cemetery.id).then((gList) => {
-      setGraves(gList);
-      if (gList.length > 0) setSelectedGrave(gList[0]);
-    });
+    setSelectedMapGraveId(null);
+    setMapGraves([]);
+    loadMapGraves(cemetery.id);
     setCurrentScreen('cemetery-map');
   };
+
+  // A grave tapped on the map is only a dot with a name, so its full details are fetched before it opens
+  const handleOpenMapGrave = async (graveId: string) => {
+    const grave = await dataStore.getGraveById(graveId).catch(() => undefined);
+    if (grave) handleOpenGrave(grave);
+  };
+
+  const replaceMapGrave = (updated: Grave) =>
+    setMapGraves((list) => list.map((item) => (item.id === updated.id ? toMapGrave(updated) : item)));
 
   // Back from grave details to wherever it was opened from
   const leaveGraveDetails = () => {
@@ -309,6 +341,8 @@ function QabrMapAppContent() {
   // Open Grave Details
   const handleOpenGrave = (grave: Grave) => {
     setDetailsNotice(null);
+    // Feeds "Recently viewed" on the search screen
+    dataStore.recordGraveViewed(grave.id);
     setPreviousScreen(currentScreen);
     setSelectedGrave(grave);
     setCurrentScreen('grave-details');
@@ -383,7 +417,9 @@ function QabrMapAppContent() {
     setCapturedGravePhoto(null);
     const cemetery = cemeteries.find((c) => c.id === saved.cemeteryId);
     if (cemetery) setSelectedCemetery(cemetery);
-    dataStore.getGraves(saved.cemeteryId).then(setGraves);
+    setMapGraves((list) => (list.length > 0 && list[0].cemeteryId !== saved.cemeteryId ? [] : list));
+    setSelectedMapGraveId(saved.id);
+    loadMapGraves(saved.cemeteryId);
     setPreviousScreen('home');
     setCurrentNavTab('home');
     setCurrentScreen('grave-details');
@@ -394,7 +430,7 @@ function QabrMapAppContent() {
     ? async (grave: Grave, fix: VisitFix) => {
         const updated = await dataStore.recordGraveVisit(grave, fix);
         setSelectedGrave(updated);
-        setGraves((list) => list.map((item) => (item.id === updated.id ? updated : item)));
+        replaceMapGrave(updated);
         return updated;
       }
     : undefined;
@@ -438,6 +474,9 @@ function QabrMapAppContent() {
                 openCapture();
               } else if (screen === 'register') {
                 setCurrentScreen('register');
+              } else if (screen === 'upgrade-pro') {
+                setPreviousScreen(currentScreen);
+                setCurrentScreen('upgrade-pro');
               }
             }}
           />
@@ -492,11 +531,13 @@ function QabrMapAppContent() {
         {currentScreen === 'cemetery-map' && selectedCemetery && (
           <CemeteryMapScreen
             cemetery={selectedCemetery}
-            graves={graves}
-            selectedGrave={selectedGrave}
+            graves={mapGraves}
+            isLoadingGraves={mapGravesLoading}
+            selectedGraveId={selectedMapGraveId}
+            isGraveSaved={(id) => dataStore.isGraveSaved(id)}
             userLocation={userLocation}
-            onSelectGrave={(grave) => setSelectedGrave(grave)}
-            onOpenGraveDetails={handleOpenGrave}
+            onSelectGrave={setSelectedMapGraveId}
+            onOpenGraveDetails={handleOpenMapGrave}
             onBack={() => setCurrentScreen('cemetery-select')}
             onSwitchCemetery={() => {
               setCemeteryFilter('nearby');
@@ -531,13 +572,27 @@ function QabrMapAppContent() {
             photosVersion={gravePhotosVersion}
             notice={detailsNotice}
             canDelete={Boolean(user && selectedGrave.createdBy === user.id)}
+            canEdit={Boolean(user && selectedGrave.createdBy === user.id)}
+            onEdited={(updated) => {
+              setSelectedGrave(updated);
+              replaceMapGrave(updated);
+            }}
             onDeleted={() => {
               const deletedId = selectedGrave.id;
-              setGraves((list) => list.filter((grave) => grave.id !== deletedId));
+              setMapGraves((list) => list.filter((grave) => grave.id !== deletedId));
+              setSelectedMapGraveId((id) => (id === deletedId ? null : id));
               leaveGraveDetails();
               setSelectedGrave(null);
             }}
             onBack={leaveGraveDetails}
+            onOpenProfile={() => {
+              setCurrentNavTab('profile');
+              setCurrentScreen('profile');
+            }}
+            onUpgradePro={() => {
+              setPreviousScreen('grave-details');
+              setCurrentScreen('upgrade-pro');
+            }}
           />
         )}
 
@@ -658,7 +713,35 @@ function QabrMapAppContent() {
         )}
 
         {currentScreen === 'survey-session' &&
-          (user ? (
+          (!isPro ? (
+            <PaywallScreen
+              headerTitle="My Surveys"
+              headerSubtitle="Continuous Cemetery Surveys"
+              title="Survey Sessions are Disabled"
+              description={
+                <p>
+                  Cemetery survey sessions and continuous multi-grave mapping tools are exclusive to <strong>Pro members</strong>. Everyone on the Free plan can search, map individual graves, and save loved ones.
+                </p>
+              }
+              primaryButtonText="Return to Home"
+              onPrimaryAction={() => {
+                setCurrentNavTab('home');
+                setCurrentScreen('home');
+              }}
+              onBack={() => {
+                setCurrentNavTab('home');
+                setCurrentScreen('home');
+              }}
+              onViewAccount={() => {
+                setCurrentNavTab('profile');
+                setCurrentScreen('profile');
+              }}
+              onUpgradePro={() => {
+                setPreviousScreen('survey-session');
+                setCurrentScreen('upgrade-pro');
+              }}
+            />
+          ) : user ? (
             <SurveySessionScreen
               userId={user.id}
               cemeteries={cemeteries}
@@ -702,6 +785,18 @@ function QabrMapAppContent() {
             onBack={() => setCurrentScreen('home')}
           />
         )}
+        {currentScreen === 'upgrade-pro' && (
+          <UpgradeProScreen
+            onBack={() => {
+              if (previousScreen && previousScreen !== 'upgrade-pro') {
+                setCurrentScreen(previousScreen);
+              } else {
+                setCurrentScreen('home');
+              }
+            }}
+            onNavigate={(screen) => setCurrentScreen(screen as ScreenId)}
+          />
+        )}
         {installOffer.visible && installOffer.platform !== 'unsupported' && (
           <InstallAppCard
             platform={installOffer.platform}
@@ -717,7 +812,12 @@ function QabrMapAppContent() {
           currentTab={currentNavTab}
           onSelectTab={handleSelectNavTab}
           isLoggedIn={Boolean(user)}
+          isPro={isPro}
           onRequireAuth={() => openAuthModal()}
+          onProRequired={() => {
+            setCurrentNavTab('surveys');
+            setCurrentScreen('survey-session');
+          }}
         />
       )}
 

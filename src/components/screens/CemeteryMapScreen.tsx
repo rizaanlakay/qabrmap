@@ -10,32 +10,52 @@ import {
   Plus,
   Minus,
   CheckCircle2,
+  Loader2,
 } from 'lucide-react';
-import { Cemetery, Grave } from '@/types';
+import { Cemetery, MapGrave } from '@/types';
 import { formatGravesMapped } from '@/lib/data/cemeteryStats';
 import { useWakeLock } from '@/lib/device/useWakeLock';
-import { googleRasterStyle, MAX_MAP_ZOOM, registerGoogleTilesProtocol } from '@/lib/map/googleMapTiles';
+import { googleRasterStyle, GoogleMapType, MAX_MAP_ZOOM, registerGoogleTilesProtocol } from '@/lib/map/googleMapTiles';
+import {
+  GRAVE_CLUSTER_LAYER,
+  GRAVE_TAP_LAYERS,
+  GRAVE_TAP_RADIUS_PX,
+  GRAVES_SOURCE,
+  MAP_GLYPHS_PATH,
+  graveFeatureCollection,
+  nearestTappedFeature,
+  selectedFeatureCollection,
+  syncGraveLayers,
+} from '@/lib/map/graveLayers';
 import { GoogleMapsAttribution } from '@/components/common/GoogleMapsAttribution';
 
 interface CemeteryMapScreenProps {
   cemetery: Cemetery;
-  graves: Grave[];
-  selectedGrave: Grave | null;
+  graves: MapGrave[];
+  isLoadingGraves?: boolean;
+  selectedGraveId: string | null;
+  isGraveSaved: (graveId: string) => boolean;
   userLocation: { lat: number; lng: number };
-  onSelectGrave: (grave: Grave) => void;
-  onOpenGraveDetails: (grave: Grave) => void;
+  onSelectGrave: (graveId: string) => void;
+  // The full grave is fetched before its details open, which can take a moment on a weak signal
+  onOpenGraveDetails: (graveId: string) => Promise<void> | void;
   onBack: () => void;
   onSwitchCemetery: () => void;
 }
 
-// Official Google Map Tiles, loaded through the gmaptiles:// protocol registered when the map starts
-const GOOGLE_SATELLITE_STYLE = googleRasterStyle('satellite');
-const GOOGLE_ROADMAP_STYLE = googleRasterStyle('roadmap');
+// Official Google Map Tiles, loaded through the gmaptiles:// protocol registered when the map starts.
+// The glyphs are the digits on the grave clusters; MapLibre wants a full address for them.
+const mapStyle = (mapType: GoogleMapType) => ({
+  ...googleRasterStyle(mapType),
+  glyphs: `${window.location.origin}${MAP_GLYPHS_PATH}`,
+});
 
 export const CemeteryMapScreen: React.FC<CemeteryMapScreenProps> = ({
   cemetery,
   graves,
-  selectedGrave,
+  isLoadingGraves = false,
+  selectedGraveId,
+  isGraveSaved,
   userLocation,
   onSelectGrave,
   onOpenGraveDetails,
@@ -55,9 +75,33 @@ export const CemeteryMapScreen: React.FC<CemeteryMapScreenProps> = ({
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
-  const markersMapRef = useRef<Map<string, any>>(new Map());
-  const userMarkerRef = useRef<any>(null);
   const baseZoomRef = useRef<number>(18.5);
+  const appliedMapTypeRef = useRef(mapType);
+  const [isOpeningGrave, setIsOpeningGrave] = useState(false);
+
+  const selectedGrave = useMemo(
+    () => (selectedGraveId ? graves.find((grave) => grave.id === selectedGraveId) ?? null : null),
+    [graves, selectedGraveId]
+  );
+
+  // The graves as MapLibre sources. Built once per change, never per frame.
+  const isGraveSavedRef = useRef(isGraveSaved);
+  isGraveSavedRef.current = isGraveSaved;
+  const graveFeatures = useMemo(
+    () => graveFeatureCollection(graves, cemetery.id, (id) => isGraveSavedRef.current(id)),
+    [graves, cemetery.id]
+  );
+  const selectedFeatures = useMemo(() => selectedFeatureCollection(selectedGrave, (id) => isGraveSavedRef.current(id)), [selectedGrave]);
+
+  // The map's own handlers are attached once, so they read the latest values through refs
+  const graveDataRef = useRef({ graves: graveFeatures, selected: selectedFeatures });
+  graveDataRef.current = { graves: graveFeatures, selected: selectedFeatures };
+  const selectedGraveRef = useRef(selectedGrave);
+  selectedGraveRef.current = selectedGrave;
+  const userLocationRef = useRef(userLocation);
+  userLocationRef.current = userLocation;
+  const onSelectGraveRef = useRef(onSelectGrave);
+  onSelectGraveRef.current = onSelectGrave;
 
   // Compute bounding box across the recorded cemetery boundary and all graves
   const bounds = useMemo(() => {
@@ -158,6 +202,9 @@ export const CemeteryMapScreen: React.FC<CemeteryMapScreenProps> = ({
         });
 
         // 1. Semi-transparent emerald polygon fill
+        // The outline is redrawn whenever it changes, and must go back under the graves, not over them
+        const beneathGraves = map.getLayer(GRAVE_CLUSTER_LAYER) ? GRAVE_CLUSTER_LAYER : undefined;
+
         map.addLayer({
           id: fillLayerId,
           type: 'fill',
@@ -166,7 +213,7 @@ export const CemeteryMapScreen: React.FC<CemeteryMapScreenProps> = ({
             'fill-color': '#10B981',
             'fill-opacity': 0.16,
           },
-        });
+        }, beneathGraves);
 
         // 2. Soft glowing outer boundary stroke
         map.addLayer({
@@ -179,7 +226,7 @@ export const CemeteryMapScreen: React.FC<CemeteryMapScreenProps> = ({
             'line-opacity': 0.35,
             'line-blur': 2,
           },
-        });
+        }, beneathGraves);
 
         // 3. Crisp emerald perimeter line
         map.addLayer({
@@ -192,7 +239,7 @@ export const CemeteryMapScreen: React.FC<CemeteryMapScreenProps> = ({
             'line-opacity': 0.95,
             'line-dasharray': [4, 2],
           },
-        });
+        }, beneathGraves);
       } catch (err) {
         console.warn('Error setting up cemetery boundary layers:', err);
       }
@@ -217,7 +264,7 @@ export const CemeteryMapScreen: React.FC<CemeteryMapScreenProps> = ({
 
         map = new maplibregl.Map({
           container: mapContainerRef.current,
-          style: mapType === 'satellite' ? GOOGLE_SATELLITE_STYLE : GOOGLE_ROADMAP_STYLE,
+          style: mapStyle(mapType),
           center: [bounds.centerLng, bounds.centerLat],
           zoom: 18.0,
           minZoom: 13,
@@ -231,6 +278,7 @@ export const CemeteryMapScreen: React.FC<CemeteryMapScreenProps> = ({
           if (isCancelled) return;
           setIsMapReady(true);
           setupBoundaryLayers(map);
+          syncGraveLayers(map, graveDataRef.current);
           fitBoundsToCemetery(map, false);
           setTimeout(() => {
             if (mapInstanceRef.current) {
@@ -249,17 +297,51 @@ export const CemeteryMapScreen: React.FC<CemeteryMapScreenProps> = ({
           setZoomDisplay(pct);
 
           // Update selected grave screen position
-          if (selectedGrave) {
-            const pt = map.project([selectedGrave.longitude, selectedGrave.latitude]);
+          const selected = selectedGraveRef.current;
+          if (selected) {
+            const pt = map.project([selected.longitude, selected.latitude]);
             setSelectedScreenPos({ x: pt.x, y: pt.y });
           }
 
           // Update user location screen position
-          if (userLocation) {
-            const uPt = map.project([userLocation.lng, userLocation.lat]);
+          const user = userLocationRef.current;
+          if (user) {
+            const uPt = map.project([user.lng, user.lat]);
             setUserScreenPos({ x: uPt.x, y: uPt.y });
           }
         };
+
+        // One handler for every grave. A tap looks a fingertip around itself, since the dots are small.
+        map.on('click', (e: any) => {
+          const layers = GRAVE_TAP_LAYERS.filter((id) => map.getLayer(id));
+          if (layers.length === 0) return;
+          const r = GRAVE_TAP_RADIUS_PX;
+          const features = map.queryRenderedFeatures(
+            [
+              [e.point.x - r, e.point.y - r],
+              [e.point.x + r, e.point.y + r],
+            ],
+            { layers }
+          );
+          const hit: any = nearestTappedFeature(features, e.point, (lngLat) => map.project(lngLat));
+          if (!hit) return;
+
+          if (hit.layer.id === GRAVE_CLUSTER_LAYER) {
+            // Zoom to where the cluster breaks apart
+            map
+              .getSource(GRAVES_SOURCE)
+              ?.getClusterExpansionZoom(hit.properties.cluster_id)
+              .then((zoom: number) => map.easeTo({ center: hit.geometry.coordinates, zoom: Math.min(zoom, MAX_MAP_ZOOM), duration: 400 }))
+              .catch(() => {});
+            return;
+          }
+          if (typeof hit.properties?.id === 'string') onSelectGraveRef.current(hit.properties.id);
+        });
+
+        for (const layerId of GRAVE_TAP_LAYERS) {
+          map.on('mouseenter', layerId, () => (map.getCanvas().style.cursor = 'pointer'));
+          map.on('mouseleave', layerId, () => (map.getCanvas().style.cursor = ''));
+        }
 
         map.on('zoom', handleMapTransform);
         map.on('move', handleMapTransform);
@@ -281,13 +363,16 @@ export const CemeteryMapScreen: React.FC<CemeteryMapScreenProps> = ({
     };
   }, [cemetery.id]); // Re-init on cemetery switch
 
-  // Update Map style when toggled and re-render boundary highlight
+  // Update Map style when toggled. A new style wipes every added layer, so the outline and graves go back on.
   useEffect(() => {
     const map = mapInstanceRef.current;
-    if (!map || !isMapReady) return;
-    map.setStyle(mapType === 'satellite' ? GOOGLE_SATELLITE_STYLE : GOOGLE_ROADMAP_STYLE);
+    if (!map || !isMapReady || appliedMapTypeRef.current === mapType) return;
+    appliedMapTypeRef.current = mapType;
+    // A full reload, so 'style.load' fires every time; a diffed style change drops the layers without saying so
+    map.setStyle(mapStyle(mapType), { diff: false });
     map.once('style.load', () => {
       setupBoundaryLayers(map);
+      syncGraveLayers(map, graveDataRef.current);
     });
   }, [mapType, isMapReady, setupBoundaryLayers]);
 
@@ -298,52 +383,16 @@ export const CemeteryMapScreen: React.FC<CemeteryMapScreenProps> = ({
     setupBoundaryLayers(map);
   }, [cemetery.boundary, isMapReady, setupBoundaryLayers]);
 
-  // Sync Grave Markers with Google Map
+  // Hand the graves to the map whenever they or the selection change
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map || !isMapReady) return;
-
-    import('maplibre-gl').then((mod) => {
-      const maplibregl = mod.default || mod;
-
-      // Remove previous markers
-      markersMapRef.current.forEach((marker) => marker.remove());
-      markersMapRef.current.clear();
-
-      graves.forEach((grave) => {
-        if (grave.cemeteryId && grave.cemeteryId !== cemetery.id) return;
-        const isSelected = selectedGrave?.id === grave.id;
-
-        // Create marker container element
-        const el = document.createElement('div');
-        el.className = 'cursor-pointer p-1.5 group select-none transition-transform';
-
-        let dotColor = 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]'; // Mapped
-        if (grave.status === 'LOW_CONFIDENCE') {
-          dotColor = 'bg-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.8)]'; // Low confidence
-        } else if (grave.status === 'UNMAPPED') {
-          dotColor = 'bg-slate-400/90'; // Unmapped
-        }
-
-        const dot = document.createElement('div');
-        dot.className = `w-4 h-4 rounded-full border-2 border-white/90 transition-transform ${dotColor} ${
-          isSelected ? 'scale-150 ring-4 ring-white shadow-2xl' : 'group-hover:scale-125'
-        }`;
-        el.appendChild(dot);
-
-        el.addEventListener('click', (e) => {
-          e.stopPropagation();
-          onSelectGrave(grave);
-        });
-
-        const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
-          .setLngLat([grave.longitude, grave.latitude])
-          .addTo(map);
-
-        markersMapRef.current.set(grave.id, marker);
-      });
-    });
-  }, [graves, selectedGrave?.id, isMapReady, onSelectGrave]);
+    try {
+      syncGraveLayers(map, { graves: graveFeatures, selected: selectedFeatures });
+    } catch {
+      // The style is mid-change; its 'style.load' handler draws the latest graves
+    }
+  }, [graveFeatures, selectedFeatures, isMapReady]);
 
   // Update selected grave tooltip position whenever selectedGrave changes
   useEffect(() => {
@@ -438,6 +487,14 @@ export const CemeteryMapScreen: React.FC<CemeteryMapScreenProps> = ({
           </div>
         )}
 
+        {/* A large cemetery takes a moment to arrive */}
+        {isLoadingGraves && (
+          <div className="absolute top-16 left-1/2 -translate-x-1/2 z-20 pointer-events-none flex items-center space-x-1.5 bg-black/65 backdrop-blur-md px-2.5 py-1 rounded-full text-white shadow-md">
+            <Loader2 className="w-3 h-3 animate-spin" />
+            <span className="text-[10px] font-semibold tracking-wide">Loading graves</span>
+          </div>
+        )}
+
         {/* User Location Pulse Marker (Blue GPS) */}
         {userScreenPos && (
           <div
@@ -460,12 +517,20 @@ export const CemeteryMapScreen: React.FC<CemeteryMapScreenProps> = ({
             className="absolute -translate-x-1/2 -translate-y-[125%] z-30 transition-all pointer-events-auto"
           >
             <div
-              onClick={() => onOpenGraveDetails(selectedGrave)}
+              onClick={async () => {
+                if (isOpeningGrave) return;
+                setIsOpeningGrave(true);
+                try {
+                  await onOpenGraveDetails(selectedGrave.id);
+                } finally {
+                  setIsOpeningGrave(false);
+                }
+              }}
               className="bg-brand-forest/95 backdrop-blur-md text-white rounded-xl py-2 px-3.5 shadow-2xl flex items-center space-x-2 border border-emerald-500/40 cursor-pointer active:scale-95 transition-transform"
             >
               <div>
                 <div className="text-xs font-bold leading-tight">
-                  {selectedGrave.person?.fullName || `Grave ${selectedGrave.graveNumber}`}
+                  {selectedGrave.fullName || `Grave ${selectedGrave.graveNumber}`}
                 </div>
                 <div className="text-[10px] text-emerald-200 mt-0.5 flex items-center">
                   {selectedGrave.graveNumber && <span>{selectedGrave.graveNumber}</span>}
@@ -474,7 +539,11 @@ export const CemeteryMapScreen: React.FC<CemeteryMapScreenProps> = ({
                   )}
                 </div>
               </div>
-              <span className="text-emerald-300 font-bold ml-1 text-sm">&gt;</span>
+              {isOpeningGrave ? (
+                <Loader2 className="w-3.5 h-3.5 ml-1 text-emerald-300 animate-spin" />
+              ) : (
+                <span className="text-emerald-300 font-bold ml-1 text-sm">&gt;</span>
+              )}
             </div>
             {/* Speech bubble arrow pointer */}
             <div className="w-3 h-3 bg-brand-forest rotate-45 mx-auto -mt-1.5 border-r border-b border-emerald-500/40 shadow-sm" />
@@ -549,8 +618,8 @@ export const CemeteryMapScreen: React.FC<CemeteryMapScreenProps> = ({
               <span>Low confidence</span>
             </div>
             <div className="flex items-center space-x-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-slate-400 shadow-sm" />
-              <span>Unmapped</span>
+              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-sm" />
+              <span>My graves</span>
             </div>
           </div>
         </div>

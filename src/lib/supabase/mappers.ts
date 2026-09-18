@@ -1,4 +1,4 @@
-import { Cemetery, Grave, GravePhoto, Person, GraveRelationship } from '@/types';
+import { Cemetery, Grave, GravePhoto, Person, GraveRelationship, UserProfile } from '@/types';
 
 export function mapDbCemetery(row: any): Cemetery {
   return {
@@ -143,3 +143,16 @@ export function mapDbGravePhoto(row: any): GravePhoto {
     createdAt: row.created_at,
   };
 }
+
+export function mapDbProfile(row: any): UserProfile {
+  return {
+    id: row.id,
+    displayName: row.display_name ?? null,
+    avatarUrl: row.avatar_url ?? null,
+    phone: row.phone ?? null,
+    subscriptionType: row.subscription_type === 'Pro' ? 'Pro' : 'Free',
+    createdAt: row.created_at || undefined,
+    updatedAt: row.updated_at || undefined,
+  };
+}
+

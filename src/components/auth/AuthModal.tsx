@@ -9,7 +9,7 @@ interface AuthModalProps {
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({ onOpenRegistrationFlow }) => {
-  const { user, isAuthModalOpen, closeAuthModal, signIn, signUp, signInWithGoogle, signOut } = useAuth();
+  const { user, profile, isAuthModalOpen, closeAuthModal, signIn, signUp, signInWithGoogle, signOut } = useAuth();
   const [tab, setTab] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -85,7 +85,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onOpenRegistrationFlow }) 
           </h2>
           <p className="text-xs text-emerald-100/80 mt-0.5">
             {user
-              ? 'Your QabrMap account & synced data'
+              ? "Your Ta'awun Qabr Map account & synced data"
               : 'Sign in to sync your loved ones across all devices'}
           </p>
         </div>
@@ -98,20 +98,33 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onOpenRegistrationFlow }) 
               <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4">
                 <div className="flex items-center space-x-3">
                   <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center text-lg">
-                    {(user.user_metadata?.display_name || user.email || 'U')[0].toUpperCase()}
+                    {((profile?.displayName || user.user_metadata?.display_name || user.email || 'U')[0]).toUpperCase()}
                   </div>
-                  <div className="overflow-hidden">
-                    <p className="text-sm font-semibold text-slate-900 truncate">
-                      {user.user_metadata?.display_name || 'QabrMap Member'}
-                    </p>
+                  <div className="overflow-hidden flex-1">
+                    <div className="flex items-center space-x-2">
+                      <p className="text-sm font-semibold text-slate-900 truncate">
+                        {profile?.displayName || user.user_metadata?.display_name || "Ta'awun Qabr Map Member"}
+                      </p>
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+                        {profile?.subscriptionType || (user.user_metadata?.subscription_type === 'Pro' ? 'Pro' : 'Free')}
+                      </span>
+                    </div>
                     <p className="text-xs text-slate-500 truncate">{user.email}</p>
                   </div>
                 </div>
-                <div className="mt-3 pt-3 border-t border-slate-200/60 flex items-center justify-between text-xs text-slate-600">
-                  <span>Cloud Database:</span>
-                  <span className="font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-                    Connected (Supabase)
-                  </span>
+                <div className="mt-3 pt-3 border-t border-slate-200/60 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs text-slate-600">
+                    <span>Membership Tier:</span>
+                    <span className="font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                      {profile?.subscriptionType || (user.user_metadata?.subscription_type === 'Pro' ? 'Pro' : 'Free')} Member
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-slate-600">
+                    <span>Cloud Database:</span>
+                    <span className="font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                      Connected (Supabase)
+                    </span>
+                  </div>
                 </div>
               </div>
 

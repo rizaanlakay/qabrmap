@@ -7,14 +7,18 @@ interface BottomNavProps {
   currentTab: NavTab;
   onSelectTab: (tab: NavTab) => void;
   isLoggedIn?: boolean;
+  isPro?: boolean;
   onRequireAuth?: () => void;
+  onProRequired?: () => void;
 }
 
 export const BottomNav: React.FC<BottomNavProps> = ({ 
   currentTab, 
   onSelectTab, 
   isLoggedIn = false,
-  onRequireAuth 
+  isPro = false,
+  onRequireAuth,
+  onProRequired,
 }) => {
   return (
     <nav className="w-full bg-white border-t border-slate-200/80 px-3 py-2 flex items-center justify-around z-30 shrink-0 select-none shadow-[0_-2px_10px_rgba(0,0,0,0.04)]">
@@ -52,19 +56,22 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         <span className="text-[10px] mt-0.5 font-medium text-brand-forest">Capture</span>
       </button>
 
-      {/* 4. My Surveys (Disabled when not signed in) */}
+      {/* 4. My Surveys (Disabled on Free plan or when not signed in) */}
       <button
+        disabled={!isLoggedIn || !isPro}
         onClick={() => {
           if (!isLoggedIn) {
             onRequireAuth?.();
+          } else if (!isPro) {
+            onProRequired?.();
           } else {
             onSelectTab('surveys');
           }
         }}
-        title={!isLoggedIn ? 'Sign in to access surveys' : 'My Surveys'}
+        title={!isLoggedIn ? 'Sign in to access surveys' : !isPro ? 'My Surveys requires a Pro membership' : 'My Surveys'}
         className={`flex flex-col items-center justify-center transition-colors min-w-[56px] py-1 relative ${
-          !isLoggedIn
-            ? 'opacity-40 hover:opacity-60 cursor-pointer text-slate-400'
+          !isLoggedIn || !isPro
+            ? 'opacity-40 cursor-not-allowed text-slate-400'
             : currentTab === 'surveys'
             ? 'text-brand-forest font-semibold'
             : 'text-slate-400 hover:text-slate-600'
@@ -72,7 +79,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
       >
         <div className="relative">
           <ClipboardList className="w-5 h-5 stroke-[2.2]" />
-          {!isLoggedIn && (
+          {(!isLoggedIn || !isPro) && (
             <Lock className="w-2.5 h-2.5 absolute -top-1 -right-1 text-slate-500" />
           )}
         </div>

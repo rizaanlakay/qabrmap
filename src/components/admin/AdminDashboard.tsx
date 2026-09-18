@@ -258,7 +258,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <h3 className="font-bold text-sm text-slate-900">Spatial Row & Qibla Alignment</h3>
             </div>
             <p className="text-slate-600 leading-relaxed">
-              QabrMap automatically models grave rows and orientation. In Athlone, graves are aligned facing Qibla (~28.5° NNE).
+              Ta&apos;awun Qabr Map automatically models grave rows and orientation. In Athlone, graves are aligned facing Qibla (~28.5° NNE).
             </p>
             <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 font-mono text-[11px] space-y-1.5">
               <div className="flex justify-between">

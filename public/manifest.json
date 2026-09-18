@@ -1,7 +1,7 @@
 {
   "id": "/",
-  "name": "QabrMap - Muslim Cemetery Mapping & Grave Navigation",
-  "short_name": "QabrMap",
+  "name": "Ta'awun Qabr Map - Muslim Cemetery Mapping & Grave Navigation",
+  "short_name": "Ta'awun Qabr Map",
   "description": "Find, map and navigate to deceased loved ones in Muslim cemeteries with AI and high-precision spatial positioning.",
   "start_url": "/",
   "scope": "/",

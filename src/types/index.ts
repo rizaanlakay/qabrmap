@@ -122,6 +122,19 @@ export interface Grave {
   updatedAt: string;
 }
 
+// What the cemetery map needs to draw one grave and label it when tapped. A large cemetery has thousands of
+// graves, so the map never loads the full rows; the details screen fetches the one that gets opened.
+export interface MapGrave {
+  id: string;
+  cemeteryId: string;
+  latitude: number;
+  longitude: number;
+  status: GraveStatus;
+  graveNumber: string;
+  positionConfidence: ConfidenceLevel;
+  fullName?: string;
+}
+
 // stone: the gravestone. grave: the whole grave, a visual clue for visitors
 export type GravePhotoKind = 'stone' | 'grave';
 
@@ -281,3 +294,18 @@ export interface Correction {
   status: 'PENDING' | 'RESOLVED' | 'REJECTED';
   createdAt: string;
 }
+
+export type SubscriptionType = 'Free' | 'Pro';
+
+export const FREE_SAVED_GRAVES_LIMIT = 3;
+
+export interface UserProfile {
+  id: string;
+  displayName: string | null;
+  avatarUrl?: string | null;
+  phone?: string | null;
+  subscriptionType: SubscriptionType;
+  createdAt?: string;
+  updatedAt?: string;
+}
+

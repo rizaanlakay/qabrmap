@@ -3,7 +3,7 @@ import './globals.css';
 import { APP_INSTALLED_EVENT, INSTALLED_FLAG_KEY, INSTALL_PROMPT_EVENT } from '@/lib/pwa/installPrompt';
 
 export const metadata: Metadata = {
-  title: 'QabrMap - Find, Remember, Always',
+  title: "Ta'awun Qabr Map - Find, Remember, Always",
   description: 'Digital mapping, AI gravestone analysis, and precision navigation for Muslim cemeteries.',
   manifest: '/manifest.json',
   icons: {
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'QabrMap',
+    title: "Ta'awun Qabr Map",
   },
   other: {
     // Chromium's counterpart to apple-mobile-web-app-capable

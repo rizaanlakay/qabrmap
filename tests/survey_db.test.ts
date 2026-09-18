@@ -4,7 +4,7 @@ import Dexie from 'dexie';
 import { QabrMapDatabase } from '../src/lib/offline/db';
 
 describe('Survey Database Tests', () => {
-  it('opens a version 1 database as version 2, keeping cached graves and dropping the old queue', async () => {
+  it('opens a version 1 database as the current version, keeping cached graves and dropping the old queue', async () => {
     const name = 'QabrMapDB_upgrade_test';
     const v1 = new Dexie(name);
     v1.version(1).stores({
@@ -19,8 +19,8 @@ describe('Survey Database Tests', () => {
 
     const db = new QabrMapDatabase(name);
     await db.open();
-    expect(db.verno).toBe(2);
-    expect(db.tables.map((table) => table.name).sort()).toEqual(['cemeteries', 'graves', 'surveyCaptures', 'surveyQueueState', 'surveys']);
+    expect(db.verno).toBe(3);
+    expect(db.tables.map((table) => table.name).sort()).toEqual(['cemeteries', 'graves', 'mapGraves', 'surveyCaptures', 'surveyQueueState', 'surveys']);
     await expect(db.graves.get('grave_1')).resolves.toMatchObject({ graveNumber: '1402' });
     db.close();
   });

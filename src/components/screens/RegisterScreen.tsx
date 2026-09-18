@@ -53,10 +53,10 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
   const [specificRelation, setSpecificRelation] = useState('Father');
   const [lovedOneNote, setLovedOneNote] = useState('');
 
-  // Step 4: Preferences
-  const [fridayReminder, setFridayReminder] = useState(true);
-  const [janazahNotices, setJanazahNotices] = useState(true);
-  const [preservationUpdates, setPreservationUpdates] = useState(true);
+  // Step 4: Preferences (Disabled - Coming Soon)
+  const [fridayReminder, setFridayReminder] = useState(false);
+  const [janazahNotices, setJanazahNotices] = useState(false);
+  const [preservationUpdates, setPreservationUpdates] = useState(false);
 
   // Status
   const [loading, setLoading] = useState(false);
@@ -157,7 +157,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
 
         {/* Step Title */}
         <h1 className="text-xl font-bold tracking-tight">
-          {currentStep === 1 && 'Welcome to QabrMap'}
+          {currentStep === 1 && "Welcome to Ta'awun Qabr Map"}
           {currentStep === 2 && 'Create Your Account'}
           {currentStep === 3 && 'Remember a Loved One'}
           {currentStep === 4 && 'Remembrance Preferences'}
@@ -198,7 +198,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
             {/* Mission Card */}
             <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm text-center">
               <div className="w-16 h-16 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center mx-auto mb-3 shadow-inner">
-                <Image src="/icons/icon.svg" alt="QabrMap Crest" width={40} height={40} />
+                <Image src="/icons/icon.svg" alt="Ta'awun Qabr Map Crest" width={40} height={40} />
               </div>
               <p className="font-serif italic text-xs text-slate-500 mb-1">
                 بِسْمِ ٱللَّٰهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
@@ -207,7 +207,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
                 Preserving Sacred Resting Places
               </h2>
               <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-                QabrMap empowers the Muslim community to document, find, and remember the graves of our parents, grandparents, and loved ones with dignified GPS precision.
+                Ta&apos;awun Qabr Map empowers the Muslim community to document, find, and remember the graves of our parents, grandparents, and loved ones with dignified GPS precision.
               </p>
             </div>
 
@@ -504,20 +504,25 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
             )}
 
             <div className="bg-white rounded-2xl p-4 border border-slate-200 space-y-3 shadow-sm">
-              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider text-emerald-800">
-                Islamic Notifications &amp; Remembrances
-              </h3>
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-800">
+                  Islamic Notifications &amp; Remembrances
+                </h3>
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 shrink-0">
+                  Coming Soon
+                </span>
+              </div>
 
-              {/* Toggle 1: Friday Jumu'ah Du'a */}
-              <label className="flex items-start space-x-3 p-2 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors">
+              {/* Toggle 1: Friday Jumu'ah Du'a (Disabled - Coming Soon) */}
+              <label className="flex items-start space-x-3 p-2.5 rounded-xl bg-slate-50/80 border border-slate-200/60 opacity-60 cursor-not-allowed select-none">
                 <input
                   type="checkbox"
-                  checked={fridayReminder}
-                  onChange={(e) => setFridayReminder(e.target.checked)}
-                  className="w-4 h-4 mt-0.5 text-brand-forest rounded focus:ring-brand-forest"
+                  checked={false}
+                  disabled
+                  className="w-4 h-4 mt-0.5 text-slate-400 rounded cursor-not-allowed"
                 />
                 <div>
-                  <span className="text-xs font-semibold text-slate-800 block">
+                  <span className="text-xs font-semibold text-slate-700 block">
                     Friday Jumu&apos;ah Du&apos;a Reminder
                   </span>
                   <span className="text-[11px] text-slate-500 leading-snug block">
@@ -526,16 +531,16 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
                 </div>
               </label>
 
-              {/* Toggle 2: Janazah Announcements */}
-              <label className="flex items-start space-x-3 p-2 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors">
+              {/* Toggle 2: Janazah Announcements (Disabled - Coming Soon) */}
+              <label className="flex items-start space-x-3 p-2.5 rounded-xl bg-slate-50/80 border border-slate-200/60 opacity-60 cursor-not-allowed select-none">
                 <input
                   type="checkbox"
-                  checked={janazahNotices}
-                  onChange={(e) => setJanazahNotices(e.target.checked)}
-                  className="w-4 h-4 mt-0.5 text-brand-forest rounded focus:ring-brand-forest"
+                  checked={false}
+                  disabled
+                  className="w-4 h-4 mt-0.5 text-slate-400 rounded cursor-not-allowed"
                 />
                 <div>
-                  <span className="text-xs font-semibold text-slate-800 block">
+                  <span className="text-xs font-semibold text-slate-700 block">
                     Local Janazah &amp; Burial Notices
                   </span>
                   <span className="text-[11px] text-slate-500 leading-snug block">
@@ -544,16 +549,16 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
                 </div>
               </label>
 
-              {/* Toggle 3: Preservation */}
-              <label className="flex items-start space-x-3 p-2 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors">
+              {/* Toggle 3: Preservation (Disabled - Coming Soon) */}
+              <label className="flex items-start space-x-3 p-2.5 rounded-xl bg-slate-50/80 border border-slate-200/60 opacity-60 cursor-not-allowed select-none">
                 <input
                   type="checkbox"
-                  checked={preservationUpdates}
-                  onChange={(e) => setPreservationUpdates(e.target.checked)}
-                  className="w-4 h-4 mt-0.5 text-brand-forest rounded focus:ring-brand-forest"
+                  checked={false}
+                  disabled
+                  className="w-4 h-4 mt-0.5 text-slate-400 rounded cursor-not-allowed"
                 />
                 <div>
-                  <span className="text-xs font-semibold text-slate-800 block">
+                  <span className="text-xs font-semibold text-slate-700 block">
                     Community Mapping Updates
                   </span>
                   <span className="text-[11px] text-slate-500 leading-snug block">
@@ -600,7 +605,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
                 Alhamdulillah!
               </h2>
               <p className="text-xs text-slate-600 mt-1 max-w-xs mx-auto leading-relaxed">
-                Your account is ready and synced with Supabase cloud. You are now part of QabrMap.
+                Your account is ready and synced with Supabase cloud. You are now part of Ta&apos;awun Qabr Map.
               </p>
             </div>
 
@@ -631,7 +636,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
               onClick={onFinish}
               className="w-full py-3 px-4 rounded-xl bg-brand-forest hover:bg-brand-dark text-white text-sm font-semibold flex items-center justify-center space-x-2 transition-all shadow-md active:scale-98"
             >
-              <span>Enter QabrMap</span>
+              <span>Enter Ta&apos;awun Qabr Map</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>

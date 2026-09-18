@@ -12,7 +12,6 @@ import {
   CheckCircle2,
   Car,
   Footprints,
-  ExternalLink,
   CornerUpLeft,
   CornerUpRight,
   ArrowUp,
@@ -1222,9 +1221,6 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
     preloadXR8();
   }, [isNearby]);
 
-  // External turn-by-turn navigation URL for drivers
-  const externalGoogleMapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${currentLoc.lat},${currentLoc.lng}&destination=${entranceLat},${entranceLng}&travelmode=driving`;
-
   // Helper to render maneuver icon
   const renderManeuverIcon = (step?: RouteStep) => {
     if (!step) return <Navigation className="w-6 h-6 text-white" />;
@@ -1620,16 +1616,6 @@ export const NavigationScreen: React.FC<NavigationScreenProps> = ({
                   <span>I have arrived at the cemetery</span>
                 </button>
               )}
-
-              <a
-                href={externalGoogleMapsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl py-2.5 px-4 font-semibold text-xs flex items-center justify-center space-x-2 border border-slate-200 active:scale-[0.99] transition-all"
-              >
-                <ExternalLink className="w-3.5 h-3.5 text-slate-600" />
-                <span>Open in Google Maps / Waze for Audio Navigation</span>
-              </a>
             </div>
           </>
         ) : (

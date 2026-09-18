@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { photoCounterLabel, swipeStep, wrapPhotoIndex } from '@/lib/ui/photoCarousel';
+import { PhotoLightboxModal } from './PhotoLightboxModal';
 
 export interface CarouselPhoto {
   id: string;
@@ -15,11 +16,18 @@ interface GravePhotoCarouselProps {
   alt: string;
   // Shown when the grave has no photos yet
   fallback: React.ReactNode;
+  onPhotoClick?: (index: number) => void;
 }
 
-export const GravePhotoCarousel: React.FC<GravePhotoCarouselProps> = ({ photos, alt, fallback }) => {
+export const GravePhotoCarousel: React.FC<GravePhotoCarouselProps> = ({
+  photos,
+  alt,
+  fallback,
+  onPhotoClick,
+}) => {
   const [index, setIndex] = useState(0);
-  const pointerStart = useRef<{ x: number; y: number } | null>(null);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const pointerStart = useRef<{ x: number; y: number; time: number } | null>(null);
   const count = photos.length;
   const hasMultiple = count > 1;
 
@@ -31,14 +39,32 @@ export const GravePhotoCarousel: React.FC<GravePhotoCarouselProps> = ({ photos, 
   const go = (step: number) => setIndex((current) => wrapPhotoIndex(current + step, count));
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    pointerStart.current = { x: e.clientX, y: e.clientY };
+    pointerStart.current = { x: e.clientX, y: e.clientY, time: Date.now() };
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     const start = pointerStart.current;
     pointerStart.current = null;
-    if (!start || !hasMultiple) return;
-    const step = swipeStep(e.clientX - start.x, e.clientY - start.y);
+    if (!start) return;
+
+    const deltaX = e.clientX - start.x;
+    const deltaY = e.clientY - start.y;
+    const elapsed = Date.now() - start.time;
+
+    // Detect tap / click: very small movement and quick press
+    if (Math.hypot(deltaX, deltaY) < 10 && elapsed < 350) {
+      if (count > 0) {
+        if (onPhotoClick) {
+          onPhotoClick(index);
+        } else {
+          setIsLightboxOpen(true);
+        }
+      }
+      return;
+    }
+
+    if (!hasMultiple) return;
+    const step = swipeStep(deltaX, deltaY);
     if (step !== 0) go(step);
   };
 
@@ -137,6 +163,16 @@ export const GravePhotoCarousel: React.FC<GravePhotoCarouselProps> = ({ photos, 
       >
         {photoCounterLabel(index, count)}
       </div>
+
+      {count > 0 && (
+        <PhotoLightboxModal
+          photos={photos}
+          initialIndex={index}
+          alt={alt}
+          isOpen={isLightboxOpen}
+          onClose={() => setIsLightboxOpen(false)}
+        />
+      )}
     </div>
   );
 };

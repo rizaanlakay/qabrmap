@@ -18,6 +18,12 @@ import { ARRIVED_M, createSceneDriver, DriverState } from '@/lib/ar/sceneDriver'
 import type { VisitFix } from '@/lib/graves/visits';
 import { VisitConfirmButton } from '@/components/common/VisitConfirmButton';
 import { LookForThisGrave } from '@/components/common/LookForThisGrave';
+import { VisionDebugView } from '@/components/common/VisionDebugView';
+import { hasRealGravePhoto } from '@/lib/ui/gravestoneInscription';
+import { MATCHER_WORKER_URL, OPENCV_SCRIPT_URL, VISION_CONFIG } from '@/lib/ar/vision/config';
+import { createMatcherClient, WorkerLike } from '@/lib/ar/vision/matcherClient';
+import { loadReferenceLevels } from '@/lib/ar/vision/referenceLevels';
+import { createVisionDriver, VisionPhase, VisionState } from '@/lib/ar/vision/visionDriver';
 
 interface ARTrackedGuidanceScreenProps {
   targetGrave: Grave;
@@ -37,6 +43,31 @@ const ALPHA_ORIENTATION = 0.25;
 // reached NORMAL it never fires again: north can still arrive later from walking, and limited tracking mid-walk
 // is handled on screen, not by leaving.
 const STARTUP_FALLBACK_MS = 30_000;
+// Stone matching diagnostics: ?visionDebug=1 turns them on and is remembered, =0 turns them off, and five
+// quick taps on the screen title toggle them in the installed app, which has no address bar
+const VISION_DEBUG_KEY = 'qabrmap:visionDebug';
+const DEBUG_TAPS = 5;
+const DEBUG_TAP_WINDOW_MS = 2500;
+
+function readVisionDebug(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const param = new URLSearchParams(window.location.search).get('visionDebug');
+    if (param === '1') window.localStorage.setItem(VISION_DEBUG_KEY, '1');
+    if (param === '0') window.localStorage.removeItem(VISION_DEBUG_KEY);
+    return window.localStorage.getItem(VISION_DEBUG_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+// What the chip above the instruction pill says while the camera looks for the photographed stone. Never a
+// percentage: the match is a pointer, and the visitor confirms by reading the stone.
+const VISION_CHIP: Partial<Record<VisionPhase, { text: string; tone: string; dot: string }>> = {
+  scanning: { text: 'Scanning for the stone…', tone: 'border-white/20 text-white/90', dot: 'bg-white/70 animate-pulse' },
+  potential: { text: 'Possible match', tone: 'border-amber-400/70 text-amber-200', dot: 'bg-amber-400' },
+  likely: { text: 'Likely match. Check the name and dates.', tone: 'border-emerald-400/70 text-emerald-200', dot: 'bg-emerald-400' },
+};
 
 function describeMissingHeading(status: CompassStatus): string {
   if (status === 'needs-permission') return 'Tap the screen to start the compass';
@@ -70,6 +101,10 @@ export const ARTrackedGuidanceScreen: React.FC<ARTrackedGuidanceScreenProps> = (
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const driverRef = useRef<ReturnType<typeof createSceneDriver> | null>(null);
+  const visionRef = useRef<ReturnType<typeof createVisionDriver> | null>(null);
+  const [visionState, setVisionState] = useState<VisionState | null>(null);
+  const [visionDebug, setVisionDebug] = useState(false);
+  const debugTapsRef = useRef<number[]>([]);
   const [engineStatus, setEngineStatus] = useState<'loading' | 'camera' | 'running'>('loading');
   const [driverState, setDriverState] = useState<DriverState>({
     tracking: 'initialising',
@@ -154,6 +189,44 @@ export const ARTrackedGuidanceScreen: React.FC<ARTrackedGuidanceScreenProps> = (
     driverRef.current?.setHeading(phoneHeading);
   }, [phoneHeading, driverReady]);
 
+  // Feed stone matching: the whole-grave photo is what visitors are told to look for, so it is what the
+  // camera looks for too; the stone close-up stands in when there is none. The matcher is fetched on the way
+  // in and only runs near the grave.
+  const referenceUrl = targetGrave.gravePhotoUrl ?? (hasRealGravePhoto(targetGrave.primaryPhotoUrl) ? targetGrave.primaryPhotoUrl : undefined);
+  const nearEnoughToLoad = distance <= VISION_CONFIG.loadDistanceM || arrived;
+  const nearEnoughToMatch = distance <= VISION_CONFIG.matchDistanceM || arrived;
+  useEffect(() => {
+    if (referenceUrl && nearEnoughToLoad) visionRef.current?.prepare(referenceUrl);
+  }, [referenceUrl, nearEnoughToLoad, driverReady]);
+  useEffect(() => {
+    visionRef.current?.setActive(nearEnoughToMatch);
+  }, [nearEnoughToMatch, driverReady]);
+  useEffect(() => {
+    visionRef.current?.setFallbackDepth(distance);
+  }, [distance, driverReady]);
+  useEffect(() => {
+    setVisionDebug(readVisionDebug());
+  }, []);
+  useEffect(() => {
+    visionRef.current?.setDebug(visionDebug);
+  }, [visionDebug, driverReady]);
+
+  const onTitleTap = () => {
+    const t = Date.now();
+    debugTapsRef.current = [...debugTapsRef.current.filter((at) => t - at < DEBUG_TAP_WINDOW_MS), t];
+    if (debugTapsRef.current.length < DEBUG_TAPS) return;
+    debugTapsRef.current = [];
+    setVisionDebug((on) => {
+      try {
+        if (on) window.localStorage.removeItem(VISION_DEBUG_KEY);
+        else window.localStorage.setItem(VISION_DEBUG_KEY, '1');
+      } catch {
+        // Private mode: the toggle still works for this visit
+      }
+      return !on;
+    });
+  };
+
   // Start the engine once; anything that stops it starting hands over to the sensor screen
   useEffect(() => {
     let cancelled = false;
@@ -190,6 +263,16 @@ export const ARTrackedGuidanceScreen: React.FC<ARTrackedGuidanceScreenProps> = (
       driver.onState(setDriverState);
       driver.setHeading(headingRef.current);
       if (targetRef.current) driver.setTarget(targetRef.current);
+
+      // Looks for the photographed stone in the camera view. It shares the pipeline and nothing else: when it
+      // cannot work it says so once and this screen carries on as before.
+      const vision = createVisionDriver(XR8, {
+        config: VISION_CONFIG,
+        makeMatcher: () => createMatcherClient(() => new Worker(MATCHER_WORKER_URL) as unknown as WorkerLike, OPENCV_SCRIPT_URL, VISION_CONFIG),
+        loadReference: (url) => loadReferenceLevels(url, VISION_CONFIG),
+      });
+      visionRef.current = vision;
+      vision.onState(setVisionState);
       setDriverReady(true);
 
       try {
@@ -214,6 +297,7 @@ export const ARTrackedGuidanceScreen: React.FC<ARTrackedGuidanceScreenProps> = (
             onException: (error) => onFallbackRef.current(error instanceof Error && error.message ? error.message : 'engine'),
           },
           driver.pipelineModule,
+          ...vision.pipelineModules,
         ]);
         XR8.run({ canvas, allowedDevices: XR8.XrConfig.device().ANY });
       } catch (err) {
@@ -228,6 +312,8 @@ export const ARTrackedGuidanceScreen: React.FC<ARTrackedGuidanceScreenProps> = (
       if (onResize) window.removeEventListener('resize', onResize);
       driverRef.current?.dispose();
       driverRef.current = null;
+      visionRef.current?.dispose();
+      visionRef.current = null;
       try {
         engine?.stop();
         // The engine is a page-wide singleton, so the modules must go with the screen
@@ -261,6 +347,7 @@ export const ARTrackedGuidanceScreen: React.FC<ARTrackedGuidanceScreenProps> = (
   else if (diffAngle > 35) guidanceText = `Turn Right (${Math.round(diffAngle)}°)`;
   else if (diffAngle < -35) guidanceText = `Turn Left (${Math.abs(Math.round(diffAngle))}°)`;
 
+  const visionChip = engineStatus === 'running' && visionState ? VISION_CHIP[visionState.phase] : undefined;
   const accuracy = Math.max(1, targetGrave.positionAccuracyMeters || 1);
   const numberLabel = graveNumberLabel(targetGrave);
   const pill =
@@ -285,9 +372,11 @@ export const ARTrackedGuidanceScreen: React.FC<ARTrackedGuidanceScreenProps> = (
         >
           <X className="w-5 h-5 stroke-[2.2]" />
         </button>
-        <h1 className="text-sm font-bold tracking-wide text-white drop-shadow">Approaching your destination</h1>
+        <h1 onClick={onTitleTap} className="text-sm font-bold tracking-wide text-white drop-shadow">Approaching your destination</h1>
         <div className="w-9 h-9" aria-hidden="true" />
       </div>
+
+      {visionDebug && visionState && <VisionDebugView state={visionState} />}
 
       {/* Distance badge */}
       <div className="absolute top-[22%] inset-x-0 z-20 flex justify-center pointer-events-none">
@@ -299,6 +388,12 @@ export const ARTrackedGuidanceScreen: React.FC<ARTrackedGuidanceScreenProps> = (
 
       {/* The instruction pill stacks above the card, so it stays clear however tall the card grows */}
       <div className="absolute bottom-10 inset-x-5 z-30 pointer-events-auto flex flex-col items-center space-y-3">
+        {visionChip && (
+          <div className={`flex items-center space-x-2 bg-black/60 backdrop-blur-md border rounded-full px-3 py-1 text-xs font-semibold pointer-events-none ${visionChip.tone}`} role="status">
+            <span className={`w-2 h-2 rounded-full ${visionChip.dot}`} aria-hidden="true" />
+            <span>{visionChip.text}</span>
+          </div>
+        )}
         <div className="max-w-[300px] bg-black/60 backdrop-blur-md border border-white/20 rounded-xl px-4 py-2 text-sm font-semibold text-white text-center pointer-events-none" role="status">
           {pill}
         </div>

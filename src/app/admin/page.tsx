@@ -79,7 +79,7 @@ export default function AdminPage() {
         </div>
         <h1 className="text-xl font-bold text-white mb-2">Administrator Access Restricted</h1>
         <p className="text-xs text-slate-400 max-w-sm mb-6 leading-relaxed">
-          The QabrMap Administration Portal is reserved exclusively for authorized administrators ({DEFAULT_ADMIN_EMAIL}).
+          The Ta&apos;awun Qabr Map Administration Portal is reserved exclusively for authorized administrators ({DEFAULT_ADMIN_EMAIL}).
           {user ? (
             <span className="block mt-2 text-slate-500">
               Signed in as: <b className="text-slate-300">{user.email}</b> (Standard Member)

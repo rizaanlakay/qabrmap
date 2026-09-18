@@ -9,6 +9,7 @@ import {
   ProvenanceLog,
   Correction,
   GraveRelationship,
+  MapGrave,
 } from '@/types';
 import { MOCK_CEMETERIES, MOCK_GRAVES } from './mockData';
 import { offlineDb } from '../offline/db';
@@ -22,6 +23,19 @@ import {
   deleteMappedGrave,
   staleGraveIds,
 } from '../graves/deleteMappedGrave';
+import { GraveEditForm, hasGraveEditChanges } from '../graves/graveEditForm';
+import { fetchAllPages, fetchMapGraves, toMapGrave, uniqueById } from '../graves/mapGraves';
+import {
+  SearchKind,
+  SearchPage,
+  addRecentGrave,
+  filterGravesLocally,
+  inOrderOf,
+  isSearchable,
+  pageOf,
+  searchGravesRemote,
+} from '../graves/searchGraves';
+import { UPDATE_NOT_SET_UP_MESSAGE, UpdateGraveError, applyGraveEdit, updateMappedGrave } from '../graves/updateMappedGrave';
 import { SaveGraveError, NOT_SET_UP_MESSAGE, OFFLINE_MESSAGE, mapSaveGraveError } from '../supabase/saveGraveErrors';
 import { applyVisitResult, parseVisitResult, VISIT_FAILED_MESSAGE, VisitFix } from '../graves/visits';
 import { GRAVE_PHOTOS_BUCKET, deleteGravePhoto, uploadGravePhoto } from '../supabase/storage';
@@ -50,6 +64,8 @@ class DataStore {
   private savedCemeteries: Set<string> = new Set();
   private savedGraveIds: Set<string> = new Set();
   private relationships: Map<string, GraveRelationship> = new Map();
+  // Graves opened on this device, most recent first, for the search screen before anything is typed
+  private recentGraveIds: string[] = [];
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -57,6 +73,11 @@ class DataStore {
         const storedCems = localStorage.getItem('qabrmap_my_cemeteries');
         if (storedCems) {
           this.savedCemeteries = new Set(JSON.parse(storedCems));
+        }
+        const storedRecent = localStorage.getItem('qabrmap_recent_graves');
+        if (storedRecent) {
+          const ids: unknown = JSON.parse(storedRecent);
+          if (Array.isArray(ids)) this.recentGraveIds = ids.filter((id): id is string => typeof id === 'string');
         }
         const storedGraves = localStorage.getItem('qabrmap_saved_graves');
         if (storedGraves) {
@@ -128,7 +149,10 @@ class DataStore {
         .select('*')
         .eq('user_id', userId);
 
-      if (!error && data && data.length > 0) {
+      if (!error && data) {
+        // Reconcile with the user's authentic saved graves from the cloud
+        this.savedGraveIds.clear();
+        this.relationships.clear();
         for (const row of data) {
           this.savedGraveIds.add(row.grave_id);
           this.relationships.set(row.grave_id, {
@@ -194,9 +218,26 @@ class DataStore {
   }
 
   async getMyCemeteriesGraves(): Promise<MyCemeteryGraveEntry[]> {
-    const allGraves = await this.getGraves();
+    // Only the saved graves are fetched; loading every grave to pick these out stops working as the map fills up
+    const savedIds = Array.from(new Set(Array.from(this.savedGraveIds).concat(Array.from(this.relationships.keys()))));
+    const allGraves = await this.getGravesByIds(savedIds);
     const allCemeteries = await this.getCemeteries();
     const cemMap = new Map(allCemeteries.map((c) => [c.id, c]));
+
+    // Prune any stale or deleted grave IDs that no longer exist in the database
+    const foundIds = new Set(allGraves.map((g) => g.id));
+    let changed = false;
+    for (const id of savedIds) {
+      if (!foundIds.has(id)) {
+        this.savedGraveIds.delete(id);
+        this.relationships.delete(id);
+        changed = true;
+      }
+    }
+    if (changed) {
+      this.persistSavedGraves();
+      this.persistRelationships();
+    }
 
     const entries: MyCemeteryGraveEntry[] = [];
     for (const grave of allGraves) {
@@ -417,26 +458,30 @@ class DataStore {
     // 1. Try Supabase Cloud. A successful answer is the truth, even when it has no graves.
     if (isSupabaseConfigured && supabase && typeof navigator !== 'undefined' && navigator.onLine) {
       try {
-        let query = supabase.from('graves').select('*, person:persons(*)');
-        if (cemeteryId) {
-          query = query.eq('cemetery_id', cemeteryId);
-        }
-        const { data, error } = await query;
-        if (!error && data) {
-          loadedFromCloud = true;
-          resultList = data.map(mapDbGrave);
-          if (typeof indexedDB !== 'undefined') {
-            // Keep the offline copy in step with the cloud, including graves deleted on another device
-            const freshIds = resultList.map((grave) => grave.id);
-            const fresh = resultList;
-            const cachedIds = cemeteryId
-              ? offlineDb.graves.where('cemeteryId').equals(cemeteryId).primaryKeys()
-              : offlineDb.graves.toCollection().primaryKeys();
-            cachedIds
-              .then((ids) => offlineDb.graves.bulkDelete(staleGraveIds(ids as string[], freshIds)))
-              .then(() => (fresh.length > 0 ? offlineDb.graves.bulkPut(fresh) : undefined))
-              .catch(() => {});
+        const client = supabase;
+        // A page at a time: one request returns at most 1000 rows and gives no sign that there are more
+        const data = await fetchAllPages<any>(async (from, to, withCount) => {
+          let query = client.from('graves').select('*, person:persons(*)', withCount ? { count: 'exact' } : undefined);
+          if (cemeteryId) {
+            query = query.eq('cemetery_id', cemeteryId);
           }
+          const { data: rows, error, count } = await query.order('id').range(from, to);
+          if (error || !rows) throw error ?? new Error('No answer');
+          return { rows, total: withCount ? count ?? null : null };
+        });
+        loadedFromCloud = true;
+        resultList = uniqueById(data.map(mapDbGrave));
+        if (typeof indexedDB !== 'undefined') {
+          // Keep the offline copy in step with the cloud, including graves deleted on another device
+          const freshIds = resultList.map((grave) => grave.id);
+          const fresh = resultList;
+          const cachedIds = cemeteryId
+            ? offlineDb.graves.where('cemeteryId').equals(cemeteryId).primaryKeys()
+            : offlineDb.graves.toCollection().primaryKeys();
+          cachedIds
+            .then((ids) => offlineDb.graves.bulkDelete(staleGraveIds(ids as string[], freshIds)))
+            .then(() => (fresh.length > 0 ? offlineDb.graves.bulkPut(fresh) : undefined))
+            .catch(() => {});
         }
       } catch (err) {
         console.warn('Supabase getGraves error, falling back to local:', err);
@@ -462,6 +507,41 @@ class DataStore {
     }));
   }
 
+  // Every grave of a cemetery as the map draws it: a slim row each, so thousands load quickly.
+  // From the cloud when it can be reached, else from the copy kept on this device.
+  async getMapGraves(cemeteryId: string): Promise<MapGrave[]> {
+    if (isSupabaseConfigured && supabase && typeof navigator !== 'undefined' && navigator.onLine) {
+      try {
+        const fresh = await fetchMapGraves(cemeteryId, { client: supabase });
+        if (typeof indexedDB !== 'undefined') {
+          const freshIds = fresh.map((grave) => grave.id);
+          offlineDb
+            .transaction('rw', [offlineDb.mapGraves, offlineDb.graves], async () => {
+              await offlineDb.mapGraves.where('cemeteryId').equals(cemeteryId).delete();
+              await offlineDb.mapGraves.bulkPut(fresh);
+              // Graves deleted on another device must not linger in offline search
+              const cachedIds = await offlineDb.graves.where('cemeteryId').equals(cemeteryId).primaryKeys();
+              await offlineDb.graves.bulkDelete(staleGraveIds(cachedIds as string[], freshIds));
+            })
+            .catch(() => {});
+        }
+        return fresh;
+      } catch (err) {
+        console.warn('Supabase getMapGraves error, falling back to local:', err);
+      }
+    }
+
+    if (typeof indexedDB === 'undefined') return [];
+    try {
+      const points = await offlineDb.mapGraves.where('cemeteryId').equals(cemeteryId).toArray();
+      if (points.length > 0) return points;
+      // Nothing kept for the map yet: show the graves this device has seen in full
+      return (await offlineDb.graves.where('cemeteryId').equals(cemeteryId).toArray()).map(toMapGrave);
+    } catch {
+      return [];
+    }
+  }
+
   // Deletes a grave the signed-in user mapped, with its photos, and forgets it on this device.
   // Throws DeleteGraveError, for example when other people have added to the grave.
   async deleteGrave(graveId: string): Promise<void> {
@@ -476,11 +556,32 @@ class DataStore {
       },
     });
 
-    if (typeof indexedDB !== 'undefined') await offlineDb.graves.delete(graveId).catch(() => {});
+    if (typeof indexedDB !== 'undefined') {
+      await offlineDb.graves.delete(graveId).catch(() => {});
+      await offlineDb.mapGraves.delete(graveId).catch(() => {});
+    }
     this.savedGraveIds.delete(graveId);
     this.relationships.delete(graveId);
     this.persistSavedGraves();
     this.persistRelationships();
+  }
+
+  // Saves corrected details for a grave the signed-in user mapped and returns it as it now reads.
+  // Throws UpdateGraveError.
+  async updateGrave(grave: Grave, form: GraveEditForm): Promise<Grave> {
+    if (!isSupabaseConfigured || !supabase) throw new UpdateGraveError('not-set-up', UPDATE_NOT_SET_UP_MESSAGE);
+
+    await updateMappedGrave(grave.id, form, {
+      client: supabase,
+      isOnline: () => typeof navigator === 'undefined' || navigator.onLine,
+    });
+
+    // The edit is saved at this point, so a failed read-back on a weak connection mustn't report a failure
+    const fresh = await this.getGraveById(grave.id).catch(() => undefined);
+    // Offline the read-back falls through to this device's cache, which still holds the old details
+    const updated = fresh && !hasGraveEditChanges(form, fresh) ? fresh : applyGraveEdit(grave, form, new Date().toISOString());
+    if (typeof indexedDB !== 'undefined') await offlineDb.graves.put(updated).catch(() => {});
+    return updated;
   }
 
   async getGraveById(id: string): Promise<Grave | undefined> {
@@ -491,19 +592,23 @@ class DataStore {
           .from('graves')
           .select('*, person:persons(*)')
           .eq('id', id)
-          .single();
+          .maybeSingle();
 
-        if (!error && data) {
+        if (!error) {
+          // The cloud answered: no row means the grave is gone, whatever this device still remembers
+          if (!data) return undefined;
           const grave = mapDbGrave(data);
-          grave.cemeteryName = this.cemeteryNameFor(grave.cemeteryId);
-          grave.relationship = this.relationships.get(grave.id);
-          return grave;
+          // Kept on the device so a grave opened from the map can be opened again without signal
+          if (typeof indexedDB !== 'undefined') offlineDb.graves.put(grave).catch(() => {});
+          return this.withLocalDetails(grave);
         }
       } catch (err) {}
     }
 
-    const list = await this.getGraves();
-    return list.find((g) => g.id === id);
+    // Offline or unreachable: only this device's copy, never a download of every grave to find one
+    if (typeof indexedDB === 'undefined') return undefined;
+    const cached = await offlineDb.graves.get(id).catch(() => undefined);
+    return cached ? this.withLocalDetails(cached) : undefined;
   }
 
   // --- GRAVE PHOTOS ---
@@ -578,41 +683,98 @@ class DataStore {
     return mapDbGravePhoto(data);
   }
 
-  async searchGraves(query: string, filterType: 'all' | 'saved' | 'names' | 'numbers' = 'all'): Promise<Grave[]> {
-    const q = query.trim().toLowerCase();
-    const all = await this.getGraves();
+  // The named graves, in the order asked for. From the cloud when it can be reached, else from this device.
+  async getGravesByIds(ids: string[]): Promise<Grave[]> {
+    if (ids.length === 0) return [];
+    let found: Grave[] | null = null;
 
-    if (filterType === 'saved') {
-      const saved = all.filter((g) => this.relationships.has(g.id));
-      if (!q) return saved;
-      return saved.filter((g) => {
-        const numMatch = g.graveNumber.toLowerCase().includes(q);
-        const fullNameMatch = g.person?.fullName.toLowerCase().includes(q) ?? false;
-        const nicknameMatch = g.person?.nickname?.toLowerCase().includes(q) ?? false;
-        return numMatch || fullNameMatch || nicknameMatch;
-      });
+    if (isSupabaseConfigured && supabase && typeof navigator !== 'undefined' && navigator.onLine) {
+      try {
+        const rows: Grave[] = [];
+        // Kept well under the length a request address can carry
+        for (let i = 0; i < ids.length; i += 100) {
+          const { data, error } = await supabase.from('graves').select('*, person:persons(*)').in('id', ids.slice(i, i + 100));
+          if (error || !data) throw error ?? new Error('No answer');
+          rows.push(...data.map(mapDbGrave));
+        }
+        found = rows;
+        if (typeof indexedDB !== 'undefined' && rows.length > 0) offlineDb.graves.bulkPut(rows).catch(() => {});
+      } catch {
+        found = null;
+      }
     }
 
-    if (!q) {
-      return all.slice(0, 15);
+    if (found === null && typeof indexedDB !== 'undefined') {
+      try {
+        found = (await offlineDb.graves.bulkGet(ids)).filter((grave): grave is Grave => grave !== undefined);
+      } catch {
+        found = [];
+      }
     }
 
-    return all.filter((g) => {
-      const numMatch = g.graveNumber.toLowerCase().includes(q);
-      const fullNameMatch = g.person?.fullName.toLowerCase().includes(q) ?? false;
-      const firstNameMatch = g.person?.firstName.toLowerCase().includes(q) ?? false;
-      const surnameMatch = g.person?.surname.toLowerCase().includes(q) ?? false;
-      // Families often only know someone by their nickname
-      const nicknameMatch = g.person?.nickname?.toLowerCase().includes(q) ?? false;
+    return inOrderOf(ids, found ?? []).map((grave) => this.withLocalDetails(grave));
+  }
 
-      if (filterType === 'names') {
-        return fullNameMatch || firstNameMatch || surnameMatch || nicknameMatch;
+  private withLocalDetails(grave: Grave): Grave {
+    return {
+      ...grave,
+      cemeteryName: grave.cemeteryName || this.cemeteryNameFor(grave.cemeteryId),
+      relationship: this.relationships.get(grave.id),
+    };
+  }
+
+  // Graves marked with a relationship on this device, most recently marked first
+  async getLovedOnes(): Promise<Grave[]> {
+    const ids = Array.from(this.relationships.values())
+      .sort((a, b) => (b.savedAt || '').localeCompare(a.savedAt || ''))
+      .map((rel) => rel.graveId);
+    return this.getGravesByIds(ids);
+  }
+
+  recordGraveViewed(graveId: string): void {
+    this.recentGraveIds = addRecentGrave(this.recentGraveIds, graveId);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('qabrmap_recent_graves', JSON.stringify(this.recentGraveIds));
+      } catch {}
+    }
+  }
+
+  async getRecentGraves(): Promise<Grave[]> {
+    return this.getGravesByIds(this.recentGraveIds);
+  }
+
+  // One page of search results. The database does the searching; when it cannot be reached, the graves already
+  // on this device are searched instead and the page says so.
+  async searchGravesPage(query: string, kind: SearchKind, offset = 0): Promise<SearchPage> {
+    if (!isSearchable(query)) return { graves: [], hasMore: false, source: 'cloud' };
+
+    if (isSupabaseConfigured && supabase && typeof navigator !== 'undefined' && navigator.onLine) {
+      try {
+        const page = await searchGravesRemote(query, kind, offset, { client: supabase });
+        if (typeof indexedDB !== 'undefined' && page.graves.length > 0) offlineDb.graves.bulkPut(page.graves).catch(() => {});
+        return { ...page, graves: page.graves.map((grave) => this.withLocalDetails(grave)) };
+      } catch (err) {
+        console.warn('Grave search failed, searching this device instead:', err);
       }
-      if (filterType === 'numbers') {
-        return numMatch;
-      }
-      return numMatch || fullNameMatch || firstNameMatch || surnameMatch || nicknameMatch;
-    });
+    }
+
+    let cached: Grave[] = [];
+    if (typeof indexedDB !== 'undefined') {
+      try {
+        cached = await offlineDb.graves.toArray();
+      } catch {}
+    }
+    const matches = filterGravesLocally(cached, query, kind).sort((a, b) =>
+      (a.person?.fullName || a.graveNumber).localeCompare(b.person?.fullName || b.graveNumber)
+    );
+    const page = pageOf(matches, offset, 'device');
+    return { ...page, graves: page.graves.map((grave) => this.withLocalDetails(grave)) };
+  }
+
+  // Loved ones matching what was typed; they are few and already fetched, so they are filtered here
+  async searchLovedOnes(query: string): Promise<Grave[]> {
+    return filterGravesLocally(await this.getLovedOnes(), query, 'all');
   }
 
   // Saves a grave captured on this device, or adds its photo to a grave already mapped. Needs a signed-in user

@@ -1,12 +1,13 @@
 // Dexie IndexedDB Database for QabrMap
-// Stores cemeteries and graves for offline use, and survey captures waiting to be read and saved.
+// Stores cemeteries, graves and the map's grave points for offline use, and survey captures waiting to be read and saved.
 
 import Dexie, { type EntityTable } from 'dexie';
-import { Cemetery, Grave, Survey, SurveyCapture, SurveyQueueState } from '@/types';
+import { Cemetery, Grave, MapGrave, Survey, SurveyCapture, SurveyQueueState } from '@/types';
 
 export class QabrMapDatabase extends Dexie {
   cemeteries!: EntityTable<Cemetery, 'id'>;
   graves!: EntityTable<Grave, 'id'>;
+  mapGraves!: EntityTable<MapGrave, 'id'>;
   surveys!: EntityTable<Survey, 'id'>;
   surveyCaptures!: EntityTable<SurveyCapture, 'id'>;
   surveyQueueState!: EntityTable<SurveyQueueState, 'userId'>;
@@ -27,6 +28,10 @@ export class QabrMapDatabase extends Dexie {
       surveys: 'id, userId, status, startedAt',
       surveyCaptures: 'id, surveyId, userId, status, createdAt, nextAttemptAt',
       surveyQueueState: 'userId',
+    });
+    // The cemetery map keeps a slim row per grave, so a cemetery of thousands still opens without signal
+    this.version(3).stores({
+      mapGraves: 'id, cemeteryId',
     });
   }
 }

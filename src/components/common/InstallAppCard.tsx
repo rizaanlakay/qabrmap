@@ -28,7 +28,7 @@ export const InstallAppCard: React.FC<InstallAppCardProps> = ({ platform, onInst
         />
         <div className="ml-3 flex-1 min-w-0">
           <h3 id="install-app-title" className="text-sm font-bold text-slate-900">
-            Install QabrMap
+            Install Ta&apos;awun Qabr Map
           </h3>
           {platform === 'native' ? (
             <p className="text-xs text-slate-500 mt-0.5">
