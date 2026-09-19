@@ -46,6 +46,7 @@ import { RegisterScreen } from '@/components/screens/RegisterScreen';
 import { ProfileScreen } from '@/components/screens/ProfileScreen';
 import { AdminDashboard } from '@/components/admin/AdminDashboard';
 import { UpgradeProScreen } from '@/components/screens/UpgradeProScreen';
+import { HelpScreen } from '@/components/screens/HelpScreen';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { useWakeLock } from '@/lib/device/useWakeLock';
@@ -71,7 +72,8 @@ export type ScreenId =
   | 'offline-status'
   | 'profile'
   | 'admin'
-  | 'upgrade-pro';
+  | 'upgrade-pro'
+  | 'help';
 
 // Used when the photo couldn't be read, so the user types everything in
 const EMPTY_EXTRACTION: AIStructuredExtraction = {
@@ -477,6 +479,16 @@ function QabrMapAppContent() {
               } else if (screen === 'upgrade-pro') {
                 setPreviousScreen(currentScreen);
                 setCurrentScreen('upgrade-pro');
+              } else if (screen === 'help') {
+                setPreviousScreen(currentScreen);
+                setCurrentScreen('help');
+              } else if (screen === 'profile') {
+                setPreviousScreen(currentScreen);
+                setCurrentNavTab('profile');
+                setCurrentScreen('profile');
+              } else if (screen === 'home') {
+                setCurrentNavTab('home');
+                setCurrentScreen('home');
               }
             }}
           />
@@ -795,6 +807,30 @@ function QabrMapAppContent() {
               }
             }}
             onNavigate={(screen) => setCurrentScreen(screen as ScreenId)}
+          />
+        )}
+        {currentScreen === 'help' && (
+          <HelpScreen
+            onNavigate={(screen) => {
+              if (screen === 'search') {
+                setCurrentNavTab('search');
+                setCurrentScreen('search');
+              } else if (screen === 'capture') {
+                openCapture();
+              } else if (screen === 'home') {
+                setCurrentNavTab('home');
+                setCurrentScreen('home');
+              } else {
+                setCurrentScreen(screen as ScreenId);
+              }
+            }}
+            onBack={() => {
+              if (previousScreen && previousScreen !== 'help') {
+                setCurrentScreen(previousScreen);
+              } else {
+                setCurrentScreen('home');
+              }
+            }}
           />
         )}
         {installOffer.visible && installOffer.platform !== 'unsupported' && (

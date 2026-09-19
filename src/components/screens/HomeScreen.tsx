@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image';
 import {
   Search,
@@ -15,9 +15,11 @@ import {
   Globe,
   Sparkles,
   ChevronRight,
+  Menu,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { RemembranceQuoteCarousel } from '../common/RemembranceQuoteCarousel';
+import { BurgerMenuDrawer } from '../common/BurgerMenuDrawer';
 
 interface HomeScreenProps {
   myCemeteryCount?: number;
@@ -26,12 +28,20 @@ interface HomeScreenProps {
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ myCemeteryCount = 2, onNavigate }) => {
   const { user, profile, openAuthModal } = useAuth();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const displayName = profile?.displayName || user?.user_metadata?.display_name || user?.email?.split('@')[0];
   const subscriptionType = profile?.subscriptionType || (user?.user_metadata?.subscription_type === 'Pro' ? 'Pro' : 'Free');
 
   return (
     <div className="flex-1 flex flex-col overflow-y-auto bg-slate-50">
+      {/* Burger Menu Drawer (Only accessible from Home Screen) */}
+      <BurgerMenuDrawer
+        isOpen={isMenuOpen}
+        onClose={() => setIsMenuOpen(false)}
+        onNavigate={onNavigate}
+      />
+
       {/* Full-bleed Hero with overlaid text */}
       <div className="relative w-full h-[272px] sm:h-72 shrink-0">
         {/* Hero Image — edge to edge, flush to top */}
@@ -45,11 +55,22 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ myCemeteryCount = 2, onN
         {/* Dark gradient overlay for text legibility */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/25 to-black/60" />
 
+        {/* White Burger Menu Button (Top Left overlaying Hero) */}
+        <button
+          id="home-burger-menu-button"
+          onClick={() => setIsMenuOpen(true)}
+          className="absolute top-3.5 left-3.5 z-30 w-10 h-10 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md border border-white/25 text-white flex items-center justify-center transition-all shadow-md active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-white/40"
+          title="Open Menu"
+          aria-label="Open navigation menu"
+        >
+          <Menu className="w-5 h-5 text-white" />
+        </button>
+
         {/* User Account / Profile Button */}
         {user ? (
           <button
             onClick={openAuthModal}
-            className="absolute top-3.5 right-3.5 z-20 flex items-center gap-2 px-2.5 py-1.5 rounded-2xl bg-black/50 hover:bg-black/70 backdrop-blur-md border border-white/20 text-white transition-all shadow-md active:scale-95 text-left"
+            className="absolute top-3.5 right-3.5 z-30 flex items-center gap-2 px-2.5 py-1.5 rounded-2xl bg-black/50 hover:bg-black/70 backdrop-blur-md border border-white/20 text-white transition-all shadow-md active:scale-95 text-left cursor-pointer"
             title="View profile & account"
           >
             <div className="w-7 h-7 rounded-full bg-emerald-700/90 border border-emerald-400/50 flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-inner">
@@ -68,7 +89,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ myCemeteryCount = 2, onN
         ) : (
           <button
             onClick={openAuthModal}
-            className="absolute top-3.5 right-3.5 z-20 flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md border border-white/20 text-white text-xs font-medium transition-all shadow-sm active:scale-95"
+            className="absolute top-3.5 right-3.5 z-30 flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md border border-white/20 text-white text-xs font-medium transition-all shadow-sm active:scale-95 cursor-pointer"
             title="Sign in"
           >
             <UserIcon className="w-3.5 h-3.5 text-emerald-300" />
@@ -77,7 +98,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ myCemeteryCount = 2, onN
         )}
 
         {/* Overlaid Brand Content */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
           <div className="w-10 h-10 mb-1 relative drop-shadow-lg">
             <Image
               src="/icons/icon.svg"
@@ -110,7 +131,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ myCemeteryCount = 2, onN
               href="https://taawun.co.za"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex flex-col items-center group mt-0.5"
+              className="inline-flex flex-col items-center group mt-0.5 pointer-events-auto"
             >
               <span className="text-xs font-bold text-white group-hover:text-emerald-300 group-hover:underline underline-offset-2 tracking-wide transition-colors">
                 Ta&apos;awun Community Fund
